@@ -73,7 +73,8 @@ pip install -r requirements.txt
 pip install -e .
 ```
 
-### 2. 配置 ADB
+### 2. 配置 ADB(安卓设备)
+(Android Debug Bridge)
 
 确认 **USB数据线具有数据传输功能**, 而不是仅有充电功能
 
