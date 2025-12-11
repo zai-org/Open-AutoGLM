@@ -58,3 +58,39 @@ screenshots/
 # Keep old files during transition
 call_model.py
 app_package_name.py
+
+# GGUF files and models (too large for git)
+*.gguf
+*.bin
+*.safetensors
+models/
+llama-cpp-bin/
+*.zip
+
+# Test and debug scripts
+test_*.py
+debug_*.py
+analyze_*.py
+check_*.py
+find_*.py
+simulate_*.py
+quantize_gguf.py
+
+# Build artifacts
+llama.cpp/build/
+llama.cpp/tools/mtmd/build/
+
+# Temporary files
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+llama-server-verbose.log
+
+# Screenshots
+screenshots/
+current_screen.png

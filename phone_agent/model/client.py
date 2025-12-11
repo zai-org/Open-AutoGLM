@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from openai import OpenAI
+import requests
 
 
 @dataclass
@@ -57,17 +58,32 @@ class ModelClient:
         Raises:
             ValueError: If the response cannot be parsed.
         """
-        response = self.client.chat.completions.create(
-            messages=messages,
-            model=self.config.model_name,
-            max_tokens=self.config.max_tokens,
-            temperature=self.config.temperature,
-            top_p=self.config.top_p,
-            frequency_penalty=self.config.frequency_penalty,
-            extra_body=self.config.extra_body,
-        )
-
-        raw_content = response.choices[0].message.content
+        # Use requests library instead of OpenAI client for better compatibility
+        # with llama.cpp server (especially for multimodal requests)
+        payload = {
+            "messages": messages,
+            "model": self.config.model_name,
+            "max_tokens": self.config.max_tokens,
+            "temperature": self.config.temperature,
+            "top_p": self.config.top_p,
+            "frequency_penalty": self.config.frequency_penalty,
+            "stream": False,
+            **self.config.extra_body
+        }
+        
+        try:
+            response = requests.post(
+                f"{self.config.base_url}/chat/completions",
+                json=payload,
+                timeout=120
+            )
+            response.raise_for_status()
+            result = response.json()
+            raw_content = result['choices'][0]['message']['content']
+        except requests.exceptions.RequestException as e:
+            raise ValueError(f"Model request failed: {e}")
+        except (KeyError, IndexError) as e:
+            raise ValueError(f"Invalid response format: {e}")
 
         # Parse thinking and action from response
         thinking, action = self._parse_response(raw_content)
@@ -84,14 +100,28 @@ class ModelClient:
         Returns:
             Tuple of (thinking, action).
         """
-        if "<answer>" not in content:
-            return "", content
-
-        parts = content.split("<answer>", 1)
-        thinking = parts[0].replace("<think>", "").replace("</think>", "").strip()
-        action = parts[1].replace("</answer>", "").strip()
-
-        return thinking, action
+        # Try标准格式 with tags
+        if "<answer>" in content:
+            parts = content.split("<answer>", 1)
+            thinking = parts[0].replace("<think>", "").replace("</think>", "").strip()
+            action = parts[1].replace("</answer>", "").strip()
+            return thinking, action
+        
+        # Fallback: smart parsing without tags
+        # Look for action patterns: do(...), finish(...), wait(...)
+        import re
+        action_pattern = r'(do|finish|wait)\([^)]+\)'
+        matches = list(re.finditer(action_pattern, content, re.IGNORECASE | re.DOTALL))
+        
+        if matches:
+            # Last match is likely the action
+            last_match = matches[-1]
+            action = content[last_match.start():].strip()
+            thinking = content[:last_match.start()].strip()
+            return thinking, action
+        
+        # No clear action found, return everything as action
+        return "", content
 
 
 class MessageBuilder:
