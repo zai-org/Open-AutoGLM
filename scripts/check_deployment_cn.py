@@ -89,7 +89,7 @@ if __name__ == "__main__":
             temperature=args.temperature,
             top_p=args.top_p,
             frequency_penalty=args.frequency_penalty,
-            extra_body={"skip_special_tokens": False},
+            stream=False,
         )
 
         print("\n模型推理结果:")

@@ -19,9 +19,7 @@ class ModelConfig:
     temperature: float = 0.0
     top_p: float = 0.85
     frequency_penalty: float = 0.2
-    extra_body: dict[str, Any] = field(
-        default_factory=lambda: {"skip_special_tokens": False}
-    )
+    extra_body: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -58,6 +56,7 @@ class ModelClient:
         Raises:
             ValueError: If the response cannot be parsed.
         """
+<<<<<<< HEAD
         # Use requests library instead of OpenAI client for better compatibility
         # with llama.cpp server (especially for multimodal requests)
         payload = {
@@ -94,33 +93,42 @@ class ModelClient:
         """
         Parse the model response into thinking and action parts.
 
+        Parsing rules:
+        1. If content contains 'finish(message=', everything before is thinking,
+           everything from 'finish(message=' onwards is action.
+        2. If rule 1 doesn't apply but content contains 'do(action=',
+           everything before is thinking, everything from 'do(action=' onwards is action.
+        3. Fallback: If content contains '<answer>', use legacy parsing with XML tags.
+        4. Otherwise, return empty thinking and full content as action.
+
         Args:
             content: Raw response content.
 
         Returns:
             Tuple of (thinking, action).
         """
-        # Try标准格式 with tags
+        # Rule 1: Check for finish(message=
+        if "finish(message=" in content:
+            parts = content.split("finish(message=", 1)
+            thinking = parts[0].strip()
+            action = "finish(message=" + parts[1]
+            return thinking, action
+
+        # Rule 2: Check for do(action=
+        if "do(action=" in content:
+            parts = content.split("do(action=", 1)
+            thinking = parts[0].strip()
+            action = "do(action=" + parts[1]
+            return thinking, action
+
+        # Rule 3: Fallback to legacy XML tag parsing
         if "<answer>" in content:
             parts = content.split("<answer>", 1)
             thinking = parts[0].replace("<think>", "").replace("</think>", "").strip()
             action = parts[1].replace("</answer>", "").strip()
             return thinking, action
-        
-        # Fallback: smart parsing without tags
-        # Look for action patterns: do(...), finish(...), wait(...)
-        import re
-        action_pattern = r'(do|finish|wait)\([^)]+\)'
-        matches = list(re.finditer(action_pattern, content, re.IGNORECASE | re.DOTALL))
-        
-        if matches:
-            # Last match is likely the action
-            last_match = matches[-1]
-            action = content[last_match.start():].strip()
-            thinking = content[:last_match.start()].strip()
-            return thinking, action
-        
-        # No clear action found, return everything as action
+
+        # Rule 4: No markers found, return content as action
         return "", content
 
 

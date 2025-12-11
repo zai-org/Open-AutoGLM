@@ -188,36 +188,28 @@ def check_model_api(base_url: str, model_name: str, api_key: str = "EMPTY") -> b
 
     all_passed = True
 
-    # Check 1: Network connectivity
+    # Check 1: Network connectivity using chat API
     print(f"1. Checking API connectivity ({base_url})...", end=" ")
     try:
-        # Parse the URL to get host and port
-        parsed = urlparse(base_url)
-
         # Create OpenAI client
-        client = OpenAI(base_url=base_url, api_key=api_key, timeout=10.0)
+        client = OpenAI(base_url=base_url, api_key=api_key, timeout=30.0)
 
-        # Try to list models (this tests connectivity)
-        models_response = client.models.list()
-        available_models = [model.id for model in models_response.data]
+        # Use chat completion to test connectivity (more universally supported than /models)
+        response = client.chat.completions.create(
+            model=model_name,
+            messages=[{"role": "user", "content": "Hi"}],
+            max_tokens=5,
+            temperature=0.0,
+            stream=False,
+        )
 
-        print("✅ OK")
-
-        # Check 2: Model exists
-        """
-        print(f"2. Checking model '{model_name}'...", end=" ")
-        if model_name in available_models:
+        # Check if we got a valid response
+        if response.choices and len(response.choices) > 0:
             print("✅ OK")
         else:
             print("❌ FAILED")
-            print(f"   Error: Model '{model_name}' not found.")
-            print(f"   Available models:")
-            for m in available_models[:10]:  # Show first 10 models
-                print(f"     - {m}")
-            if len(available_models) > 10:
-                print(f"     ... and {len(available_models) - 10} more")
+            print("   Error: Received empty response from API")
             all_passed = False
-        """
 
     except Exception as e:
         print("❌ FAILED")
@@ -229,7 +221,7 @@ def check_model_api(base_url: str, model_name: str, api_key: str = "EMPTY") -> b
             print("   Solution:")
             print("     1. Check if the model server is running")
             print("     2. Verify the base URL is correct")
-            print(f"     3. Try: curl {base_url}/models")
+            print(f"     3. Try: curl {base_url}/chat/completions")
         elif "timed out" in error_msg.lower() or "timeout" in error_msg.lower():
             print(f"   Error: Connection to {base_url} timed out")
             print("   Solution:")
