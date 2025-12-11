@@ -1,11 +1,14 @@
 Pillow>=12.0.0
 openai>=2.9.0
 
+# For iOS Support
+requests>=2.31.0
+
 # For Model Deployment
 
-# sglang>=0.5.6.post1
-# transformers>=5.0.0rc0
-# vllm>=0.12.0
+sglang>=0.5.6.post1
+transformers>=5.0.0rc0
+vllm>=0.12.0
 
 # Optional: for development
 # pytest>=7.0.0

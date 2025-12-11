@@ -7,6 +7,26 @@ from typing import Optional
 from phone_agent.config.apps import APP_PACKAGES
 
 
+def _get_wda_session_url(wda_url: str, session_id: str | None, endpoint: str) -> str:
+    """
+    Get the correct WDA URL for a session endpoint.
+
+    Args:
+        wda_url: Base WDA URL.
+        session_id: Optional session ID.
+        endpoint: The endpoint path.
+
+    Returns:
+        Full URL for the endpoint.
+    """
+    base = wda_url.rstrip("/")
+    if session_id:
+        return f"{base}/session/{session_id}/{endpoint}"
+    else:
+        # Try to use WDA endpoints without session when possible
+        return f"{base}/{endpoint}"
+
+
 def get_current_app(
     wda_url: str = "http://localhost:8100", session_id: str | None = None
 ) -> str:
@@ -58,7 +78,7 @@ def tap(
     delay: float = 1.0,
 ) -> None:
     """
-    Tap at the specified coordinates.
+    Tap at the specified coordinates using WebDriver W3C Actions API.
 
     Args:
         x: X coordinate.
@@ -70,11 +90,26 @@ def tap(
     try:
         import requests
 
-        url = f"{wda_url.rstrip('/')}/session/{session_id or 'default'}/wda/tap/0"
+        url = _get_wda_session_url(wda_url, session_id, "actions")
 
-        requests.post(
-            url, json={"x": x, "y": y}, timeout=10, verify=False
-        )
+        # W3C WebDriver Actions API for tap/click
+        actions = {
+            "actions": [
+                {
+                    "type": "pointer",
+                    "id": "finger1",
+                    "parameters": {"pointerType": "touch"},
+                    "actions": [
+                        {"type": "pointerMove", "duration": 0, "x": x / 3, "y": y / 3},
+                        {"type": "pointerDown", "button": 0},
+                        {"type": "pause", "duration": 0.1},
+                        {"type": "pointerUp", "button": 0},
+                    ],
+                }
+            ]
+        }
+
+        requests.post(url, json=actions, timeout=15, verify=False)
 
         time.sleep(delay)
 
@@ -92,7 +127,7 @@ def double_tap(
     delay: float = 1.0,
 ) -> None:
     """
-    Double tap at the specified coordinates.
+    Double tap at the specified coordinates using WebDriver W3C Actions API.
 
     Args:
         x: X coordinate.
@@ -104,11 +139,30 @@ def double_tap(
     try:
         import requests
 
-        url = f"{wda_url.rstrip('/')}/session/{session_id or 'default'}/wda/doubleTap"
+        url = _get_wda_session_url(wda_url, session_id, "actions")
 
-        requests.post(
-            url, json={"x": x, "y": y}, timeout=10, verify=False
-        )
+        # W3C WebDriver Actions API for double tap
+        actions = {
+            "actions": [
+                {
+                    "type": "pointer",
+                    "id": "finger1",
+                    "parameters": {"pointerType": "touch"},
+                    "actions": [
+                        {"type": "pointerMove", "duration": 0, "x": x, "y": y},
+                        {"type": "pointerDown", "button": 0},
+                        {"type": "pause", "duration": 100},
+                        {"type": "pointerUp", "button": 0},
+                        {"type": "pause", "duration": 100},
+                        {"type": "pointerDown", "button": 0},
+                        {"type": "pause", "duration": 100},
+                        {"type": "pointerUp", "button": 0},
+                    ],
+                }
+            ]
+        }
+
+        requests.post(url, json=actions, timeout=10, verify=False)
 
         time.sleep(delay)
 
@@ -127,7 +181,7 @@ def long_press(
     delay: float = 1.0,
 ) -> None:
     """
-    Long press at the specified coordinates.
+    Long press at the specified coordinates using WebDriver W3C Actions API.
 
     Args:
         x: X coordinate.
@@ -140,11 +194,29 @@ def long_press(
     try:
         import requests
 
-        url = f"{wda_url.rstrip('/')}/session/{session_id or 'default'}/wda/touchAndHold"
+        url = _get_wda_session_url(wda_url, session_id, "actions")
 
-        requests.post(
-            url, json={"x": x, "y": y, "duration": duration}, timeout=10, verify=False
-        )
+        # W3C WebDriver Actions API for long press
+        # Convert duration to milliseconds
+        duration_ms = int(duration * 1000)
+
+        actions = {
+            "actions": [
+                {
+                    "type": "pointer",
+                    "id": "finger1",
+                    "parameters": {"pointerType": "touch"},
+                    "actions": [
+                        {"type": "pointerMove", "duration": 0, "x": x, "y": y},
+                        {"type": "pointerDown", "button": 0},
+                        {"type": "pause", "duration": duration_ms},
+                        {"type": "pointerUp", "button": 0},
+                    ],
+                }
+            ]
+        }
+
+        requests.post(url, json=actions, timeout=int(duration + 10), verify=False)
 
         time.sleep(delay)
 
@@ -165,7 +237,7 @@ def swipe(
     delay: float = 1.0,
 ) -> None:
     """
-    Swipe from start to end coordinates.
+    Swipe from start to end coordinates using WebDriver W3C Actions API.
 
     Args:
         start_x: Starting X coordinate.
@@ -186,20 +258,30 @@ def swipe(
             duration = dist_sq / 1000000  # Convert to seconds
             duration = max(1.0, min(duration, 2.0))  # Clamp between 1-2 seconds
 
-        url = f"{wda_url.rstrip('/')}/session/{session_id or 'default'}/wda/dragfromtoforduration"
+        url = _get_wda_session_url(wda_url, session_id, "actions")
 
-        requests.post(
-            url,
-            json={
-                "fromX": start_x,
-                "fromY": start_y,
-                "toX": end_x,
-                "toY": end_y,
-                "duration": duration,
-            },
-            timeout=10,
-            verify=False,
-        )
+        # W3C WebDriver Actions API for swipe
+        # Convert duration to milliseconds
+        duration_ms = int(duration * 1000)
+
+        actions = {
+            "actions": [
+                {
+                    "type": "pointer",
+                    "id": "finger1",
+                    "parameters": {"pointerType": "touch"},
+                    "actions": [
+                        {"type": "pointerMove", "duration": 0, "x": start_x, "y": start_y},
+                        {"type": "pointerDown", "button": 0},
+                        {"type": "pause", "duration": 50},
+                        {"type": "pointerMove", "duration": duration_ms, "x": end_x, "y": end_y},
+                        {"type": "pointerUp", "button": 0},
+                    ],
+                }
+            ]
+        }
+
+        requests.post(url, json=actions, timeout=int(duration + 10), verify=False)
 
         time.sleep(delay)
 
@@ -284,9 +366,7 @@ def launch_app(
         import requests
 
         bundle_id = APP_PACKAGES[app_name]
-        url = (
-            f"{wda_url.rstrip('/')}/session/{session_id or 'default'}/wda/apps/launch"
-        )
+        url = _get_wda_session_url(wda_url, session_id, "wda/apps/launch")
 
         response = requests.post(
             url, json={"bundleId": bundle_id}, timeout=10, verify=False
@@ -319,7 +399,7 @@ def get_screen_size(
     try:
         import requests
 
-        url = f"{wda_url.rstrip('/')}/session/{session_id or 'default'}/window/size"
+        url = _get_wda_session_url(wda_url, session_id, "window/size")
 
         response = requests.get(url, timeout=5, verify=False)
 

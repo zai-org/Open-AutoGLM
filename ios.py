@@ -159,7 +159,7 @@ def check_system_requirements(wda_url: str = "http://localhost:8100") -> bool:
     return all_passed
 
 
-def check_model_api(base_url: str, model_name: str) -> bool:
+def check_model_api(base_url: str, api_key: str, model_name: str) -> bool:
     """
     Check if the model API is accessible and the specified model exists.
 
@@ -186,7 +186,7 @@ def check_model_api(base_url: str, model_name: str) -> bool:
         parsed = urlparse(base_url)
 
         # Create OpenAI client
-        client = OpenAI(base_url=base_url, api_key="EMPTY", timeout=10.0)
+        client = OpenAI(base_url=base_url, api_key=api_key, timeout=10.0)
 
         # Try to list models (this tests connectivity)
         models_response = client.models.list()
@@ -286,6 +286,13 @@ Examples:
         type=str,
         default=os.getenv("PHONE_AGENT_BASE_URL", "http://localhost:8000/v1"),
         help="Model API base URL",
+    )
+
+    parser.add_argument(
+        "--api-key",
+        type=str,
+        default="EMPTY",
+        help="Model API KEY",
     )
 
     parser.add_argument(
@@ -462,14 +469,14 @@ def main():
         sys.exit(1)
 
     # Check model API connectivity and model availability
-    if not check_model_api(args.base_url, args.model):
-        sys.exit(1)
+    # if not check_model_api(args.base_url, args.api_key, args.model):
+    #     sys.exit(1)
 
     # Create configurations
     model_config = ModelConfig(
         base_url=args.base_url,
         model_name=args.model,
-        # api_key=args.api_key
+        api_key=args.api_key
     )
 
     agent_config = IOSAgentConfig(

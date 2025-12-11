@@ -10,7 +10,7 @@ from phone_agent.actions.handler_ios import IOSActionHandler
 from phone_agent.config import get_messages, get_system_prompt
 from phone_agent.model import ModelClient, ModelConfig
 from phone_agent.model.client import MessageBuilder
-from phone_agent.xctest import get_current_app, get_screenshot
+from phone_agent.xctest import XCTestConnection, get_current_app, get_screenshot
 
 
 @dataclass
@@ -75,6 +75,20 @@ class IOSPhoneAgent:
         self.agent_config = agent_config or IOSAgentConfig()
 
         self.model_client = ModelClient(self.model_config)
+
+        # Initialize WDA connection and create session if needed
+        self.wda_connection = XCTestConnection(wda_url=self.agent_config.wda_url)
+
+        # Auto-create session if not provided
+        if self.agent_config.session_id is None:
+            success, session_id = self.wda_connection.start_wda_session()
+            if success and session_id != "session_started":
+                self.agent_config.session_id = session_id
+                if self.agent_config.verbose:
+                    print(f"✅ Created WDA session: {session_id}")
+            elif self.agent_config.verbose:
+                print(f"⚠️  Using default WDA session (no explicit session ID)")
+
         self.action_handler = IOSActionHandler(
             wda_url=self.agent_config.wda_url,
             session_id=self.agent_config.session_id,

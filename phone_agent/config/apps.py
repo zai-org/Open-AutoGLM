@@ -2,9 +2,10 @@
 
 APP_PACKAGES: dict[str, str] = {
     # Social & Messaging
-    "微信": "com.tencent.xin.ios",
+    "微信": "com.tencent.xin",
     "QQ": "com.tencent.mobileqq",
     "微博": "com.sina.weibo",
+    "钉钉": "com.laiwang.DingTalk",
     # E-commerce
     "淘宝": "com.taobao.taobao",
     "京东": "com.jingdong.app.mall",

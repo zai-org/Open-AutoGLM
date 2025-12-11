@@ -3,6 +3,26 @@
 import time
 
 
+def _get_wda_session_url(wda_url: str, session_id: str | None, endpoint: str) -> str:
+    """
+    Get the correct WDA URL for a session endpoint.
+
+    Args:
+        wda_url: Base WDA URL.
+        session_id: Optional session ID.
+        endpoint: The endpoint path.
+
+    Returns:
+        Full URL for the endpoint.
+    """
+    base = wda_url.rstrip("/")
+    if session_id:
+        return f"{base}/session/{session_id}/{endpoint}"
+    else:
+        # Try to use WDA endpoints without session when possible
+        return f"{base}/{endpoint}"
+
+
 def type_text(
     text: str,
     wda_url: str = "http://localhost:8100",
@@ -25,7 +45,7 @@ def type_text(
     try:
         import requests
 
-        url = f"{wda_url.rstrip('/')}/session/{session_id or 'default'}/wda/keys"
+        url = _get_wda_session_url(wda_url, session_id, "wda/keys")
 
         # Send text to WDA
         response = requests.post(
@@ -60,7 +80,7 @@ def clear_text(
         import requests
 
         # First, try to get the active element
-        url = f"{wda_url.rstrip('/')}/session/{session_id or 'default'}/element/active"
+        url = _get_wda_session_url(wda_url, session_id, "element/active")
 
         response = requests.get(url, timeout=10, verify=False)
 
@@ -70,7 +90,7 @@ def clear_text(
 
             if element_id:
                 # Clear the element
-                clear_url = f"{wda_url.rstrip('/')}/session/{session_id or 'default'}/element/{element_id}/clear"
+                clear_url = _get_wda_session_url(wda_url, session_id, f"element/{element_id}/clear")
                 requests.post(clear_url, timeout=10, verify=False)
                 return
 
@@ -99,7 +119,7 @@ def _clear_with_backspace(
     try:
         import requests
 
-        url = f"{wda_url.rstrip('/')}/session/{session_id or 'default'}/wda/keys"
+        url = _get_wda_session_url(wda_url, session_id, "wda/keys")
 
         # Send backspace character multiple times
         backspace_char = "\u0008"  # Backspace Unicode character
@@ -134,7 +154,7 @@ def send_keys(
     try:
         import requests
 
-        url = f"{wda_url.rstrip('/')}/session/{session_id or 'default'}/wda/keys"
+        url = _get_wda_session_url(wda_url, session_id, "wda/keys")
 
         requests.post(url, json={"value": keys}, timeout=10, verify=False)
 
@@ -202,7 +222,7 @@ def is_keyboard_shown(
     try:
         import requests
 
-        url = f"{wda_url.rstrip('/')}/session/{session_id or 'default'}/wda/keyboard/shown"
+        url = _get_wda_session_url(wda_url, session_id, "wda/keyboard/shown")
 
         response = requests.get(url, timeout=5, verify=False)
 
