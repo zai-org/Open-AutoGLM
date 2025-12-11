@@ -37,7 +37,7 @@ def example_basic_task(lang: str = "cn"):
     )
 
     # Execute task
-    result = agent.run("打开小红书搜索美食攻略")
+    result = agent.run("Open Instagram and search for food guides")
     print(f"{msgs['task_result']}: {result}")
 
 
@@ -66,7 +66,7 @@ def example_with_callbacks(lang: str = "cn"):
     )
 
     # Execute task that may require confirmation
-    result = agent.run("打开淘宝搜索无线耳机并加入购物车")
+    result = agent.run("Open Amazon and search for wireless earphones and add to cart")
     print(f"{msgs['task_result']}: {result}")
 
 
@@ -78,7 +78,7 @@ def example_step_by_step(lang: str = "cn"):
     agent = PhoneAgent(agent_config=agent_config)
 
     # Initialize task
-    result = agent.step("打开美团搜索附近的火锅店")
+    result = agent.step("Open Yelp and search for nearby hot pot restaurants")
     print(f"{msgs['step']} 1: {result.action}")
 
     # Continue if not finished
@@ -98,9 +98,9 @@ def example_multiple_tasks(lang: str = "cn"):
     agent = PhoneAgent(agent_config=agent_config)
 
     tasks = [
-        "打开高德地图查看实时路况",
-        "打开大众点评搜索附近的咖啡店",
-        "打开bilibili搜索Python教程",
+        "Open Google Maps and check real-time traffic",
+        "Open Yelp and search for nearby coffee shops",
+        "Open YouTube and search for Python tutorials",
     ]
 
     for task in tasks:
@@ -142,7 +142,7 @@ def example_remote_device(lang: str = "cn"):
     agent = PhoneAgent(agent_config=agent_config)
 
     # Execute task
-    result = agent.run("打开微信查看消息")
+    result = agent.run("Open WhatsApp and check messages")
     print(f"{msgs['task_result']}: {result}")
 
     # Disconnect
