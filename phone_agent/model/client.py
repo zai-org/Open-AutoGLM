@@ -21,6 +21,7 @@ class ModelConfig:
     extra_body: dict[str, Any] = field(
         default_factory=lambda: {"skip_special_tokens": False}
     )
+    stream: bool = True  # Set to False for local vLLM deployment
 
 
 @dataclass
@@ -65,9 +66,17 @@ class ModelClient:
             top_p=self.config.top_p,
             frequency_penalty=self.config.frequency_penalty,
             extra_body=self.config.extra_body,
+            stream=self.config.stream,
         )
 
-        raw_content = response.choices[0].message.content
+        # Collect response content
+        if self.config.stream:
+            raw_content = ""
+            for chunk in response:
+                if chunk.choices and chunk.choices[0].delta.content:
+                    raw_content += chunk.choices[0].delta.content
+        else:
+            raw_content = response.choices[0].message.content
 
         # Parse thinking and action from response
         thinking, action = self._parse_response(raw_content)
@@ -84,14 +93,65 @@ class ModelClient:
         Returns:
             Tuple of (thinking, action).
         """
-        if "<answer>" not in content:
-            return "", content
+        # Standard format with <think> and <answer> tags
+        if "<answer>" in content:
+            parts = content.split("<answer>", 1)
+            thinking = parts[0].replace("<think>", "").replace("</think>", "").strip()
+            action = parts[1].replace("</answer>", "").strip()
+            return thinking, action
 
-        parts = content.split("<answer>", 1)
-        thinking = parts[0].replace("<think>", "").replace("</think>", "").strip()
-        action = parts[1].replace("</answer>", "").strip()
+        # Fallback: extract do(...) or finish(...) from plain text response
+        # Use balanced parentheses matching to handle nested brackets
+        action = self._extract_action_call(content)
+        if action:
+            # Find where the action starts in content
+            action_start = content.rfind(action[:10])  # Use prefix to locate
+            if action_start != -1:
+                thinking = content[:action_start].strip()
+                return thinking, action
 
-        return thinking, action
+        # No recognizable action found
+        return "", content
+
+    def _extract_action_call(self, content: str) -> str | None:
+        """
+        Extract the last do(...) or finish(...) call from content.
+        Handles nested parentheses correctly.
+        """
+        # Find all potential action starts from the end
+        for func_name in ["finish", "do"]:
+            # Search from end of string
+            idx = content.rfind(func_name + "(")
+            if idx == -1:
+                continue
+
+            # Extract with balanced parentheses
+            start = idx
+            paren_count = 0
+            in_string = False
+            string_char = None
+            i = idx + len(func_name)
+
+            while i < len(content):
+                char = content[i]
+
+                # Handle string literals
+                if char in "\"'" and (i == 0 or content[i - 1] != "\\"):
+                    if not in_string:
+                        in_string = True
+                        string_char = char
+                    elif char == string_char:
+                        in_string = False
+                elif not in_string:
+                    if char == "(":
+                        paren_count += 1
+                    elif char == ")":
+                        paren_count -= 1
+                        if paren_count == 0:
+                            return content[start : i + 1].strip()
+                i += 1
+
+        return None
 
 
 class MessageBuilder:
