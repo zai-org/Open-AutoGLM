@@ -9,7 +9,7 @@
     👋 加入我们的 <a href="resources/WECHAT.md" target="_blank">微信</a> 社区
 </p>
 
-## 快速开始
+## 懒人版快速跑通
 你可以使用 claude code，输入以下 prompt，快速部署本项目
 ```
 访问文档，为我安装 AutoGLM
