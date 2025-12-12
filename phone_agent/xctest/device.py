@@ -239,7 +239,7 @@ def swipe(
     delay: float = 1.0,
 ) -> None:
     """
-    Swipe from start to end coordinates using WebDriver W3C Actions API.
+    Swipe from start to end coordinates using WDA dragfromtoforduration endpoint.
 
     Args:
         start_x: Starting X coordinate.
@@ -258,32 +258,20 @@ def swipe(
             # Calculate duration based on distance
             dist_sq = (start_x - end_x) ** 2 + (start_y - end_y) ** 2
             duration = dist_sq / 1000000  # Convert to seconds
-            duration = max(1.0, min(duration, 2.0))  # Clamp between 1-2 seconds
+            duration = max(0.3, min(duration, 2.0))  # Clamp between 0.3-2 seconds
 
-        url = _get_wda_session_url(wda_url, session_id, "actions")
+        url = _get_wda_session_url(wda_url, session_id, "wda/dragfromtoforduration")
 
-        # W3C WebDriver Actions API for swipe
-        # Convert duration to milliseconds
-        duration_ms = int(duration * 1000)
-
-        actions = {
-            "actions": [
-                {
-                    "type": "pointer",
-                    "id": "finger1",
-                    "parameters": {"pointerType": "touch"},
-                    "actions": [
-                        {"type": "pointerMove", "duration": 0, "x": start_x / SCALE_FACTOR, "y": start_y / SCALE_FACTOR},
-                        {"type": "pointerDown", "button": 0},
-                        {"type": "pause", "duration": 50},
-                        {"type": "pointerMove", "duration": duration_ms, "x": end_x / SCALE_FACTOR, "y": end_y / SCALE_FACTOR},
-                        {"type": "pointerUp", "button": 0},
-                    ],
-                }
-            ]
+        # WDA dragfromtoforduration API payload
+        payload = {
+            "fromX": start_x / SCALE_FACTOR,
+            "fromY": start_y / SCALE_FACTOR,
+            "toX": end_x / SCALE_FACTOR,
+            "toY": end_y / SCALE_FACTOR,
+            "duration": duration,
         }
 
-        requests.post(url, json=actions, timeout=int(duration + 10), verify=False)
+        requests.post(url, json=payload, timeout=int(duration + 10), verify=False)
 
         time.sleep(delay)
 
@@ -310,10 +298,28 @@ def back(
         iOS doesn't have a universal back button. This simulates a back gesture
         by swiping from the left edge of the screen.
     """
-    # Swipe from left edge to simulate back gesture
-    # Note: coordinates are already scaled inside swipe function
-    swipe(10, 400, 200, 400, duration=0.3, wda_url=wda_url, session_id=session_id)
-    time.sleep(delay)
+    try:
+        import requests
+
+        url = _get_wda_session_url(wda_url, session_id, "wda/dragfromtoforduration")
+
+        # Swipe from left edge to simulate back gesture
+        payload = {
+            "fromX": 0,
+            "fromY": 640,
+            "toX": 400,
+            "toY": 640,
+            "duration": 0.3,
+        }
+
+        requests.post(url, json=payload, timeout=10, verify=False)
+
+        time.sleep(delay)
+
+    except ImportError:
+        print("Error: requests library required. Install: pip install requests")
+    except Exception as e:
+        print(f"Error performing back gesture: {e}")
 
 
 def home(
