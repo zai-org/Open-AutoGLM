@@ -110,35 +110,7 @@ def run():
     agent = PhoneAgent(model_config=model_config, agent_config=agent_config)
 
     # 用户获取
-    # acquisition(agent)
-    while True:
-        print("正在点关注……")
-        try:
-            result = agent.run(
-                "翻评论区找到第一个发“我要这个——男朋友”表情包（而不是“女朋友”）的人，点她的头像（头像在昵称的左侧）进入她的主页点关注（如果是已经关注过的人或者朋友也忽略，显示“相互关注”也说明已经关注过了）。若已到当日关注上限则仅输出“y”，没达到输出“n”，其他什么都不要输出，严格按照这个格式来。警告：滑动的距离尽量小一点，起点y轴与终点y轴的差距不要超过300。"
-            )
-            if result == "y":
-                print("哈哈哈，已达当日关注上限，用户获取任务完成")
-                return
-            elif result == "n":
-                pass
-            else:
-                raise Exception(result)
-        except Exception as e:
-            print("点关注失败：", e)
-        print("正在判断到底提示……")
-        try:
-            result = agent.run(
-                "确保你在评论区界面，如果不在则尝试返回，如果返回不了则仅输出“y”然后停止所有工作。在评论区的情况下向下滚动一次，然后判断：若看到“部分评论被折叠”字样，则仅输出“y”，若没看到则仅输出“n”，其他什么都不要输出，严格按照这个格式来。警告：滑动的距离尽量小一点，起点y轴与终点y轴的差距不要超过300。"
-            )
-            if result == "y":
-                break
-            elif result == "n":
-                pass
-            else:
-                raise Exception(result)
-        except Exception as e:
-            print("判断到底提示失败：", e)
+    acquisition(agent)
 
 
 if __name__ == "__main__":
