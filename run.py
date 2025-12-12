@@ -24,7 +24,7 @@ def acquisition(agent: PhoneAgent):
             if result != "成功":
                 raise Exception(result)
         except Exception as e:
-            print("进入设置搜索条件：", e)
+            print("设置搜索条件失败：", e)
             continue
         while True:
             try:
