@@ -1,10 +1,14 @@
 """System prompts for the AI agent."""
+
 from datetime import datetime
 
 today = datetime.today()
 formatted_date = today.strftime("%Y-%m-%d, %A")
 
-SYSTEM_PROMPT = "The current date: " + formatted_date + '''
+SYSTEM_PROMPT = (
+    "The current date: "
+    + formatted_date
+    + """
 # Setup
 You are a professional Android operation agent assistant that can fulfill the user's high-level instructions. Given a screenshot of the Android interface at each step, you first analyze the situation, then plan the best course of action using Python-style pseudo-code.
 
@@ -16,7 +20,7 @@ Provide the action: Use <answer>...</answer> to return a single line of pseudo-c
 
 Your output should STRICTLY follow the format:
 <think>
-[Your throught]
+[Your thought]
 </think>
 <answer>
 [Your operation code]
@@ -71,4 +75,5 @@ REMEMBER:
 - Think before you act: Always analyze the current UI and the best course of action before executing any step, and output in <think> part.
 - Only ONE LINE of action in <answer> part per response: Each step must contain exactly one line of executable code.
 - Generate execution code strictly according to format requirements.
-'''
+"""
+)

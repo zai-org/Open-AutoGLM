@@ -1,4 +1,5 @@
 """System prompts for the AI agent."""
+
 from datetime import datetime
 
 today = datetime.today()
@@ -6,7 +7,10 @@ weekday_names = ["星期一", "星期二", "星期三", "星期四", "星期五"
 weekday = weekday_names[today.weekday()]
 formatted_date = today.strftime("%Y年%m月%d日") + " " + weekday
 
-SYSTEM_PROMPT = "今天的日期是: " + formatted_date + '''
+SYSTEM_PROMPT = (
+    "今天的日期是: "
+    + formatted_date
+    + """
 你是一个智能体分析专家，可以根据操作历史和当前状态图执行一系列操作来完成任务。
 你必须严格按照要求输出以下格式：
 <think>{think}</think>
@@ -69,4 +73,5 @@ SYSTEM_PROMPT = "今天的日期是: " + formatted_date + '''
 16. 在做游戏任务时如果在战斗页面如果有自动战斗一定要开启自动战斗，如果多轮历史状态相似要检查自动战斗是否开启。
 17. 如果没有合适的搜索结果，可能是因为搜索页面不对，请返回到搜索页面的上一级尝试重新搜索，如果尝试三次返回上一级搜索后仍然没有符合要求的结果，执行 finish(message="原因")。
 18. 在结束任务前请一定要仔细检查任务是否完整准确的完成，如果出现错选、漏选、多选的情况，请返回之前的步骤进行纠正。
-'''
+"""
+)

@@ -18,9 +18,7 @@ class ModelConfig:
     temperature: float = 0.0
     top_p: float = 0.85
     frequency_penalty: float = 0.2
-    extra_body: dict[str, Any] = field(
-        default_factory=lambda: {"skip_special_tokens": False}
-    )
+    extra_body: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -65,6 +63,7 @@ class ModelClient:
             top_p=self.config.top_p,
             frequency_penalty=self.config.frequency_penalty,
             extra_body=self.config.extra_body,
+            stream=False,
         )
 
         raw_content = response.choices[0].message.content
@@ -78,20 +77,43 @@ class ModelClient:
         """
         Parse the model response into thinking and action parts.
 
+        Parsing rules:
+        1. If content contains 'finish(message=', everything before is thinking,
+           everything from 'finish(message=' onwards is action.
+        2. If rule 1 doesn't apply but content contains 'do(action=',
+           everything before is thinking, everything from 'do(action=' onwards is action.
+        3. Fallback: If content contains '<answer>', use legacy parsing with XML tags.
+        4. Otherwise, return empty thinking and full content as action.
+
         Args:
             content: Raw response content.
 
         Returns:
             Tuple of (thinking, action).
         """
-        if "<answer>" not in content:
-            return "", content
+        # Rule 1: Check for finish(message=
+        if "finish(message=" in content:
+            parts = content.split("finish(message=", 1)
+            thinking = parts[0].strip()
+            action = "finish(message=" + parts[1]
+            return thinking, action
 
-        parts = content.split("<answer>", 1)
-        thinking = parts[0].replace("<think>", "").replace("</think>", "").strip()
-        action = parts[1].replace("</answer>", "").strip()
+        # Rule 2: Check for do(action=
+        if "do(action=" in content:
+            parts = content.split("do(action=", 1)
+            thinking = parts[0].strip()
+            action = "do(action=" + parts[1]
+            return thinking, action
 
-        return thinking, action
+        # Rule 3: Fallback to legacy XML tag parsing
+        if "<answer>" in content:
+            parts = content.split("<answer>", 1)
+            thinking = parts[0].replace("<think>", "").replace("</think>", "").strip()
+            action = parts[1].replace("</answer>", "").strip()
+            return thinking, action
+
+        # Rule 4: No markers found, return content as action
+        return "", content
 
 
 class MessageBuilder:

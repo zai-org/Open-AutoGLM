@@ -8,6 +8,7 @@ Usage:
 Environment Variables:
     PHONE_AGENT_BASE_URL: Model API base URL (default: http://localhost:8000/v1)
     PHONE_AGENT_MODEL: Model name (default: autoglm-phone-9b)
+    PHONE_AGENT_API_KEY: API key for model authentication (default: EMPTY)
     PHONE_AGENT_MAX_STEPS: Maximum steps per task (default: 100)
     PHONE_AGENT_DEVICE_ID: ADB device ID for multi-device setups
 """
@@ -166,7 +167,7 @@ def check_system_requirements() -> bool:
     return all_passed
 
 
-def check_model_api(base_url: str, model_name: str) -> bool:
+def check_model_api(base_url: str, model_name: str, api_key: str = "EMPTY") -> bool:
     """
     Check if the model API is accessible and the specified model exists.
 
@@ -177,6 +178,7 @@ def check_model_api(base_url: str, model_name: str) -> bool:
     Args:
         base_url: The API base URL
         model_name: The model name to check
+        api_key: The API key for authentication
 
     Returns:
         True if all checks pass, False otherwise.
@@ -186,33 +188,27 @@ def check_model_api(base_url: str, model_name: str) -> bool:
 
     all_passed = True
 
-    # Check 1: Network connectivity
+    # Check 1: Network connectivity using chat API
     print(f"1. Checking API connectivity ({base_url})...", end=" ")
     try:
-        # Parse the URL to get host and port
-        parsed = urlparse(base_url)
-
         # Create OpenAI client
-        client = OpenAI(base_url=base_url, api_key="EMPTY", timeout=10.0)
+        client = OpenAI(base_url=base_url, api_key=api_key, timeout=30.0)
 
-        # Try to list models (this tests connectivity)
-        models_response = client.models.list()
-        available_models = [model.id for model in models_response.data]
+        # Use chat completion to test connectivity (more universally supported than /models)
+        response = client.chat.completions.create(
+            model=model_name,
+            messages=[{"role": "user", "content": "Hi"}],
+            max_tokens=5,
+            temperature=0.0,
+            stream=False,
+        )
 
-        print("✅ OK")
-
-        # Check 2: Model exists
-        print(f"2. Checking model '{model_name}'...", end=" ")
-        if model_name in available_models:
+        # Check if we got a valid response
+        if response.choices and len(response.choices) > 0:
             print("✅ OK")
         else:
             print("❌ FAILED")
-            print(f"   Error: Model '{model_name}' not found.")
-            print(f"   Available models:")
-            for m in available_models[:10]:  # Show first 10 models
-                print(f"     - {m}")
-            if len(available_models) > 10:
-                print(f"     ... and {len(available_models) - 10} more")
+            print("   Error: Received empty response from API")
             all_passed = False
 
     except Exception as e:
@@ -225,7 +221,7 @@ def check_model_api(base_url: str, model_name: str) -> bool:
             print("   Solution:")
             print("     1. Check if the model server is running")
             print("     2. Verify the base URL is correct")
-            print(f"     3. Try: curl {base_url}/models")
+            print(f"     3. Try: curl {base_url}/chat/completions")
         elif "timed out" in error_msg.lower() or "timeout" in error_msg.lower():
             print(f"   Error: Connection to {base_url} timed out")
             print("   Solution:")
@@ -267,6 +263,9 @@ Examples:
     # Specify model endpoint
     python main.py --base-url http://localhost:8000/v1
 
+    # Use API key for authentication
+    python main.py --apikey sk-xxxxx
+
     # Run with specific device
     python main.py --device-id emulator-5554
 
@@ -297,6 +296,13 @@ Examples:
         type=str,
         default=os.getenv("PHONE_AGENT_MODEL", "autoglm-phone-9b"),
         help="Model name",
+    )
+
+    parser.add_argument(
+        "--apikey",
+        type=str,
+        default=os.getenv("PHONE_AGENT_API_KEY", "EMPTY"),
+        help="API key for model authentication",
     )
 
     parser.add_argument(
@@ -462,13 +468,14 @@ def main():
         sys.exit(1)
 
     # Check model API connectivity and model availability
-    if not check_model_api(args.base_url, args.model):
+    if not check_model_api(args.base_url, args.model, args.apikey):
         sys.exit(1)
 
     # Create configurations
     model_config = ModelConfig(
         base_url=args.base_url,
         model_name=args.model,
+        api_key=args.apikey,
     )
 
     agent_config = AgentConfig(
