@@ -1,6 +1,7 @@
 """Action handler for processing AI model outputs on iOS devices."""
 
 import ast
+import logging
 import re
 import time
 from dataclasses import dataclass
@@ -18,6 +19,8 @@ from phone_agent.wda import (
     tap,
     type_text,
 )
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -161,19 +164,39 @@ class ActionHandlerIOS:
         return ActionResult(True, False)
 
     def _handle_type(self, action: dict, width: int, height: int) -> ActionResult:
-        """Handle text input action using gekowa's proven method."""
+        """
+        Handle text typing action with UI state refresh.
+        
+        Implements a four-step process:
+        1. Clear existing text
+        2. Type new text (gets input field rect)
+        3. Tap input field to trigger UI state change (activates send buttons)
+        4. Hide keyboard
+        
+        Note: Tapping the input field after typing is crucial for apps like WeChat
+        where send buttons need explicit text change notifications to activate.
+        """
         text = action.get("text", "")
         
-        # Based on gekowa's working implementation:
+        # Based on gekowa's working implementation with UI trigger enhancement:
         # 1. Clear existing text
         clear_text(self.device_id)
         time.sleep(0.5)
         
-        # 2. Type new text (with frequency parameter for better reliability)
-        type_text(text, self.device_id, frequency=60)
-        time.sleep(0.5)
+        # 2. Type new text and get input field's rect
+        rect = type_text(text, self.device_id, frequency=60, trigger_change=True)
+        time.sleep(0.3)
         
-        # 3. Hide keyboard after typing
+        # 3. Tap the input field to trigger UI update (activates send buttons)
+        if rect:
+            # Tap center of input field
+            tap_x = rect['x'] + rect['width'] / 2
+            tap_y = rect['y'] + rect['height'] / 2
+            tap(tap_x, tap_y, self.device_id)
+            logger.debug(f"Tapped input field at ({tap_x:.1f}, {tap_y:.1f}) to activate UI")
+            time.sleep(0.3)
+        
+        # 4. Hide keyboard after typing
         hide_keyboard(self.device_id)
         time.sleep(0.5)
 

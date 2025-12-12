@@ -9,29 +9,58 @@ from phone_agent.wda.client import get_client
 logger = logging.getLogger(__name__)
 
 
-def type_text(text: str, device_id: str | None = None, frequency: int = 60) -> None:
+def type_text(text: str, device_id: str | None = None, frequency: int = 60, 
+              trigger_change: bool = True) -> None:
     """
     Type text into the currently focused input field using global keyboard.
     
-    Based on gekowa's working iOS implementation.
+    Based on gekowa's working iOS implementation, with enhancement to trigger
+    UI state changes (e.g., enabling send buttons in chat apps).
     
     Args:
         text: The text to type
         device_id: WDA URL or None to use default
         frequency: Typing frequency (keys per minute), default 60
+        trigger_change: If True, retrieves and returns the input field's rect
+                       so caller can tap it to trigger UI update
         
+    Returns:
+        dict | None: If trigger_change is True, returns the active element's rect
+                     with keys: x, y, width, height (in Points)
+                     
     Note:
         The input field MUST be focused (tapped) before calling this!
         This uses WDA's global keyboard input (not element-specific).
+        
+    Technical Detail:
+        WDA's /wda/keys bypasses UITextField delegate callbacks, which some apps
+        (like WeChat) rely on to enable UI elements. Caller should tap the returned
+        coordinates to trigger textDidChange notification.
     """
     if not text:
-        return
+        return None
     
     client = get_client(device_id)
     
     # Send keys as array of characters with frequency parameter
-    # This is the gekowa method that works reliably
     client.post("/wda/keys", {"value": list(text), "frequency": frequency}, use_session=True)
+    
+    # Get active element's rect for caller to tap (triggers UI update)
+    if trigger_change:
+        time.sleep(0.1)
+        try:
+            resp = client.get("/element/active", use_session=True)
+            if "value" in resp and isinstance(resp["value"], dict):
+                element_id = resp["value"].get("ELEMENT") or resp["value"].get("element-6066-11e4-a52e-4f735466cecf")
+                if element_id:
+                    rect_resp = client.get(f"/element/{element_id}/rect", use_session=True)
+                    if "value" in rect_resp:
+                        logger.debug(f"Got active element rect: {rect_resp['value']}")
+                        return rect_resp["value"]
+        except Exception as e:
+            logger.debug(f"Failed to get element rect: {e}")
+    
+    return None
 
 
 def clear_text(device_id: str | None = None) -> None:
