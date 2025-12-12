@@ -9,20 +9,13 @@ def acquisition(agent: PhoneAgent):
         try:
             print("正在进入搜索结果界面……")
             result = agent.run(
-                "打开快手搜索“评论区找对象”。若成功完成任务，仅输出“成功”，其他什么都不要输出，严格按照这个格式来。"
+                "打开快手搜索“评论区找对象”，点漏斗图标把搜索条件设置为7日内、未看过。若成功完成任务，仅输出“成功”，其他什么都不要输出，严格按照这个格式来。"
             )
             if result != "成功":
                 raise Exception(result)
         except Exception as e:
             print("进入搜索结果界面失败：", e)
             continue
-        try:
-            print("正在设置搜索条件……")
-            result = agent.run(
-                "点漏斗图标把搜索条件设置为7日内、未看过。若成功完成任务，仅输出“成功”，其他什么都不要输出，严格按照这个格式来。"
-            )
-            if result != "成功":
-                raise Exception(result)
         except Exception as e:
             print("设置搜索条件失败：", e)
             continue
@@ -109,7 +102,7 @@ def run():
     
     # Configure agent
     agent_config = AgentConfig(
-        max_steps=5,
+        max_steps=10,
     )
 
     # 创建 Agent
