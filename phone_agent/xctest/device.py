@@ -102,7 +102,7 @@ def tap(
                     "id": "finger1",
                     "parameters": {"pointerType": "touch"},
                     "actions": [
-                        {"type": "pointerMove", "duration": 0, "x": x / 3, "y": y / 3},
+                        {"type": "pointerMove", "duration": 0, "x": x / SCALE_FACTOR, "y": y / SCALE_FACTOR},
                         {"type": "pointerDown", "button": 0},
                         {"type": "pause", "duration": 0.1},
                         {"type": "pointerUp", "button": 0},
@@ -151,7 +151,7 @@ def double_tap(
                     "id": "finger1",
                     "parameters": {"pointerType": "touch"},
                     "actions": [
-                        {"type": "pointerMove", "duration": 0, "x": x, "y": y},
+                        {"type": "pointerMove", "duration": 0, "x": x / SCALE_FACTOR, "y": y / SCALE_FACTOR},
                         {"type": "pointerDown", "button": 0},
                         {"type": "pause", "duration": 100},
                         {"type": "pointerUp", "button": 0},
@@ -209,7 +209,7 @@ def long_press(
                     "id": "finger1",
                     "parameters": {"pointerType": "touch"},
                     "actions": [
-                        {"type": "pointerMove", "duration": 0, "x": x, "y": y},
+                        {"type": "pointerMove", "duration": 0, "x": x / SCALE_FACTOR, "y": y / SCALE_FACTOR},
                         {"type": "pointerDown", "button": 0},
                         {"type": "pause", "duration": duration_ms},
                         {"type": "pointerUp", "button": 0},
@@ -273,10 +273,10 @@ def swipe(
                     "id": "finger1",
                     "parameters": {"pointerType": "touch"},
                     "actions": [
-                        {"type": "pointerMove", "duration": 0, "x": start_x, "y": start_y},
+                        {"type": "pointerMove", "duration": 0, "x": start_x / SCALE_FACTOR, "y": start_y / SCALE_FACTOR},
                         {"type": "pointerDown", "button": 0},
                         {"type": "pause", "duration": 50},
-                        {"type": "pointerMove", "duration": duration_ms, "x": end_x, "y": end_y},
+                        {"type": "pointerMove", "duration": duration_ms, "x": end_x / SCALE_FACTOR, "y": end_y / SCALE_FACTOR},
                         {"type": "pointerUp", "button": 0},
                     ],
                 }
@@ -311,6 +311,7 @@ def back(
         by swiping from the left edge of the screen.
     """
     # Swipe from left edge to simulate back gesture
+    # Note: coordinates are already scaled inside swipe function
     swipe(10, 400, 200, 400, duration=0.3, wda_url=wda_url, session_id=session_id)
     time.sleep(delay)
 
