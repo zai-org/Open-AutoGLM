@@ -29,7 +29,7 @@ app = Flask(__name__)
 CONFIG = {
     "base_url": "https://open.bigmodel.cn/api/paas/v4",
     "model_name": "autoglm-phone",
-    "api_key": "ce41396d8f44415eb3bff547e12d21f3.qNXajSi820CAHv0J"
+    "api_key": "change your api key"
 }
 
 # 文件路径
