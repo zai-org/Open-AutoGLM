@@ -144,6 +144,8 @@ class IOSActionHandler:
 
         x, y = self._convert_relative_to_absolute(element, width, height)
 
+        print(f"Physically tap on ({x}, {y})")
+
         # Check for sensitive operation
         if "message" in action:
             if not self.confirmation_callback(action["message"]):
@@ -183,6 +185,8 @@ class IOSActionHandler:
 
         start_x, start_y = self._convert_relative_to_absolute(start, width, height)
         end_x, end_y = self._convert_relative_to_absolute(end, width, height)
+
+        print(f"Physically scroll from ({start_x}, {start_y}) to ({end_x}, {end_y})")
 
         swipe(
             start_x,

@@ -23,7 +23,7 @@ from urllib.parse import urlparse
 from openai import OpenAI
 
 from phone_agent.agent_ios import IOSAgentConfig, IOSPhoneAgent
-from phone_agent.config.apps import list_supported_apps
+from phone_agent.config.apps_ios import list_supported_apps
 from phone_agent.model import ModelConfig
 from phone_agent.xctest import XCTestConnection, list_devices
 
@@ -449,14 +449,14 @@ def main():
 
     # Handle --list-apps (no system check needed)
     if args.list_apps:
-        print("Supported apps:")
-        print("\nNote: For iOS apps, ensure the Bundle IDs are configured in:")
-        print("  phone_agent/config/apps.py")
+        print("Supported iOS apps:")
+        print("\nNote: For iOS apps, Bundle IDs are configured in:")
+        print("  phone_agent/config/apps_ios.py")
         print("\nCurrently configured apps:")
         for app in sorted(list_supported_apps()):
             print(f"  - {app}")
         print(
-            "\nTo add iOS apps, find the Bundle ID and add to APP_PACKAGES dictionary."
+            "\nTo add iOS apps, find the Bundle ID and add to APP_PACKAGES_IOS dictionary."
         )
         return
 
