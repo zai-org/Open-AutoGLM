@@ -51,7 +51,7 @@ class ADBConnection:
         """
         self.adb_path = adb_path
 
-    def connect(self, address: str, timeout: int = 10) -> tuple[bool, str]:
+    def connect(self, address: str, timeout: int = 30) -> tuple[bool, str]:
         """
         Connect to a remote device via TCP/IP.
 
@@ -107,7 +107,7 @@ class ADBConnection:
             if address:
                 cmd.append(address)
 
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
 
             output = result.stdout + result.stderr
             return True, output.strip() or "Disconnected"
@@ -127,7 +127,7 @@ class ADBConnection:
                 [self.adb_path, "devices", "-l"],
                 capture_output=True,
                 text=True,
-                timeout=5,
+                timeout=15,
             )
 
             devices = []
@@ -239,7 +239,7 @@ class ADBConnection:
                 cmd.extend(["-s", device_id])
             cmd.extend(["tcpip", str(port)])
 
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
 
             output = result.stdout + result.stderr
 

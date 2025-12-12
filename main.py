@@ -29,7 +29,7 @@ from phone_agent.config.apps import list_supported_apps
 from phone_agent.model import ModelConfig
 
 
-def check_system_requirements() -> bool:
+def check_system_requirements(device_id: str | None = None) -> bool:
     """
     Check system requirements before running the agent.
 
@@ -90,7 +90,7 @@ def check_system_requirements() -> bool:
     print("2. Checking connected devices...", end=" ")
     try:
         result = subprocess.run(
-            ["adb", "devices"], capture_output=True, text=True, timeout=10
+            ["adb", "devices"], capture_output=True, text=True, timeout=30
         )
         lines = result.stdout.strip().split("\n")
         # Filter out header and empty lines, look for 'device' status
@@ -125,11 +125,16 @@ def check_system_requirements() -> bool:
     # Check 3: ADB Keyboard installed
     print("3. Checking ADB Keyboard...", end=" ")
     try:
+        cmd = ["adb"]
+        if device_id:
+            cmd.extend(["-s", device_id])
+        cmd.extend(["shell", "ime", "list", "-s"])
+        
         result = subprocess.run(
-            ["adb", "shell", "ime", "list", "-s"],
+            cmd,
             capture_output=True,
             text=True,
-            timeout=10,
+            timeout=30,
         )
         ime_list = result.stdout.strip()
 
@@ -369,8 +374,20 @@ Examples:
     )
 
     parser.add_argument(
+        "--auto-confirm", 
+        action="store_true", 
+        help="Automatically confirm sensitive operations and suppress interactive prompts"
+    )
+
+    parser.add_argument(
+        "--skip-checks",
+        action="store_true",
+        help="Skip system requirements check",
+    )
+
+    parser.add_argument(
         "task",
-        nargs="?",
+        nargs="*",
         type=str,
         help="Task to execute (interactive mode if not provided)",
     )
@@ -464,7 +481,7 @@ def main():
         return
 
     # Run system requirements check before proceeding
-    if not check_system_requirements():
+    if not args.skip_checks and not check_system_requirements(args.device_id):
         sys.exit(1)
 
     # Check model API connectivity and model availability
@@ -485,10 +502,27 @@ def main():
         lang=args.lang,
     )
 
+    # Define callbacks based on auto-confirm
+    confirmation_callback = None
+    takeover_callback = None
+
+    if args.auto_confirm:
+        def auto_confirmation(msg):
+            print(f"⚠️ Auto-confirming sensitive operation: {msg}")
+            return True
+        
+        def auto_takeover(msg):
+            print(f"⚠️ Auto-takeover suppressed: {msg}")
+
+        confirmation_callback = auto_confirmation
+        takeover_callback = auto_takeover
+
     # Create agent
     agent = PhoneAgent(
         model_config=model_config,
         agent_config=agent_config,
+        confirmation_callback=confirmation_callback,
+        takeover_callback=takeover_callback,
     )
 
     # Print header
@@ -511,8 +545,14 @@ def main():
 
     # Run with provided task or enter interactive mode
     if args.task:
-        print(f"\nTask: {args.task}\n")
-        result = agent.run(args.task)
+        # Join task arguments into a single string if it's a list
+        if isinstance(args.task, list):
+            task_str = " ".join(args.task)
+        else:
+            task_str = args.task
+            
+        print(f"\nTask: {task_str}\n")
+        result = agent.run(task_str)
         print(f"\nResult: {result}")
     else:
         # Interactive mode

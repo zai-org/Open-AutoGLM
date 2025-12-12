@@ -22,7 +22,7 @@ class Screenshot:
     is_sensitive: bool = False
 
 
-def get_screenshot(device_id: str | None = None, timeout: int = 10) -> Screenshot:
+def get_screenshot(device_id: str | None = None, timeout: int = 30) -> Screenshot:
     """
     Capture a screenshot from the connected Android device.
 
@@ -59,7 +59,7 @@ def get_screenshot(device_id: str | None = None, timeout: int = 10) -> Screensho
             adb_prefix + ["pull", "/sdcard/tmp.png", temp_path],
             capture_output=True,
             text=True,
-            timeout=5,
+            timeout=30,
         )
 
         if not os.path.exists(temp_path):
