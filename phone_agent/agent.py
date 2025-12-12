@@ -9,6 +9,7 @@ from phone_agent.actions import ActionHandler
 from phone_agent.actions.handler import do, finish, parse_action
 from phone_agent.adb import get_current_app, get_screenshot
 from phone_agent.config import get_messages, get_system_prompt
+from phone_agent.logger import init_logger, logger
 from phone_agent.model import ModelClient, ModelConfig
 from phone_agent.model.client import MessageBuilder
 
@@ -22,6 +23,7 @@ class AgentConfig:
     lang: str = "cn"
     system_prompt: str | None = None
     verbose: bool = True
+    log_level: str = "INFO"
 
     def __post_init__(self):
         if self.system_prompt is None:
@@ -70,6 +72,9 @@ class PhoneAgent:
     ):
         self.model_config = model_config or ModelConfig()
         self.agent_config = agent_config or AgentConfig()
+
+        # Initialize logger with configured log level
+        init_logger(level=self.agent_config.log_level)
 
         self.model_client = ModelClient(self.model_config)
         self.action_handler = ActionHandler(
@@ -169,6 +174,14 @@ class PhoneAgent:
 
         # Get model response
         try:
+            log_context = self._context.copy()
+            log_context = [
+                content
+                for msg in log_context
+                for content in msg
+                if isinstance(content, dict) and content.get("type") == "text"
+            ]
+            logger.debug(f"{log_context=}")
             response = self.model_client.request(self._context)
         except Exception as e:
             if self.agent_config.verbose:

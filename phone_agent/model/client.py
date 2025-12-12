@@ -6,6 +6,8 @@ from typing import Any
 
 from openai import OpenAI
 
+from phone_agent.logger import logger
+
 
 @dataclass
 class ModelConfig:
@@ -67,6 +69,7 @@ class ModelClient:
         )
 
         raw_content = response.choices[0].message.content
+        logger.debug(f"raw response content: {raw_content}")
 
         # Parse thinking and action from response
         thinking, action = self._parse_response(raw_content)

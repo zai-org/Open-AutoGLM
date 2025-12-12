@@ -1,11 +1,30 @@
 """Device control utilities for Android automation."""
 
-import os
 import subprocess
 import time
-from typing import List, Optional, Tuple
+from typing import List
 
 from phone_agent.config.apps import APP_PACKAGES
+from phone_agent.logger import logger
+
+
+def _run_adb_command(
+    cmd: List[str], capture_output: bool = True, text: bool = False
+) -> subprocess.CompletedProcess:
+    """
+    Run an ADB command and print it for debugging.
+
+    Args:
+        cmd: The command list to execute.
+        capture_output: Whether to capture stdout/stderr.
+        text: Whether to decode output as text.
+
+    Returns:
+        The CompletedProcess result.
+    """
+    cmd_str = " ".join(cmd)
+    logger.debug(f"[ADB] {cmd_str}")
+    return subprocess.run(cmd, capture_output=capture_output, text=text)
 
 
 def get_current_app(device_id: str | None = None) -> str:
@@ -20,7 +39,7 @@ def get_current_app(device_id: str | None = None) -> str:
     """
     adb_prefix = _get_adb_prefix(device_id)
 
-    result = subprocess.run(
+    result = _run_adb_command(
         adb_prefix + ["shell", "dumpsys", "window"], capture_output=True, text=True
     )
     output = result.stdout
@@ -46,10 +65,7 @@ def tap(x: int, y: int, device_id: str | None = None, delay: float = 1.0) -> Non
         delay: Delay in seconds after tap.
     """
     adb_prefix = _get_adb_prefix(device_id)
-
-    subprocess.run(
-        adb_prefix + ["shell", "input", "tap", str(x), str(y)], capture_output=True
-    )
+    _run_adb_command(adb_prefix + ["shell", "input", "tap", str(x), str(y)])
     time.sleep(delay)
 
 
@@ -67,13 +83,9 @@ def double_tap(
     """
     adb_prefix = _get_adb_prefix(device_id)
 
-    subprocess.run(
-        adb_prefix + ["shell", "input", "tap", str(x), str(y)], capture_output=True
-    )
+    _run_adb_command(adb_prefix + ["shell", "input", "tap", str(x), str(y)])
     time.sleep(0.1)
-    subprocess.run(
-        adb_prefix + ["shell", "input", "tap", str(x), str(y)], capture_output=True
-    )
+    _run_adb_command(adb_prefix + ["shell", "input", "tap", str(x), str(y)])
     time.sleep(delay)
 
 
@@ -96,10 +108,9 @@ def long_press(
     """
     adb_prefix = _get_adb_prefix(device_id)
 
-    subprocess.run(
+    _run_adb_command(
         adb_prefix
-        + ["shell", "input", "swipe", str(x), str(y), str(x), str(y), str(duration_ms)],
-        capture_output=True,
+        + ["shell", "input", "swipe", str(x), str(y), str(x), str(y), str(duration_ms)]
     )
     time.sleep(delay)
 
@@ -133,7 +144,7 @@ def swipe(
         duration_ms = int(dist_sq / 1000)
         duration_ms = max(1000, min(duration_ms, 2000))  # Clamp between 1000-2000ms
 
-    subprocess.run(
+    _run_adb_command(
         adb_prefix
         + [
             "shell",
@@ -144,8 +155,7 @@ def swipe(
             str(end_x),
             str(end_y),
             str(duration_ms),
-        ],
-        capture_output=True,
+        ]
     )
     time.sleep(delay)
 
@@ -160,9 +170,7 @@ def back(device_id: str | None = None, delay: float = 1.0) -> None:
     """
     adb_prefix = _get_adb_prefix(device_id)
 
-    subprocess.run(
-        adb_prefix + ["shell", "input", "keyevent", "4"], capture_output=True
-    )
+    _run_adb_command(adb_prefix + ["shell", "input", "keyevent", "4"])
     time.sleep(delay)
 
 
@@ -176,9 +184,7 @@ def home(device_id: str | None = None, delay: float = 1.0) -> None:
     """
     adb_prefix = _get_adb_prefix(device_id)
 
-    subprocess.run(
-        adb_prefix + ["shell", "input", "keyevent", "KEYCODE_HOME"], capture_output=True
-    )
+    _run_adb_command(adb_prefix + ["shell", "input", "keyevent", "KEYCODE_HOME"])
     time.sleep(delay)
 
 
@@ -200,7 +206,7 @@ def launch_app(app_name: str, device_id: str | None = None, delay: float = 1.0) 
     adb_prefix = _get_adb_prefix(device_id)
     package = APP_PACKAGES[app_name]
 
-    subprocess.run(
+    _run_adb_command(
         adb_prefix
         + [
             "shell",
@@ -210,8 +216,7 @@ def launch_app(app_name: str, device_id: str | None = None, delay: float = 1.0) 
             "-c",
             "android.intent.category.LAUNCHER",
             "1",
-        ],
-        capture_output=True,
+        ]
     )
     time.sleep(delay)
     return True
