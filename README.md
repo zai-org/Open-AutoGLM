@@ -1,13 +1,13 @@
-# 📱 AutoGLM-TGLinked: The "Cloud Native" AI Phone Agent
+# AutoGLM-TGLinked: The "Cloud Native" AI Phone Agent
 
-> **Status**: 🟢 **Public Alpha v0.1**  
+> **Status**: **Public Alpha v0.1**  
 > **"Control your phone, from your phone... via your computer."**
 
 Open-AutoGLM is a Windows-based AI agent that uses the Z.ai Vision Model to autonomously control your Android device. It is designed to be **"Cloud Native"**, meaning you can control your phone from anywhere in the world using Telegram, with your laptop acting as the brain at home.
 
 ---
 
-## 🚀 The Architecture
+## The Architecture
 
 ### 1. What We Did
 We integrated **Tailscale** (a Mesh VPN) and **Telegram** to decouple the physical link between PC and Phone.
@@ -23,7 +23,7 @@ We integrated **Tailscale** (a Mesh VPN) and **Telegram** to decouple the physic
 
 ---
 
-## ⚡ Quick Start Guide
+## Quick Start Guide
 
 Want to run this on your own laptop? Follow these steps.
 
@@ -53,7 +53,7 @@ Want to run this on your own laptop? Follow these steps.
 
 ---
 
-## 🔑 Configuration (IMPORTANT)
+## Configuration (IMPORTANT)
 
 You must add your own API keys for this to work.
 
@@ -83,7 +83,7 @@ You must add your own API keys for this to work.
 
 ---
 
-## 🎮 Usage
+## Usage
 
 ### 1. Connect Devices
 Ensure Tailscale is ON for both devices. Get your phone's Tailscale IP (e.g., `100.x.x.x`).
@@ -105,7 +105,7 @@ The bot will execute the script, connect to your phone, and send you back a scre
 
 ---
 
-## 🗺️ Future Roadmap
+## Future Roadmap
 
 We are moving towards a computer-less future where the agent lives entirely in the cloud.
 
@@ -126,7 +126,7 @@ We are moving towards a computer-less future where the agent lives entirely in t
 
 ---
 
-## ❓ Troubleshooting
+## Troubleshooting
 
 *   **"Target machine actively refused it"**: Re-enable TCP/IP mode via USB (`adb tcpip 5555`).
 *   **"Device Offline"**: Disconnect and reconnect ADB using the new IP.
