@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoGLM - 安装指南</title>
+    <style>
+        :root {
+            --bg-primary: #0a0e27;
+            --bg-secondary: #151a2d;
+            --bg-tertiary: #1e2438;
+            --accent-primary: #6366f1;
+            --accent-secondary: #8b5cf6;
+            --accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            --text-primary: #ffffff;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --border-color: #2d3548;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.8;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: var(--accent-gradient);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            margin: 0 auto 20px;
+        }
+
+        h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 16px;
+        }
+
+        .section {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        h2 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: var(--accent-primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        h3 {
+            font-size: 18px;
+            margin: 25px 0 15px;
+            color: var(--text-primary);
+        }
+
+        p {
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+        }
+
+        .step {
+            background: var(--bg-tertiary);
+            border-left: 3px solid var(--accent-primary);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .step-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+        }
+
+        .code {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            color: var(--success);
+            overflow-x: auto;
+        }
+
+        .warning {
+            background: rgba(245, 158, 11, 0.1);
+            border-left: 3px solid var(--warning);
+            padding: 15px;
+            border-radius: 0 6px 6px 0;
+            margin: 15px 0;
+        }
+
+        .warning::before {
+            content: "⚠️ ";
+            font-size: 18px;
+        }
+
+        .success {
+            background: rgba(16, 185, 129, 0.1);
+            border-left: 3px solid var(--success);
+            padding: 15px;
+            border-radius: 0 6px 6px 0;
+            margin: 15px 0;
+        }
+
+        .success::before {
+            content: "✅ ";
+            font-size: 18px;
+        }
+
+        ul, ol {
+            margin-left: 30px;
+            margin-bottom: 15px;
+        }
+
+        li {
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+
+        a {
+            color: var(--accent-primary);
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        a:hover {
+            color: var(--accent-secondary);
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: var(--accent-gradient);
+            color: white;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        .faq {
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+
+        .faq-question {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+        }
+
+        .faq-answer {
+            color: var(--text-secondary);
+        }
+
+        .footer {
+            text-align: center;
+            padding: 40px 0;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🤖</div>
+            <h1>AutoGLM 安装指南</h1>
+            <p class="subtitle">完整的环境配置教程，手把手教你使用</p>
+        </div>
+
+        <!-- 简介 -->
+        <div class="section">
+            <h2>📖 产品简介</h2>
+            <p>AutoGLM 是一个智能手机控制平台，让您可以用自然语言控制安卓手机。无需编程知识，只需输入"打开微信"、"在淘宝搜索商品"等简单指令，AI就会自动帮您完成操作。</p>
+
+            <div class="success">
+                <strong>适用场景：</strong> 自动化测试、批量操作、重复任务自动化、老人/残障人士辅助等
+            </div>
+        </div>
+
+        <!-- 前置条件 -->
+        <div class="section">
+            <h2>✅ 前置条件</h2>
+            <ul>
+                <li>一台安卓手机（Android 7.0+）</li>
+                <li>一根支持数据传输的USB数据线（不是仅充电线）</li>
+                <li>Windows / macOS / Linux 电脑</li>
+            </ul>
+        </div>
+
+        <!-- 第一步：安装ADB -->
+        <div class="section">
+            <h2>🔧 第一步：安装 ADB 工具</h2>
+            <p>ADB（Android Debug Bridge）是连接电脑和手机的桥梁。</p>
+
+            <h3>Windows 系统</h3>
+            <div class="step">
+                <div class="step-title">1. 下载 ADB</div>
+                <p>访问官网下载：<a href="https://developer.android.com/tools/releases/platform-tools" target="_blank">https://developer.android.com/tools/releases/platform-tools</a></p>
+                <p>或直接下载：<a href="https://dl.google.com/android/repository/platform-tools-latest-windows.zip" target="_blank">Windows 版本</a></p>
+            </div>
+
+            <div class="step">
+                <div class="step-title">2. 解压文件</div>
+                <p>将下载的zip文件解压到任意目录，例如：<code>C:\platform-tools</code></p>
+            </div>
+
+            <div class="step">
+                <div class="step-title">3. 配置环境变量</div>
+                <ol>
+                    <li>右键"此电脑" → "属性" → "高级系统设置" → "环境变量"</li>
+                    <li>在"系统变量"中找到 Path，点击"编辑"</li>
+                    <li>点击"新建"，输入 ADB 解压路径（如：<code>C:\platform-tools</code>）</li>
+                    <li>点击"确定"保存</li>
+                </ol>
+            </div>
+
+            <div class="step">
+                <div class="step-title">4. 验证安装</div>
+                <p>打开命令提示符（Win+R 输入 cmd），执行：</p>
+                <div class="code">adb version</div>
+                <p>如果显示版本信息，说明安装成功！</p>
+            </div>
+
+            <h3>macOS 系统</h3>
+            <div class="step">
+                <div class="step-title">使用 Homebrew 安装（推荐）</div>
+                <div class="code">brew install android-platform-tools</div>
+            </div>
+
+            <h3>Linux 系统</h3>
+            <div class="step">
+                <div class="step-title">Ubuntu/Debian</div>
+                <div class="code">sudo apt-get install android-tools-adb</div>
+            </div>
+        </div>
+
+        <!-- 第二步：配置手机 -->
+        <div class="section">
+            <h2>📱 第二步：配置安卓手机</h2>
+
+            <h3>1. 开启开发者模式</h3>
+            <div class="step">
+                <div class="step-title">操作步骤</div>
+                <ol>
+                    <li>打开手机"设置"</li>
+                    <li>找到"关于手机"（或"关于设备"）</li>
+                    <li>找到"版本号"（或"MIUI版本"、"Build号"等）</li>
+                    <li>连续快速点击7-10次，直到提示"您已处于开发者模式"</li>
+                </ol>
+            </div>
+
+            <div class="warning">
+                <strong>注意：</strong> 不同品牌手机位置可能略有不同。如果找不到，可以搜索"[您的手机品牌] 开启开发者模式"
+            </div>
+
+            <h3>2. 开启 USB 调试</h3>
+            <div class="step">
+                <div class="step-title">操作步骤</div>
+                <ol>
+                    <li>在设置中找到"开发者选项"（或"开发人员选项"）</li>
+                    <li>打开"USB 调试"开关</li>
+                    <li>如果有"USB 调试（安全设置）"，也要打开</li>
+                    <li>部分机型需要重启手机才能生效</li>
+                </ol>
+            </div>
+
+            <div class="warning">
+                <strong>重要：</strong> 请务必同时开启这两个选项：
+                <ul>
+                    <li>✅ USB 调试</li>
+                    <li>✅ USB 调试（安全设置）</li>
+                </ul>
+            </div>
+
+            <h3>3. 连接手机到电脑</h3>
+            <div class="step">
+                <div class="step-title">验证连接</div>
+                <ol>
+                    <li>用USB数据线连接手机和电脑</li>
+                    <li>手机会弹出"允许USB调试吗？"对话框，点击"允许"或"始终允许"</li>
+                    <li>在电脑上打开命令行，执行：</li>
+                </ol>
+                <div class="code">adb devices</div>
+                <p>如果看到设备序列号和"device"字样，说明连接成功！</p>
+                <div class="code">List of devices attached
+XXXXXXXX    device</div>
+            </div>
+
+            <div class="warning">
+                如果显示 "unauthorized"，请在手机上重新允许USB调试权限
+            </div>
+        </div>
+
+        <!-- 第三步：安装 ADB Keyboard -->
+        <div class="section">
+            <h2>⌨️ 第三步：安装 ADB Keyboard</h2>
+            <p>ADB Keyboard 是一个特殊的输入法，允许电脑向手机发送文字输入。</p>
+
+            <div class="step">
+                <div class="step-title">1. 下载安装包</div>
+                <p>下载地址：<a href="https://github.com/senzhk/ADBKeyBoard/blob/master/ADBKeyboard.apk" target="_blank">ADBKeyboard.apk</a></p>
+                <p>或使用命令安装：</p>
+                <div class="code">adb install ADBKeyboard.apk</div>
+            </div>
+
+            <div class="step">
+                <div class="step-title">2. 启用输入法</div>
+                <ol>
+                    <li>打开手机"设置"</li>
+                    <li>找到"语言和输入法"（或"系统" → "语言和输入法"）</li>
+                    <li>点击"虚拟键盘"（或"键盘管理"）</li>
+                    <li>找到"ADB Keyboard"，打开开关</li>
+                </ol>
+                <p>或使用命令启用：</p>
+                <div class="code">adb shell ime enable com.android.adbkeyboard/.AdbIME</div>
+            </div>
+
+            <div class="success">
+                <strong>完成！</strong> 现在 ADB Keyboard 已安装并启用，AutoGLM 可以自动切换输入法来输入文字。
+            </div>
+        </div>
+
+        <!-- 第四步：开始使用 -->
+        <div class="section">
+            <h2>🚀 第四步：开始使用 AutoGLM</h2>
+
+            <div class="step">
+                <div class="step-title">1. 访问 Web 界面</div>
+                <p>在浏览器打开：<a href="/">http://localhost:5000</a></p>
+            </div>
+
+            <div class="step">
+                <div class="step-title">2. 输入任务</div>
+                <p>在任务输入框中输入自然语言指令，例如：</p>
+                <ul>
+                    <li>"打开微信"</li>
+                    <li>"打开淘宝搜索蓝牙耳机"</li>
+                    <li>"打开美团搜索附近的火锅店"</li>
+                    <li>"返回主屏幕"</li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <div class="step-title">3. 执行任务</div>
+                <p>点击"立即执行"按钮，或按 Ctrl+Enter，AI 就会开始控制您的手机！</p>
+                <p>您可以在右侧实时看到AI的思考过程和每一步操作。</p>
+            </div>
+
+            <div class="success">
+                <strong>提示：</strong> 如果当前有任务在执行，可以点击"加入队列"按钮将新任务添加到队列，它会自动依次执行。
+            </div>
+        </div>
+
+        <!-- 常见问题 -->
+        <div class="section">
+            <h2>❓ 常见问题</h2>
+
+            <div class="faq">
+                <div class="faq-question">Q: adb devices 显示没有设备？</div>
+                <div class="faq-answer">
+                    <p>A: 请检查：</p>
+                    <ol>
+                        <li>数据线是否支持数据传输（不是仅充电线）</li>
+                        <li>手机是否开启了USB调试</li>
+                        <li>手机上是否点击了"允许"USB调试</li>
+                        <li>尝试更换USB接口或数据线</li>
+                        <li>执行 <code>adb kill-server</code> 然后 <code>adb start-server</code> 重启ADB</li>
+                    </ol>
+                </div>
+            </div>
+
+            <div class="faq">
+                <div class="faq-question">Q: 能打开应用但无法点击？</div>
+                <div class="faq-answer">
+                    <p>A: 部分手机需要同时开启"USB调试"和"USB调试（安全设置）"两个选项。请在开发者选项中检查。</p>
+                </div>
+            </div>
+
+            <div class="faq">
+                <div class="faq-question">Q: 无法输入中文？</div>
+                <div class="faq-answer">
+                    <p>A: 请确保已安装并启用 ADB Keyboard 输入法。</p>
+                </div>
+            </div>
+
+            <div class="faq">
+                <div class="faq-question">Q: 任务执行很慢或卡住？</div>
+                <div class="faq-answer">
+                    <p>A: 可能是应用加载时间较长，AI会自动等待。如果长时间无响应，可以点击"停止"按钮中止任务。</p>
+                </div>
+            </div>
+
+            <div class="faq">
+                <div class="faq-question">Q: 支持哪些手机？</div>
+                <div class="faq-answer">
+                    <p>A: 支持所有 Android 7.0 及以上版本的安卓手机，包括小米、华为、OPPO、vivo、三星等各品牌。</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 进阶功能 -->
+        <div class="section">
+            <h2>🌟 进阶功能</h2>
+
+            <h3>任务队列</h3>
+            <p>将多个任务添加到队列，系统会自动依次执行，无需手动等待。</p>
+
+            <h3>高频任务</h3>
+            <p>系统会统计您常用的任务，显示在"高频任务"列表中，点击即可快速执行。</p>
+
+            <h3>历史搜索</h3>
+            <p>在历史记录中搜索之前执行过的任务，点击可以查看详细的执行过程。</p>
+
+            <h3>实时停止</h3>
+            <p>执行过程中可以随时点击"停止"按钮中止任务。</p>
+        </div>
+
+        <!-- 技术支持 -->
+        <div class="section">
+            <h2>💬 技术支持</h2>
+            <p>如果您在使用过程中遇到问题，欢迎：</p>
+            <ul>
+                <li>查看<a href="https://github.com/zai-org/Open-AutoGLM" target="_blank">项目文档</a></li>
+                <li>搜索已有的<a href="https://github.com/zai-org/Open-AutoGLM/issues" target="_blank">问题讨论</a></li>
+                <li>提交<a href="https://github.com/zai-org/Open-AutoGLM/issues/new" target="_blank">新的Issue</a></li>
+            </ul>
+        </div>
+
+        <div style="text-align: center; margin-top: 40px;">
+            <a href="/" class="btn">返回主页开始使用</a>
+        </div>
+
+        <div class="footer">
+            <p>AutoGLM - 让AI帮您控制手机</p>
+            <p>Powered by AutoGLM-Phone-9B Model</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoGLM - 智能手机控制平台</title>
+    <style>
+        :root {
+            --bg-primary: #0a0e27;
+            --bg-secondary: #151a2d;
+            --bg-tertiary: #1e2438;
+            --accent-primary: #6366f1;
+            --accent-secondary: #8b5cf6;
+            --accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            --text-primary: #ffffff;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --border-color: #2d3548;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 380px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .sidebar-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--accent-gradient);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .logo-text {
+            font-size: 20px;
+            font-weight: 700;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 12px;
+            margin-left: 52px;
+        }
+
+        .guide-link {
+            display: inline-block;
+            margin-left: 52px;
+            margin-top: 4px;
+            color: var(--accent-primary);
+            font-size: 12px;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .guide-link:hover {
+            color: var(--accent-secondary);
+        }
+
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 24px;
+        }
+
+        .section {
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .badge {
+            background: var(--accent-primary);
+            color: white;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+
+        .input-group {
+            margin-bottom: 12px;
+        }
+
+        .input-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        textarea.input-field {
+            resize: vertical;
+            min-height: 80px;
+            font-family: inherit;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background: var(--accent-gradient);
+            color: var(--text-primary);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+
+        .btn-danger {
+            background: var(--error);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            opacity: 0.9;
+        }
+
+        .spinner {
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Popular Tasks */
+        .popular-grid {
+            display: grid;
+            gap: 6px;
+        }
+
+        .popular-item {
+            padding: 8px 10px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .popular-item:hover {
+            background: var(--accent-primary);
+            color: var(--text-primary);
+            border-color: var(--accent-primary);
+            transform: translateX(2px);
+        }
+
+        .popular-text {
+            font-size: 12px;
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .popular-count {
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-left: 8px;
+        }
+
+        /* Queue */
+        .queue-item {
+            padding: 10px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .queue-text {
+            font-size: 12px;
+            flex: 1;
+            color: var(--text-secondary);
+        }
+
+        .queue-remove {
+            background: transparent;
+            border: none;
+            color: var(--error);
+            cursor: pointer;
+            font-size: 16px;
+            padding: 4px;
+        }
+
+        .queue-remove:hover {
+            opacity: 0.7;
+        }
+
+        /* History */
+        .search-box {
+            position: relative;
+            margin-bottom: 10px;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .search-box input {
+            padding-left: 32px;
+        }
+
+        .history-list {
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            padding: 10px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            margin-bottom: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .history-item:hover {
+            background: var(--bg-primary);
+            border-color: var(--accent-primary);
+        }
+
+        .history-task {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .history-time {
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .main-header {
+            padding: 16px 28px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .task-info {
+            flex: 1;
+        }
+
+        .task-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .task-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-idle {
+            background: rgba(100, 116, 139, 0.2);
+            color: var(--text-muted);
+        }
+
+        .status-running {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+        }
+
+        .status-success {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+        }
+
+        .status-error {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--error);
+        }
+
+        .stop-btn {
+            padding: 5px 12px;
+            background: var(--error);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .stop-btn:hover {
+            opacity: 0.9;
+        }
+
+        .execution-log {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 28px;
+        }
+
+        .log-item {
+            margin-bottom: 14px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .log-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 14px;
+        }
+
+        .log-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .log-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .log-icon-thinking {
+            background: rgba(99, 102, 241, 0.2);
+            color: var(--accent-primary);
+        }
+
+        .log-icon-action {
+            background: rgba(139, 92, 246, 0.2);
+            color: var(--accent-secondary);
+        }
+
+        .log-icon-success {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+        }
+
+        .log-icon-error {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--error);
+        }
+
+        .log-meta {
+            flex: 1;
+        }
+
+        .log-type {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .log-time {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .log-content {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            font-size: 13px;
+        }
+
+        .action-details {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 10px;
+            margin-top: 8px;
+        }
+
+        .action-row {
+            display: flex;
+            align-items: center;
+            padding: 4px 0;
+        }
+
+        .action-key {
+            color: var(--text-muted);
+            font-size: 11px;
+            width: 90px;
+        }
+
+        .action-value {
+            color: var(--text-primary);
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-muted);
+        }
+
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+            opacity: 0.5;
+        }
+
+        .empty-text {
+            font-size: 14px;
+            margin-bottom: 6px;
+        }
+
+        .empty-subtext {
+            font-size: 12px;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 320px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .app-container {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+                height: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">🤖</div>
+                    <div>
+                        <div class="logo-text">AutoGLM</div>
+                    </div>
+                </div>
+                <div class="subtitle">智能手机控制平台</div>
+                <a href="/guide" target="_blank" class="guide-link">📖 安装指南</a>
+            </div>
+
+            <div class="sidebar-content">
+                <!-- Task Input -->
+                <div class="section">
+                    <div class="section-title">任务控制</div>
+                    <div class="input-group">
+                        <textarea id="taskInput" class="input-field" placeholder="输入任务描述...&#10;例如: 打开微信 / 打开抖音刷视频"></textarea>
+                    </div>
+                    <div class="btn-group">
+                        <button id="executeBtn" class="btn btn-primary" onclick="executeTask()">
+                            <span id="btnText">立即执行</span>
+                            <span id="btnSpinner" class="spinner" style="display:none;"></span>
+                        </button>
+                        <button class="btn btn-secondary" onclick="addToQueue()">➕ 加入队列</button>
+                    </div>
+                </div>
+
+                <!-- Queue -->
+                <div class="section">
+                    <div class="section-title">
+                        任务队列
+                        <span class="badge" id="queueBadge">0</span>
+                    </div>
+                    <div id="queueList">
+                        <div class="empty-state" style="padding:15px;font-size:11px;">
+                            队列为空
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Popular Tasks -->
+                <div class="section">
+                    <div class="section-title">高频任务</div>
+                    <div id="popularList" class="popular-grid">
+                        <div class="empty-state" style="padding:15px;font-size:11px;">
+                            暂无数据
+                        </div>
+                    </div>
+                </div>
+
+                <!-- History -->
+                <div class="section">
+                    <div class="section-title">历史记录</div>
+                    <div class="search-box">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="searchInput" class="input-field" placeholder="搜索历史任务..." onkeyup="searchHistory()">
+                    </div>
+                    <div id="historyList" class="history-list">
+                        <div class="empty-state" style="padding:15px;font-size:11px;">
+                            暂无历史
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="main-header">
+                <div class="task-info">
+                    <div class="task-label">当前任务</div>
+                    <div class="task-name" id="currentTask">等待任务...</div>
+                </div>
+                <div class="header-actions">
+                    <button id="stopBtn" class="stop-btn" onclick="stopTask()" style="display:none;">⏹ 停止</button>
+                    <div class="status-badge status-idle" id="statusBadge">IDLE</div>
+                </div>
+            </div>
+
+            <div class="execution-log" id="executionLog">
+                <div class="empty-state">
+                    <div class="empty-icon">🚀</div>
+                    <div class="empty-text">准备就绪</div>
+                    <div class="empty-subtext">输入任务并执行开始</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isExecuting = false;
+        let statusCheckInterval = null;
+        let lastStepCount = 0;
+
+        // 立即执行任务
+        async function executeTask() {
+            if (isExecuting) return;
+
+            const task = document.getElementById('taskInput').value.trim();
+            if (!task) {
+                alert('请输入任务描述');
+                return;
+            }
+
+            try {
+                isExecuting = true;
+                lastStepCount = 0;
+                updateExecuteButton(true);
+                updateTaskHeader(task, 'running');
+                clearExecutionLog();
+                addLogItem('start', '任务开始', task, new Date().toLocaleTimeString());
+
+                const response = await fetch('/api/execute', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({task: task})
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    startStatusPolling();
+                } else {
+                    isExecuting = false;
+                    updateExecuteButton(false);
+                    if (data.message.includes('队列')) {
+                        if (confirm(data.message + '，是否添加到队列？')) {
+                            addToQueue();
+                        }
+                    } else {
+                        alert(data.message);
+                    }
+                }
+            } catch (error) {
+                isExecuting = false;
+                updateExecuteButton(false);
+                alert('执行失败: ' + error.message);
+            }
+        }
+
+        // 添加到队列
+        async function addToQueue() {
+            const task = document.getElementById('taskInput').value.trim();
+            if (!task) {
+                alert('请输入任务描述');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/queue/add', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({task: task})
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('taskInput').value = '';
+                    loadQueue();
+                } else {
+                    alert(data.message);
+                }
+            } catch (error) {
+                alert('添加失败: ' + error.message);
+            }
+        }
+
+        // 停止任务
+        async function stopTask() {
+            if (!confirm('确定要停止当前任务吗？')) return;
+
+            try {
+                const response = await fetch('/api/stop', {method: 'POST'});
+                const data = await response.json();
+                if (!data.success) {
+                    alert(data.message);
+                }
+            } catch (error) {
+                alert('停止失败: ' + error.message);
+            }
+        }
+
+        // 开始轮询
+        function startStatusPolling() {
+            statusCheckInterval = setInterval(checkStatus, 500);
+        }
+
+        // 停止轮询
+        function stopStatusPolling() {
+            if (statusCheckInterval) {
+                clearInterval(statusCheckInterval);
+                statusCheckInterval = null;
+            }
+        }
+
+        // 检查状态
+        async function checkStatus() {
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+
+                // 更新停止按钮
+                document.getElementById('stopBtn').style.display = data.can_stop ? 'block' : 'none';
+
+                // 更新新增的步骤
+                if (data.steps && data.steps.length > lastStepCount) {
+                    for (let i = lastStepCount; i < data.steps.length; i++) {
+                        const step = data.steps[i];
+                        addLogItem(step.type, getStepTitle(step.type), step.content || step.message || step.error || step.task, step.timestamp);
+                    }
+                    lastStepCount = data.steps.length;
+                }
+
+                // 任务完成
+                if (!data.running && isExecuting) {
+                    isExecuting = false;
+                    updateExecuteButton(false);
+                    stopStatusPolling();
+                    updateTaskHeader(data.task, data.status);
+                    loadHistory();
+                    loadPopular();
+                    loadQueue();
+                }
+            } catch (error) {
+                console.error('状态检查失败:', error);
+            }
+        }
+
+        // 加载队列
+        async function loadQueue() {
+            try {
+                const response = await fetch('/api/queue/list');
+                const data = await response.json();
+                renderQueue(data.queue || []);
+            } catch (error) {
+                console.error('加载队列失败:', error);
+            }
+        }
+
+        // 渲染队列
+        function renderQueue(queue) {
+            const list = document.getElementById('queueList');
+            const badge = document.getElementById('queueBadge');
+            badge.textContent = queue.length;
+
+            if (queue.length === 0) {
+                list.innerHTML = '<div class="empty-state" style="padding:15px;font-size:11px;">队列为空</div>';
+                return;
+            }
+
+            let html = '';
+            queue.forEach(item => {
+                html += `
+                    <div class="queue-item">
+                        <div class="queue-text">${escapeHtml(item.task)}</div>
+                        <button class="queue-remove" onclick="removeFromQueue('${item.id}')">✕</button>
+                    </div>
+                `;
+            });
+            list.innerHTML = html;
+        }
+
+        // 从队列移除
+        async function removeFromQueue(taskId) {
+            try {
+                const response = await fetch('/api/queue/remove', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({task_id: taskId})
+                });
+                if (response.ok) {
+                    loadQueue();
+                }
+            } catch (error) {
+                console.error('移除失败:', error);
+            }
+        }
+
+        // 加载高频任务
+        async function loadPopular() {
+            try {
+                const response = await fetch('/api/popular');
+                const data = await response.json();
+                renderPopular(data.popular || []);
+            } catch (error) {
+                console.error('加载高频任务失败:', error);
+            }
+        }
+
+        // 渲染高频任务
+        function renderPopular(popular) {
+            const list = document.getElementById('popularList');
+
+            if (popular.length === 0) {
+                list.innerHTML = '<div class="empty-state" style="padding:15px;font-size:11px;">暂无数据</div>';
+                return;
+            }
+
+            let html = '';
+            popular.slice(0, 10).forEach(item => {
+                html += `
+                    <div class="popular-item" onclick="setTask('${escapeHtml(item.task)}')">
+                        <div class="popular-text">${escapeHtml(item.task)}</div>
+                        <div class="popular-count">${item.count}次</div>
+                    </div>
+                `;
+            });
+            list.innerHTML = html;
+        }
+
+        // 搜索历史
+        let searchTimeout;
+        async function searchHistory() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(async () => {
+                const search = document.getElementById('searchInput').value;
+                await loadHistory(search);
+            }, 300);
+        }
+
+        // 加载历史
+        async function loadHistory(search = '') {
+            try {
+                const url = search ? `/api/history?search=${encodeURIComponent(search)}` : '/api/history';
+                const response = await fetch(url);
+                const data = await response.json();
+                renderHistory(data.history || []);
+            } catch (error) {
+                console.error('加载历史失败:', error);
+            }
+        }
+
+        // 渲染历史
+        function renderHistory(history) {
+            const list = document.getElementById('historyList');
+
+            if (history.length === 0) {
+                list.innerHTML = '<div class="empty-state" style="padding:15px;font-size:11px;">暂无历史</div>';
+                return;
+            }
+
+            let html = '';
+            history.slice(0, 20).forEach(item => {
+                html += `
+                    <div class="history-item" onclick='viewHistory(${JSON.stringify(item).replace(/'/g, "&apos;")})'>
+                        <div class="history-task">${escapeHtml(item.task)}</div>
+                        <div class="history-time">${item.timestamp}</div>
+                    </div>
+                `;
+            });
+            list.innerHTML = html;
+        }
+
+        // 查看历史详情
+        function viewHistory(item) {
+            document.getElementById('taskInput').value = item.task;
+            updateTaskHeader(item.task, item.status);
+            clearExecutionLog();
+
+            if (item.steps && item.steps.length > 0) {
+                item.steps.forEach(step => {
+                    addLogItem(
+                        step.type,
+                        getStepTitle(step.type),
+                        step.content || step.message || step.error || step.task,
+                        step.timestamp
+                    );
+                });
+            }
+        }
+
+        // 设置任务
+        function setTask(task) {
+            document.getElementById('taskInput').value = task;
+        }
+
+        // 获取步骤标题
+        function getStepTitle(type) {
+            const titles = {
+                'start': '任务开始',
+                'thinking': 'AI 思考',
+                'action': '执行动作',
+                'success': '任务完成',
+                'complete': '执行完成',
+                'error': '执行错误'
+            };
+            return titles[type] || type;
+        }
+
+        // 更新任务头部
+        function updateTaskHeader(task, status) {
+            document.getElementById('currentTask').textContent = task || '等待任务...';
+            const badge = document.getElementById('statusBadge');
+            badge.className = `status-badge status-${status}`;
+            badge.textContent = status.toUpperCase();
+        }
+
+        // 更新执行按钮
+        function updateExecuteButton(executing) {
+            const btn = document.getElementById('executeBtn');
+            const btnText = document.getElementById('btnText');
+            const btnSpinner = document.getElementById('btnSpinner');
+
+            btn.disabled = executing;
+            btnText.textContent = executing ? '执行中' : '立即执行';
+            btnSpinner.style.display = executing ? 'block' : 'none';
+        }
+
+        // 清空执行日志
+        function clearExecutionLog() {
+            document.getElementById('executionLog').innerHTML = '';
+        }
+
+        // 添加日志项
+        function addLogItem(type, title, content, time) {
+            const log = document.getElementById('executionLog');
+            const item = document.createElement('div');
+            item.className = 'log-item';
+
+            const iconMap = {
+                'start': '🚀',
+                'thinking': '💭',
+                'action': '⚡',
+                'success': '✅',
+                'complete': '🎉',
+                'error': '❌'
+            };
+
+            const iconClass = {
+                'start': 'log-icon-action',
+                'thinking': 'log-icon-thinking',
+                'action': 'log-icon-action',
+                'success': 'log-icon-success',
+                'complete': 'log-icon-success',
+                'error': 'log-icon-error'
+            };
+
+            let contentHtml = '';
+            if (typeof content === 'object') {
+                contentHtml = '<div class="action-details">';
+                for (const [key, value] of Object.entries(content)) {
+                    if (key !== '_metadata') {
+                        contentHtml += `
+                            <div class="action-row">
+                                <div class="action-key">${key}:</div>
+                                <div class="action-value">${JSON.stringify(value)}</div>
+                            </div>
+                        `;
+                    }
+                }
+                contentHtml += '</div>';
+            } else {
+                contentHtml = `<div class="log-content">${escapeHtml(content)}</div>`;
+            }
+
+            item.innerHTML = `
+                <div class="log-card">
+                    <div class="log-header">
+                        <div class="log-icon ${iconClass[type] || 'log-icon-action'}">
+                            ${iconMap[type] || '📋'}
+                        </div>
+                        <div class="log-meta">
+                            <div class="log-type">${title}</div>
+                            <div class="log-time">${time}</div>
+                        </div>
+                    </div>
+                    ${contentHtml}
+                </div>
+            `;
+
+            log.appendChild(item);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        // HTML转义
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 页面加载
+        document.addEventListener('DOMContentLoaded', function() {
+            loadHistory();
+            loadPopular();
+            loadQueue();
+
+            // Ctrl+Enter 执行
+            document.getElementById('taskInput').addEventListener('keydown', function(e) {
+                if (e.ctrlKey && e.key === 'Enter') {
+                    executeTask();
+                }
+            });
+
+            // 定期更新队列
+            setInterval(loadQueue, 3000);
+        });
+    </script>
+</body>
+</html>
