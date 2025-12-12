@@ -1,6 +1,7 @@
 """Configuration module for Phone Agent."""
 
 from phone_agent.config.apps import APP_PACKAGES
+from phone_agent.config.apps_ios import APP_PACKAGES_IOS
 from phone_agent.config.i18n import get_message, get_messages
 from phone_agent.config.prompts_en import SYSTEM_PROMPT as SYSTEM_PROMPT_EN
 from phone_agent.config.prompts_zh import SYSTEM_PROMPT as SYSTEM_PROMPT_ZH
@@ -35,6 +36,7 @@ SYSTEM_PROMPT = SYSTEM_PROMPT_ZH
 
 __all__ = [
     "APP_PACKAGES",
+    "APP_PACKAGES_IOS",
     "SYSTEM_PROMPT",
     "SYSTEM_PROMPT_ZH",
     "SYSTEM_PROMPT_EN",
