@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 def type_text(text: str, device_id: str | None = None, frequency: int = 60, 
-              trigger_change: bool = True) -> None:
+              trigger_change: bool = True) -> dict | None:
     """
     Type text into the currently focused input field using global keyboard.
     
