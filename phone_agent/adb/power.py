@@ -10,7 +10,7 @@ def is_screen_on(device_id: str | None = None) -> bool:
             adb_prefix + ["shell", "dumpsys", "power"],
             capture_output=True,
             text=True,
-            timeout=5
+            timeout=5,
         )
 
         output = result.stdout.lower()
@@ -24,7 +24,7 @@ def wake_screen_if_needed(device_id: str | None = None) -> bool:
         adb_prefix = _get_adb_prefix(device_id)
         subprocess.run(
             adb_prefix + ["shell", "input", "keyevent", "KEYCODE_WAKEUP"],
-            capture_output=True
+            capture_output=True,
         )
         time.sleep(0.5)
 

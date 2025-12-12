@@ -17,15 +17,15 @@ from phone_agent.adb.device import (
     swipe,
     tap,
 )
-from phone_agent.adb.power import (
-    is_screen_on,
-    wake_screen_if_needed,
-)
 from phone_agent.adb.input import (
     clear_text,
     detect_and_set_adb_keyboard,
     restore_keyboard,
     type_text,
+)
+from phone_agent.adb.power import (
+    is_screen_on,
+    wake_screen_if_needed,
 )
 from phone_agent.adb.screenshot import get_screenshot
 
