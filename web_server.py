@@ -25,11 +25,21 @@ from phone_agent.model import ModelConfig
 
 app = Flask(__name__)
 
+# 从.env中读取API_KEY的值到API_KEY
+import os
+from dotenv import load_dotenv
+
+# 加载上级目录的 .env 文件
+env_path = Path(__file__).resolve().parent.parent / '.env'
+load_dotenv(env_path)
+
+API_KEY = os.getenv("API_KEY")
+
 # 配置
 CONFIG = {
     "base_url": "https://open.bigmodel.cn/api/paas/v4",
     "model_name": "autoglm-phone",
-    "api_key": "change your api key"
+    "api_key": API_KEY
 }
 
 # 文件路径

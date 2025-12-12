@@ -1,24 +1,46 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AutoGLM - 智能手机控制平台</title>
+    <title>AI_Phone - 智能手机控制平台</title>
     <style>
         :root {
-            --bg-primary: #0a0e27;
-            --bg-secondary: #151a2d;
-            --bg-tertiary: #1e2438;
-            --accent-primary: #6366f1;
-            --accent-secondary: #8b5cf6;
-            --accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-            --text-primary: #ffffff;
-            --text-secondary: #94a3b8;
-            --text-muted: #64748b;
+            /* Modern Professional Dark Theme (Zinc/Slate based) */
+            --bg-primary: #09090b;
+            /* Zinc 950 */
+            --bg-secondary: #18181b;
+            /* Zinc 900 */
+            --bg-tertiary: #27272a;
+            /* Zinc 800 */
+
+            /* Professional Blue Accents (Intercom/Stripe style) */
+            --accent-primary: #2563eb;
+            /* Blue 600 */
+            --accent-secondary: #1d4ed8;
+            /* Blue 700 */
+            --accent-gradient: #2563eb;
+            /* Solid blue, no gradient */
+
+            /* Text Colors */
+            --text-primary: #f4f4f5;
+            /* Zinc 100 */
+            --text-secondary: #a1a1aa;
+            /* Zinc 400 */
+            --text-muted: #71717a;
+            /* Zinc 500 */
+
+            /* Status Colors */
             --success: #10b981;
             --warning: #f59e0b;
             --error: #ef4444;
-            --border-color: #2d3548;
+
+            /* Borders & UI */
+            --border-color: #3f3f46;
+            /* Zinc 700 */
+            --radius-md: 6px;
+            --radius-lg: 8px;
         }
 
         * {
@@ -28,10 +50,11 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             background: var(--bg-primary);
             color: var(--text-primary);
             overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
         }
 
         .app-container {
@@ -50,7 +73,7 @@
         }
 
         .sidebar-header {
-            padding: 20px 24px;
+            padding: 24px;
             border-bottom: 1px solid var(--border-color);
         }
 
@@ -58,77 +81,80 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
+            /* Tighter layout */
         }
 
         .logo-icon {
-            width: 40px;
-            height: 40px;
-            background: var(--accent-gradient);
-            border-radius: 10px;
+            width: 36px;
+            height: 36px;
+            background: var(--accent-primary);
+            border-radius: var(--radius-lg);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
+            font-size: 20px;
+            color: white;
         }
 
         .logo-text {
-            font-size: 20px;
-            font-weight: 700;
-            background: var(--accent-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            /* Removed gradient text */
         }
 
         .subtitle {
-            color: var(--text-secondary);
-            font-size: 12px;
-            margin-left: 52px;
+            color: var(--text-muted);
+            font-size: 13px;
+            margin-left: 48px;
+            font-weight: 400;
         }
 
         .guide-link {
             display: inline-block;
-            margin-left: 52px;
-            margin-top: 4px;
-            color: var(--accent-primary);
-            font-size: 12px;
+            margin-left: 48px;
+            margin-top: 8px;
+            color: var(--text-secondary);
+            font-size: 13px;
             text-decoration: none;
-            transition: all 0.2s;
+            transition: color 0.2s;
+            border-bottom: 1px solid transparent;
         }
 
         .guide-link:hover {
-            color: var(--accent-secondary);
+            color: var(--accent-primary);
+            border-bottom-color: var(--accent-primary);
         }
 
         .sidebar-content {
             flex: 1;
             overflow-y: auto;
-            padding: 20px 24px;
+            padding: 24px;
         }
 
         .section {
-            margin-bottom: 20px;
+            margin-bottom: 24px;
         }
 
         .section-title {
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--text-muted);
-            margin-bottom: 10px;
+            color: var(--text-primary);
+            margin-bottom: 12px;
             display: flex;
             align-items: center;
             justify-content: space-between;
         }
 
         .badge {
-            background: var(--accent-primary);
-            color: white;
-            font-size: 10px;
-            padding: 2px 6px;
-            border-radius: 10px;
-            font-weight: 600;
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 500;
+            border: 1px solid var(--border-color);
         }
 
         .input-group {
@@ -137,7 +163,7 @@
 
         .input-label {
             display: block;
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 500;
             color: var(--text-secondary);
             margin-bottom: 6px;
@@ -146,38 +172,40 @@
         .input-field {
             width: 100%;
             padding: 10px 12px;
-            background: var(--bg-tertiary);
+            background: var(--bg-primary);
+            /* Darker input bg */
             border: 1px solid var(--border-color);
-            border-radius: 8px;
+            border-radius: var(--radius-md);
             color: var(--text-primary);
-            font-size: 13px;
+            font-size: 14px;
             transition: all 0.2s;
         }
 
         .input-field:focus {
             outline: none;
             border-color: var(--accent-primary);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
         }
 
         textarea.input-field {
             resize: vertical;
             min-height: 80px;
             font-family: inherit;
+            line-height: 1.5;
         }
 
         .btn-group {
             display: flex;
-            gap: 8px;
+            gap: 10px;
         }
 
         .btn {
             flex: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
+            padding: 10px;
+            border: 1px solid transparent;
+            border-radius: var(--radius-md);
             font-size: 13px;
-            font-weight: 600;
+            font-weight: 500;
             cursor: pointer;
             transition: all 0.2s;
             display: flex;
@@ -187,52 +215,56 @@
         }
 
         .btn-primary {
-            background: var(--accent-gradient);
-            color: var(--text-primary);
-            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+            background: var(--accent-primary);
+            color: white;
+            /* Flattened button, no harsh shadow */
         }
 
         .btn-primary:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+            background: var(--accent-secondary);
         }
 
         .btn-primary:disabled {
-            opacity: 0.6;
+            opacity: 0.5;
             cursor: not-allowed;
         }
 
         .btn-secondary {
-            background: var(--bg-tertiary);
+            background: transparent;
             border: 1px solid var(--border-color);
             color: var(--text-secondary);
         }
 
         .btn-secondary:hover {
-            background: var(--bg-primary);
+            background: var(--bg-tertiary);
             color: var(--text-primary);
+            border-color: var(--text-muted);
         }
 
         .btn-danger {
-            background: var(--error);
-            color: white;
+            background: transparent;
+            border: 1px solid var(--error);
+            color: var(--error);
         }
 
         .btn-danger:hover {
-            opacity: 0.9;
+            background: var(--error);
+            color: white;
         }
 
         .spinner {
             width: 14px;
             height: 14px;
-            border: 2px solid rgba(255,255,255,0.3);
+            border: 2px solid rgba(255, 255, 255, 0.3);
             border-top-color: white;
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         /* Popular Tasks */
@@ -365,11 +397,12 @@
         }
 
         .main-header {
-            padding: 16px 28px;
+            padding: 16px 24px;
             border-bottom: 1px solid var(--border-color);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            background: var(--bg-primary);
         }
 
         .task-info {
@@ -377,7 +410,8 @@
         }
 
         .task-label {
-            font-size: 11px;
+            font-size: 12px;
+            font-weight: 500;
             color: var(--text-muted);
             margin-bottom: 4px;
         }
@@ -390,71 +424,82 @@
 
         .header-actions {
             display: flex;
-            gap: 10px;
+            gap: 12px;
             align-items: center;
         }
 
         .status-badge {
-            padding: 5px 10px;
-            border-radius: 6px;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: capitalize;
+            letter-spacing: 0;
+            border: 1px solid transparent;
         }
 
         .status-idle {
-            background: rgba(100, 116, 139, 0.2);
+            background: var(--bg-tertiary);
             color: var(--text-muted);
+            border-color: var(--border-color);
         }
 
         .status-running {
-            background: rgba(245, 158, 11, 0.2);
-            color: var(--warning);
+            background: rgba(37, 99, 235, 0.1);
+            color: var(--accent-primary);
+            border-color: rgba(37, 99, 235, 0.2);
         }
 
         .status-success {
-            background: rgba(16, 185, 129, 0.2);
+            background: rgba(16, 185, 129, 0.1);
             color: var(--success);
+            border-color: rgba(16, 185, 129, 0.2);
         }
 
         .status-error {
-            background: rgba(239, 68, 68, 0.2);
+            background: rgba(239, 68, 68, 0.1);
             color: var(--error);
+            border-color: rgba(239, 68, 68, 0.2);
         }
 
         .stop-btn {
-            padding: 5px 12px;
-            background: var(--error);
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 11px;
-            font-weight: 600;
+            padding: 6px 12px;
+            background: white;
+            color: var(--error);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            font-size: 12px;
+            font-weight: 500;
             cursor: pointer;
             transition: all 0.2s;
         }
 
         .stop-btn:hover {
-            opacity: 0.9;
+            background: var(--error);
+            color: white;
+            border-color: var(--error);
         }
 
         .execution-log {
             flex: 1;
             overflow-y: auto;
-            padding: 20px 28px;
+            padding: 24px;
+            background: var(--bg-primary);
         }
 
         .log-item {
-            margin-bottom: 14px;
-            animation: slideIn 0.3s ease-out;
+            margin-bottom: 16px;
+            animation: slideIn 0.2s ease-out;
+            border-left: 2px solid var(--border-color);
+            padding-left: 16px;
         }
 
         @keyframes slideIn {
             from {
                 opacity: 0;
-                transform: translateY(10px);
+                transform: translateY(5px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -462,51 +507,59 @@
         }
 
         .log-card {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            padding: 14px;
+            background: transparent;
+            border: none;
+            padding: 0;
         }
 
         .log-header {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
+            gap: 12px;
+            margin-bottom: 8px;
         }
 
         .log-icon {
-            width: 28px;
-            height: 28px;
+            width: 24px;
+            height: 24px;
             border-radius: 6px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 14px;
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
         }
 
         .log-icon-thinking {
-            background: rgba(99, 102, 241, 0.2);
+            background: white;
             color: var(--accent-primary);
+            border-color: var(--accent-primary);
         }
 
         .log-icon-action {
-            background: rgba(139, 92, 246, 0.2);
-            color: var(--accent-secondary);
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
         }
 
         .log-icon-success {
-            background: rgba(16, 185, 129, 0.2);
-            color: var(--success);
+            background: var(--success);
+            color: white;
+            border-color: var(--success);
         }
 
         .log-icon-error {
-            background: rgba(239, 68, 68, 0.2);
-            color: var(--error);
+            background: var(--error);
+            color: white;
+            border-color: var(--error);
         }
 
         .log-meta {
             flex: 1;
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
         }
 
         .log-type {
@@ -524,32 +577,41 @@
             color: var(--text-secondary);
             line-height: 1.6;
             font-size: 13px;
+            padding-left: 36px;
+            /* Align with text start */
         }
 
         .action-details {
-            background: var(--bg-tertiary);
+            background: var(--bg-secondary);
             border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 10px;
+            border-radius: var(--radius-md);
+            padding: 12px;
             margin-top: 8px;
+            margin-left: 36px;
         }
 
         .action-row {
             display: flex;
-            align-items: center;
+            align-items: baseline;
             padding: 4px 0;
+            border-bottom: 1px dashed var(--border-color);
+        }
+
+        .action-row:last-child {
+            border-bottom: none;
         }
 
         .action-key {
             color: var(--text-muted);
             font-size: 11px;
-            width: 90px;
+            width: 100px;
+            flex-shrink: 0;
         }
 
         .action-value {
             color: var(--text-primary);
             font-size: 12px;
-            font-weight: 500;
+            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
         }
 
         .empty-state {
@@ -562,9 +624,10 @@
         }
 
         .empty-icon {
-            font-size: 48px;
+            font-size: 32px;
             margin-bottom: 12px;
-            opacity: 0.5;
+            opacity: 0.3;
+            filter: grayscale(1);
         }
 
         .empty-text {
@@ -606,6 +669,7 @@
             .app-container {
                 flex-direction: column;
             }
+
             .sidebar {
                 width: 100%;
                 height: auto;
@@ -613,6 +677,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="app-container">
         <!-- Sidebar -->
@@ -621,7 +686,7 @@
                 <div class="logo">
                     <div class="logo-icon">🤖</div>
                     <div>
-                        <div class="logo-text">AutoGLM</div>
+                        <div class="logo-text">AI_Phone</div>
                     </div>
                 </div>
                 <div class="subtitle">智能手机控制平台</div>
@@ -633,7 +698,8 @@
                 <div class="section">
                     <div class="section-title">任务控制</div>
                     <div class="input-group">
-                        <textarea id="taskInput" class="input-field" placeholder="输入任务描述...&#10;例如: 打开微信 / 打开抖音刷视频"></textarea>
+                        <textarea id="taskInput" class="input-field"
+                            placeholder="输入任务描述...&#10;例如: 打开微信 / 打开抖音刷视频"></textarea>
                     </div>
                     <div class="btn-group">
                         <button id="executeBtn" class="btn btn-primary" onclick="executeTask()">
@@ -672,7 +738,8 @@
                     <div class="section-title">历史记录</div>
                     <div class="search-box">
                         <span class="search-icon">🔍</span>
-                        <input type="text" id="searchInput" class="input-field" placeholder="搜索历史任务..." onkeyup="searchHistory()">
+                        <input type="text" id="searchInput" class="input-field" placeholder="搜索历史任务..."
+                            onkeyup="searchHistory()">
                     </div>
                     <div id="historyList" class="history-list">
                         <div class="empty-state" style="padding:15px;font-size:11px;">
@@ -731,8 +798,8 @@
 
                 const response = await fetch('/api/execute', {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({task: task})
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ task: task })
                 });
 
                 const data = await response.json();
@@ -767,8 +834,8 @@
             try {
                 const response = await fetch('/api/queue/add', {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({task: task})
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ task: task })
                 });
 
                 const data = await response.json();
@@ -788,7 +855,7 @@
             if (!confirm('确定要停止当前任务吗？')) return;
 
             try {
-                const response = await fetch('/api/stop', {method: 'POST'});
+                const response = await fetch('/api/stop', { method: 'POST' });
                 const data = await response.json();
                 if (!data.success) {
                     alert(data.message);
@@ -883,8 +950,8 @@
             try {
                 const response = await fetch('/api/queue/remove', {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({task_id: taskId})
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ task_id: taskId })
                 });
                 if (response.ok) {
                     loadQueue();
@@ -1098,13 +1165,13 @@
         }
 
         // 页面加载
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             loadHistory();
             loadPopular();
             loadQueue();
 
             // Ctrl+Enter 执行
-            document.getElementById('taskInput').addEventListener('keydown', function(e) {
+            document.getElementById('taskInput').addEventListener('keydown', function (e) {
                 if (e.ctrlKey && e.key === 'Enter') {
                     executeTask();
                 }
@@ -1115,4 +1182,5 @@
         });
     </script>
 </body>
+
 </html>
