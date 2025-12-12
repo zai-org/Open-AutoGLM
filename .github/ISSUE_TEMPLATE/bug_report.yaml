@@ -1,0 +1,72 @@
+name: "\U0001F41B Bug Report"
+description: Submit a bug report to help us improve Open-AutoGLM / 提交一个 Bug 问题报告来帮助我们改进 Open-AutoGLM
+body:
+  - type: textarea
+    id: system-info
+    attributes:
+      label: System Info / 系統信息
+      description: Your operating environment / 您的运行环境信息
+      placeholder: Includes Cuda version, Transformers version, Python version, operating system, hardware information (if you suspect a hardware problem)... / 包括Cuda版本，Transformers版本，Python版本，操作系统，硬件信息(如果您怀疑是硬件方面的问题)...
+    validations:
+      required: true
+
+  - type: textarea
+    id: who-can-help
+    attributes:
+      label: Who can help? / 谁可以帮助到您？
+      description: |
+        Your issue will be replied to more quickly if you can figure out the right person to tag with @
+        All issues are read by one of the maintainers, so if you don't know who to tag, just leave this blank and our maintainer will ping the right person.
+
+        Please tag fewer than 3 people.
+
+        如果您能找到合适的标签 @，您的问题会更快得到回复。
+        所有问题都会由我们的维护者阅读，如果您不知道该标记谁，只需留空，我们的维护人员会找到合适的开发组成员来解决问题。
+
+        标记的人数应该不超过 3 个人。
+
+        If it's not a bug in these three subsections, you may not specify the helper. Our maintainer will find the right person in the development group to solve the problem.
+
+        如果不是这三个子版块的bug，您可以不指明帮助者，我们的维护人员会找到合适的开发组成员来解决问题。
+
+      placeholder: "@Username ..."
+
+  - type: checkboxes
+    id: information-scripts-examples
+    attributes:
+      label: Information / 问题信息
+      description: 'The problem arises when using: / 问题出现在'
+      options:
+        - label: "The official example scripts / 官方的示例脚本"
+        - label: "My own modified scripts / 我自己修改的脚本和任务"
+
+  - type: textarea
+    id: reproduction
+    validations:
+      required: true
+    attributes:
+      label: Reproduction / 复现过程
+      description: |
+        Please provide a code example that reproduces the problem you encountered, preferably with a minimal reproduction unit.
+        If you have code snippets, error messages, stack traces, please provide them here as well.
+        Please format your code correctly using code tags. See https://help.github.com/en/github/writing-on-github/creating-and-highlighting-code-blocks#syntax-highlighting
+        Do not use screenshots, as they are difficult to read and (more importantly) do not allow others to copy and paste your code.
+
+        请提供能重现您遇到的问题的代码示例,最好是最小复现单元。
+        如果您有代码片段、错误信息、堆栈跟踪，也请在此提供。
+        请使用代码标签正确格式化您的代码。请参见 https://help.github.com/en/github/writing-on-github/creating-and-highlighting-code-blocks#syntax-highlighting
+        请勿使用截图，因为截图难以阅读，而且（更重要的是）不允许他人复制粘贴您的代码。
+      placeholder: |
+        Steps to reproduce the behavior/复现Bug的步骤:
+
+          1.
+          2.
+          3.
+
+  - type: textarea
+    id: expected-behavior
+    validations:
+      required: true
+    attributes:
+      label: Expected behavior / 期待表现
+      description: "A clear and concise description of what you would expect to happen. /简单描述您期望发生的事情。"

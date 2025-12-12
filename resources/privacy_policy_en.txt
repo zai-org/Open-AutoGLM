@@ -1,0 +1,134 @@
+Part I: Safety Description of Model/Technology
+
+1. AutoGLM Technical Mechanism and Deployment Flexibility
+The core functionality of AutoGLM is automated operation execution. Its working principle is as follows:
+- Instruction-Driven: Based on operation instructions issued by the user or developer.
+- Screen Understanding: Captures the screen content of the current operating environment and sends the image to a large model (which can be deployed locally or in the cloud) for analysis and understanding.
+- Operation Simulation: Simulates human interaction methods (such as clicking, swiping, inputting information, etc.) to complete tasks in the target environment.
+- Example: When instructed to book a high-speed rail ticket, AutoGLM would open the relevant application, identify the interface content, and follow the instructions to select a train, complete the order, etc., similar to manual operation. The user or developer can terminate the task at any time.
+  
+Key Flexibility:
+- Model Deployment: Developers can freely choose to deploy the AutoGLM model on local devices or on cloud servers.
+- Operation Execution Environment: Automated operations can be executed on local devices or on cloud-based devices, as determined by the developer based on application scenarios and requirements.
+- Data Flow: The data flow depends on the deployment choice:
+  - Local Deployment (Model + Execution): Screen capture, model analysis, and operation execution are all completed on the local device. Data does not leave the device, offering the highest level of privacy.
+  - Cloud Deployment (Model + Execution): Screen content needs to be transmitted from the operating environment (local or cloud device) to the cloud-based model. After analysis, the model returns instructions to the operating environment for execution. Developers must ensure the security of transmission and cloud processing.
+  - Hybrid Deployment (e.g., Local Execution + Cloud Model): Screen content is captured locally, transmitted to the cloud model for analysis, and the analysis results are returned to the local environment for execution. Developers need to pay attention to data transmission security.
+    
+2. System Permission Usage Description (For the Operation Execution Environment)
+To ensure the normal execution of automated operations, the environment running AutoGLM operations may need to obtain the following permissions:
+- ADB (Android Debug Bridge) Permissions: Used to obtain information and simulate user interaction operations such as clicking, swiping, and inputting.
+- Storage Permissions: Used for temporary storage of necessary data, model files (if deployed locally), or logs.
+- Network Permissions: Used to access online services (e.g., calling cloud models, accessing target application services).
+- Other Specific Permissions: May be required for specific tasks (e.g., microphone for voice commands).
+  
+Developer Responsibilities:
+- Principle of Least Privilege: Only request permissions absolutely necessary to complete a specific task.
+- Transparent Disclosure: Clearly and explicitly inform end-users in the application or service about the purpose and necessity of each permission.
+- User Authorization: Must obtain explicit authorization from the end-user before enabling relevant permissions and functionalities in the operating environment.
+- Environment Adaptation: Ensure that the permission request and acquisition mechanisms are adapted to the chosen operation execution environment (local or cloud).
+  
+3. Data Processing and Privacy Protection Principles
+The AutoGLM open-source project itself does not collect user data. The responsibility for data processing and privacy protection lies with the developers who build specific applications or services based on AutoGLM. Their responsibilities vary depending on the deployment method:
+- Local Deployment (Model + Execution):
+  - Developers must implement secure local data storage and processing at the application level. All data processing (screen capture, model analysis, operation execution) is completed on the end-user's local device.
+  - Developers should ensure their application does not actively upload sensitive data (such as screen content, operation logs) to the developer's servers or third parties, unless with the user's explicit, informed consent and for a necessary functionality.
+- Cloud Deployment (Model and/or Execution):
+  - Involves data transmission (screen content, operation instructions, model analysis results) between the operating environment and the cloud.
+  - Developers must:
+    - Implement strong encryption to protect all data in transit and at rest.
+    - Clearly inform end-users about what data will be sent to the cloud, the purpose of transmission, storage location, and retention period, and obtain the end-user's explicit consent for data transmission and cloud processing.
+    - Comply with applicable data protection regulations, provide a clear privacy policy explaining data processing practices.
+    - Ensure secure configuration and access control for the cloud environment (model servers, operating environment servers).
+- General Principles (All Deployment Methods):
+  - Data Minimization: Collect and process only the minimum information absolutely necessary to complete the automated task.
+  - Purpose Limitation: Use data solely for the specific purpose of the automated operation to fulfill the user's instruction.
+  - Security Safeguards: Developers are responsible for taking reasonable technical and administrative measures to protect the security and confidentiality of all user data they process (whether locally or in the cloud), preventing unauthorized access, use, disclosure, or loss.
+  - User Control: Provide mechanisms allowing end-users to view and manage (e.g., delete) data related to them (where technically feasible and consistent with the deployment method).
+    
+
+---
+
+Part II: Usage Norms Developers/Users Should Follow
+Developers/users must always comply with applicable laws and regulations when using the AutoGLM open-source project.
+
+1. Critical Operation Confirmation Mechanism
+Developers must design and implement explicit, mandatory user confirmation steps within their applications or services built on AutoGLM for the following 6+1 types of high-risk operations:
+- Information Interaction and Content Dissemination: Including but not limited to sending messages, emails, posting comments, liking, sharing, etc.
+- File Handling and Permission Management: Including but not limited to creating, editing, deleting, moving files or folders, enabling or disabling any permissions, etc.
+- Transaction Orders and Disposal of Rights/Interests: Including but not limited to clearing shopping carts, submitting orders, modifying/adding shipping addresses, using coupons/points, etc.
+- Fund Transfers and Payment Settlement: Including but not limited to transfers, payments, receiving funds, recharging, withdrawals, binding/unbinding payment methods, etc.
+- Account Identity and Security Configuration: Including but not limited to changing passwords, setting/modifying security options, deleting accounts or linked accounts, deleting friends/contacts, deleting conversations/records, etc.
+- Healthcare and Legal Compliance: Including but not limited to accessing, authorizing, or disposing of medical records/health data, purchasing medication, physical or psychological testing, signing electronic agreements, etc.
+- Other High-Risk Operations: Any other operation that may significantly impact user data security, property security, account security, or reputation.
+  
+Requirements:
+- The confirmation step must be triggered before operation execution, clearly displaying the details of the upcoming operation.
+- Provide convenient cancel/termination mechanisms, allowing users to abort the task at any time before confirmation or during the operation process.
+- Developer Responsibility: Developers shall bear corresponding responsibility for losses caused to users due to failure to implement an effective confirmation mechanism.
+- User Responsibility: Users shall bear losses resulting from their failure to promptly terminate erroneous operations after confirmation.
+  
+2. Obligations of Developers and Users
+Developer Obligations:
+- Transparent Disclosure: Clearly and accurately explain to end-users the functionality, working principles (especially the automated parts), data collection and processing methods (including whether the cloud is involved), potential risks, and how users can exercise control.
+- Provide Monitoring and Control: Design a user interface that allows end-users to:
+  - View or understand the current status and steps of automated operations in real-time.
+  - Conveniently and quickly pause or terminate any ongoing automated task.
+  - Manage permissions and settings for automated operations.
+- Secure Development: Follow secure coding practices to ensure the security of the application/service itself and prevent malicious exploitation.
+- Compliance: Ensure that the developed application/service complies with all applicable laws, regulations, industry standards, and third-party platform (e.g., the application being operated on) terms of service.
+- Risk Warning: Clearly warn users in appropriate locations (e.g., feature entry points, first-time use, confirmation steps) about potential risks of using automation functions (such as misoperation, privacy risks, third-party platform policy risks).
+- Avoid Critical Dependencies: Carefully evaluate and refrain from recommending AutoGLM for handling extremely critical, high-risk operations or those with severe consequences upon error (e.g., medical device control, critical infrastructure operations, large financial transactions without human review).
+  
+User Obligations:
+- Understand Risks: Before using AutoGLM-based automation features, carefully read the developer's instructions, privacy policy, and risk warnings to fully understand their working principles and potential risks.
+- Grant Permissions Cautiously: Only grant necessary permissions after fully trusting the application/service developer and understanding the authorization content.
+- Active Monitoring: Maintain appropriate attention during the execution of automated tasks, especially for important operations. Utilize monitoring functions provided by the developer to understand operation progress.
+- Timely Intervention: Immediately use the provided termination function to stop the task if any operation error, abnormality, or deviation from expectation is observed.
+- Assume Responsibility: Bear responsibility for instructions issued, operations confirmed, and any losses resulting from failure to promptly monitor and stop erroneous operations.
+  
+3. Developer and User Code of Conduct
+It is strictly prohibited to use the AutoGLM open-source project or applications/services developed based on it to engage in the following behaviors:
+
+(1) Bulk Automation and Malicious Competition
+- Any form of falsified data manipulation: brushing orders, votes, likes, comments, traffic, followers, play counts, downloads, etc.
+- Bulk account manipulation: bulk registration, bulk login, bulk operation of third-party platform accounts (group control, multi-instance, cloud control).
+- Disrupting market order: malicious bulk purchasing, hoarding and profiteering, snatching limited resources, bulk claiming/abusing coupons/subsidies, maliciously occupying service resources ("薅羊毛").
+- Manipulating platform rules: brushing rankings/search results, artificially influencing recommendation algorithms, artificially inflating/deflating content exposure.
+- Creating false engagement: bulk publishing, reposting, liking, collecting, following, unfollowing, etc., on social media.
+- Undermining game fairness: power-leveling services, studio operations, bulk farming of equipment/currency/experience/items.
+- Undermining fairness: bulk voting, ballot stuffing, manipulating online polls/survey results.
+  
+(2) False Information and Fraudulent Behavior
+- Creating misleading information: publishing/spreading false product/service reviews, false user feedback, false testimonials, false experiences.
+- Fabricating commercial data: creating false transaction records, sales figures, user engagement, positive review rates.
+- Identity fraud: impersonating others, fabricating personal information, stealing others' accounts/avatars/nicknames, forging identity documents.
+- False marketing: publishing false advertisements, conducting false promotions, exaggerating product efficacy, concealing product defects/risks.
+- Participating in fraudulent activities: online scams, false investments, pyramid schemes, illegal fundraising, fake prize wins, phishing, etc.
+- Spreading unverified information: creating or maliciously spreading fake news, rumors, unverified information.
+  
+(3) Harming Third-Party Services and System Security
+- Unauthorized access: using AutoGLM for data scraping (violating robots.txt or platform policies), information theft, API abuse, unauthorized penetration testing.
+- Technical sabotage: reverse engineering, cracking, modifying, injecting malicious code into third-party applications, disrupting their normal operation.
+- Resource abuse: maliciously occupying third-party server resources, sending spam requests, generating abnormal traffic, conducting DDoS attacks.
+- Violating platform rules: intentionally violating the user agreements, terms of service, or community rules of the third-party application being operated on.
+- Malicious competition: malicious negative reviews, false reporting, false complaints, commercial defamation.
+- Spreading harmful content: spreading computer viruses, trojans, malware, ransomware, spam, illegal content.
+- Infringing data rights: unauthorized large-scale commercial data collection, user information gathering, privacy snooping.
+  
+(4) Infringing on Others' Legitimate Rights and Interests
+- Account theft: stealing others' accounts, passwords, identity credentials for operations.
+- Online harassment and bullying: malicious harassment, threats, insults, defamation, doxxing others.
+- Privacy and secret infringement: unauthorized collection, use, or dissemination of others' personal information, private data, trade secrets.
+- Cybersquatting: registering others' trademarks, domain names, usernames, social media accounts, etc., in bad faith.
+- Harassment: malicious spamming, message bombing, forced following/subscription.
+- Harming commercial interests: industrial espionage, unfair competition, malicious poaching, theft of trade secrets.
+  
+(5) Resource Abuse and Damaging Project Ecosystem
+- Abusing registration resources: maliciously registering numerous accounts, fake registration.
+- Wasting computing/device resources: maliciously occupying local or cloud device resources, long-term idle occupancy, running high-energy-consumption programs unrelated to automated tasks (e.g., cryptocurrency mining).
+- Destabilizing systems: maliciously testing system performance, conducting unauthorized stress tests, frequently restarting services, exploiting technical vulnerabilities/defects for personal gain or to harm the project/platform.
+- Violating open-source licenses: violating the terms of the AutoGLM project's open-source license.
+  
+Consequences of Violation:
+If developers/users fail to follow the corresponding laws, regulations, policies, industry standards (including but not limited to technical specifications, security standards), and the project's agreements (including but not limited to open-source licenses, usage notes) during use, all resulting legal liabilities, economic losses, and any adverse consequences shall be solely and independently borne by the developers / users.

@@ -1,0 +1,34 @@
+name: "\U0001F680 Feature request"
+description: Submit a request for a new Open-AutoGLM / 提交一个新的 Open-AutoGLM 的功能建议
+labels: [ "feature" ]
+body:
+  - type: textarea
+    id: feature-request
+    validations:
+      required: true
+    attributes:
+      label: Feature request  / 功能建议
+      description: |
+        A brief description of the functional proposal. Links to corresponding papers and code are desirable.
+        对功能建议的简述。最好提供对应的论文和代码链接
+
+  - type: textarea
+    id: motivation
+    validations:
+      required: true
+    attributes:
+      label: Motivation / 动机
+      description: |
+        Your motivation for making the suggestion. If that motivation is related to another GitHub issue, link to it here.
+        您提出建议的动机。如果该动机与另一个 GitHub 问题有关，请在此处提供对应的链接。
+
+  - type: textarea
+    id: contribution
+    validations:
+      required: true
+    attributes:
+      label: Your contribution / 您的贡献
+      description: |
+
+        Your PR link or any other link you can help with.
+        您的PR链接或者其他您能提供帮助的链接。

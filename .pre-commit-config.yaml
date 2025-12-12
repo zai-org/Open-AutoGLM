@@ -1,0 +1,22 @@
+default_install_hook_types:
+  - pre-commit
+  - commit-msg
+
+default_stages:
+  - pre-commit # Run locally
+repos:
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.11.7
+  hooks:
+  - id: ruff
+    args: [--output-format, github, --fix, --select, I]
+  - id: ruff-format
+- repo: https://github.com/crate-ci/typos
+  rev: v1.32.0
+  hooks:
+  - id: typos
+- repo: https://github.com/jackdewinter/pymarkdown
+  rev: v0.9.29
+  hooks:
+  - id: pymarkdown
+    args: [fix]
