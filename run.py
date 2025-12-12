@@ -4,6 +4,7 @@ from phone_agent.model import ModelConfig
 from phone_agent.agent import AgentConfig
 
 
+# 翻找对象评论区，关注要男朋友的
 def acquisition(agent: PhoneAgent):
     while True:
         try:
@@ -99,7 +100,7 @@ def run():
         api_key=env("API_KEY"),
         model_name=env("MODEL_NAME"),
     )
-    
+
     # Configure agent
     agent_config = AgentConfig(
         max_steps=10,
