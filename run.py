@@ -1,10 +1,15 @@
+from environs import env
 from phone_agent import PhoneAgent
 from phone_agent.model import ModelConfig
 
+# Read .env into os.environ
+env.read_env()
+
 # Configure model
 model_config = ModelConfig(
-    base_url="http://localhost:8000/v1",
-    model_name="autoglm-phone-9b",
+    base_url=env("BASE_URL"),
+    api_key=env("API_KEY")
+    model_name=env("MODEL_NAME"),
 )
 
 # 创建 Agent
