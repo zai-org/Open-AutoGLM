@@ -1,5 +1,6 @@
 Pillow>=12.0.0
 openai>=2.9.0
+requests>=2.28.0  # For iOS/WDA support
 
 # For Model Deployment
 
