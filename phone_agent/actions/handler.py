@@ -16,6 +16,7 @@ from phone_agent.adb import (
     swipe,
     tap,
     type_text,
+    wake_screen_if_needed,
 )
 
 
@@ -77,6 +78,8 @@ class ActionHandler:
                 should_finish=True,
                 message=f"Unknown action type: {action_type}",
             )
+
+        wake_screen_if_needed(self.device_id)
 
         action_name = action.get("action")
         handler_method = self._get_handler(action_name)

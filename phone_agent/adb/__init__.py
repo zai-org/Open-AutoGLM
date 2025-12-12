@@ -17,6 +17,10 @@ from phone_agent.adb.device import (
     swipe,
     tap,
 )
+from phone_agent.adb.power import (
+    is_screen_on,
+    wake_screen_if_needed,
+)
 from phone_agent.adb.input import (
     clear_text,
     detect_and_set_adb_keyboard,
@@ -42,6 +46,9 @@ __all__ = [
     "double_tap",
     "long_press",
     "launch_app",
+    # Power management
+    "is_screen_on",
+    "wake_screen_if_needed",
     # Connection management
     "ADBConnection",
     "DeviceInfo",
