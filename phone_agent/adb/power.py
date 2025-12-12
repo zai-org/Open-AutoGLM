@@ -19,7 +19,7 @@ def is_screen_on(device_id: str | None = None) -> bool:
         return True
 
 
-def wake_screen_if_needed(device_id: str | None = None) -> None:
+def wake_screen_if_needed(device_id: str | None = None) -> bool:
     if not is_screen_on(device_id):
         adb_prefix = _get_adb_prefix(device_id)
         subprocess.run(
@@ -27,6 +27,11 @@ def wake_screen_if_needed(device_id: str | None = None) -> None:
             capture_output=True
         )
         time.sleep(0.5)
+
+        if not is_screen_on(device_id):
+            return False
+
+    return True
 
 
 def _get_adb_prefix(device_id: str | None) -> list:

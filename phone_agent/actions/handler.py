@@ -79,7 +79,12 @@ class ActionHandler:
                 message=f"Unknown action type: {action_type}",
             )
 
-        wake_screen_if_needed(self.device_id)
+        if not wake_screen_if_needed(self.device_id):
+            return ActionResult(
+                success=False,
+                should_finish=True,
+                message="Failed to wake screen",
+            )
 
         action_name = action.get("action")
         handler_method = self._get_handler(action_name)
