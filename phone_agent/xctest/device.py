@@ -44,16 +44,17 @@ def get_current_app(
     try:
         import requests
 
-        # Get active app info from WDA
+        # Get active app info from WDA using activeAppInfo endpoint
         response = requests.get(
-            f"{wda_url.rstrip('/')}/status", timeout=5, verify=False
+            f"{wda_url.rstrip('/')}/wda/activeAppInfo", timeout=5, verify=False
         )
 
         if response.status_code == 200:
             data = response.json()
-            # Try to extract bundle ID from status
+            # Extract bundle ID from response
+            # Response format: {"value": {"bundleId": "com.apple.AppStore", "name": "", "pid": 825, "processArguments": {...}}, "sessionId": "..."}
             value = data.get("value", {})
-            bundle_id = value.get("currentApp", {}).get("bundleId", "")
+            bundle_id = value.get("bundleId", "")
 
             if bundle_id:
                 # Try to find app name from bundle ID
