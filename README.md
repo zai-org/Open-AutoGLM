@@ -1,177 +1,154 @@
 # Open-AutoGLM
 
-[Readme in English](README_en.md)
+[中文阅读](./README_zh.md)
 
 <div align="center">
 <img src=resources/logo.svg width="20%"/>
 </div>
 <p align="center">
-    👋 加入我们的 <a href="resources/WECHAT.md" target="_blank">微信</a> 社区
+    👋 Join our <a href="resources/WECHAT.md" target="_blank">WeChat</a> or <a href="https://discord.gg/QR7SARHRxK" target="_blank">Discord</a> communities
 </p>
 <p align="center">
     🎤 进一步在我们的产品 <a href="https://autoglm.zhipuai.cn/autotyper/" target="_blank">智谱 AI 输入法</a> 体验“用嘴发指令”
 </p>
 
-## 懒人版快速安装
+## Quick Start
 
-你可以使用Claude Code，配置 [GLM Coding Plan](https://bigmodel.cn/glm-coding) 后，输入以下提示词，快速部署本项目。
+You can use Claude Code with [GLM Coding Plan](https://z.ai/subscribe) and enter the following prompt to quickly deploy this project:
 
 ```
-访问文档，为我安装 AutoGLM
-https://raw.githubusercontent.com/zai-org/Open-AutoGLM/refs/heads/main/README.md
+Access the documentation and install AutoGLM for me
+https://raw.githubusercontent.com/zai-org/Open-AutoGLM/refs/heads/main/README_en.md
 ```
 
-## 项目介绍
+## Project Introduction
 
-Phone Agent 是一个基于 AutoGLM 构建的手机端智能助理框架，它能够以多模态方式理解手机屏幕内容，并通过自动化操作帮助用户完成任务。系统通过
-ADB(Android Debug Bridge)来控制设备，以视觉语言模型进行屏幕感知，再结合智能规划能力生成并执行操作流程。用户只需用自然语言描述需求，如“打开小红书搜索美食”，Phone
-Agent 即可自动解析意图、理解当前界面、规划下一步动作并完成整个流程。系统还内置敏感操作确认机制，并支持在登录或验证码场景下进行人工接管。同时，它提供远程
-ADB 调试能力，可通过 WiFi 或网络连接设备，实现灵活的远程控制与开发。
+Phone Agent is a mobile intelligent assistant framework built on AutoGLM. It understands phone screen content in a multimodal manner and helps users complete tasks through automated operations. The system controls devices via ADB (Android Debug Bridge), perceives screens using vision-language models, and generates and executes operation workflows through intelligent planning. Users simply describe their needs in natural language, such as "Open eBay and search for wireless earphones." and Phone Agent will automatically parse the intent, understand the current interface, plan the next action, and complete the entire workflow. The system also includes a sensitive operation confirmation mechanism and supports manual takeover during login or verification code scenarios. Additionally, it provides remote ADB debugging capabilities, allowing device connection via WiFi or network for flexible remote control and development.
 
-> ⚠️
-> 本项目仅供研究和学习使用。严禁用于非法获取信息、干扰系统或任何违法活动。请仔细审阅 [使用条款](resources/privacy_policy.txt)。
+> ⚠️ This project is for research and learning purposes only. It is strictly prohibited to use for illegal information acquisition, system interference, or any illegal activities. Please carefully review the [Terms of Use](resources/privacy_policy_en.txt).
 
-## 模型下载地址
+## Model Download Links
 
-| Model                         | Download Links                                                                                                                                                         |
-|-------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| AutoGLM-Phone-9B              | [🤗 Hugging Face](https://huggingface.co/zai-org/AutoGLM-Phone-9B)<br>[🤖 ModelScope](https://modelscope.cn/models/ZhipuAI/AutoGLM-Phone-9B)                           |
+| Model             | Download Links                                                                                                                                             |
+|-------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| AutoGLM-Phone-9B  | [🤗 Hugging Face](https://huggingface.co/zai-org/AutoGLM-Phone-9B)<br>[🤖 ModelScope](https://modelscope.cn/models/ZhipuAI/AutoGLM-Phone-9B)               |
 | AutoGLM-Phone-9B-Multilingual | [🤗 Hugging Face](https://huggingface.co/zai-org/AutoGLM-Phone-9B-Multilingual)<br>[🤖 ModelScope](https://modelscope.cn/models/ZhipuAI/AutoGLM-Phone-9B-Multilingual) |
 
-其中，`AutoGLM-Phone-9B` 是针对中文手机应用优化的模型，而 `AutoGLM-Phone-9B-Multilingual` 支持英语场景，适用于包含英文等其他语言内容的应用。
+`AutoGLM-Phone-9B` is optimized for Chinese mobile applications, while `AutoGLM-Phone-9B-Multilingual` supports English scenarios and is suitable for applications containing English or other language content.
 
-## 环境准备
+## Environment Setup
 
-### 1. Python 环境
+### 1. Python Environment
 
-建议使用 Python 3.10 及以上版本。
+Python 3.10 or higher is recommended.
 
 ### 2. ADB (Android Debug Bridge)
 
-1. 下载官方 ADB [安装包](https://developer.android.com/tools/releases/platform-tools?hl=zh-cn)，并解压到自定义路径
-2. 配置环境变量
+1. Download the official ADB [installation package](https://developer.android.com/tools/releases/platform-tools) and extract it to a custom path
+2. Configure environment variables
 
-- MacOS 配置方法：在 `Terminal` 或者任何命令行工具里
+- MacOS configuration: In `Terminal` or any command line tool
 
   ```bash
-  # 假设解压后的目录为 ~/Downlaods/platform-tools。如果不是请自行调整命令。
+  # Assuming the extracted directory is ~/Downloads/platform-tools. Adjust the command if different.
   export PATH=${PATH}:~/Downloads/platform-tools
   ```
 
-- Windows 配置方法：可参考 [第三方教程](https://blog.csdn.net/x2584179909/article/details/108319973) 进行配置。
+- Windows configuration: Refer to [third-party tutorials](https://blog.csdn.net/x2584179909/article/details/108319973) for configuration.
 
-### 3. Android 7.0+ 的设备或模拟器，并启用 `开发者模式` 和 `USB 调试`
+### 3. Android 7.0+ Device or Emulator with `Developer Mode` and `USB Debugging` Enabled
 
-1. 开发者模式启用：通常启用方法是，找到 `设置-关于手机-版本号` 然后连续快速点击 10
-   次左右，直到弹出弹窗显示“开发者模式已启用”。不同手机会有些许差别，如果找不到，可以上网搜索一下教程。
-2. USB 调试启用：启用开发者模式之后，会出现 `设置-开发者选项-USB 调试`，勾选启用
-3. 部分机型在设置开发者选项以后, 可能需要重启设备才能生效. 可以测试一下: 将手机用USB数据线连接到电脑后, `adb devices`
-   查看是否有设备信息, 如果没有说明连接失败.
+1. Enable Developer Mode: The typical method is to find `Settings > About Phone > Build Number` and tap it rapidly about 10 times until a popup shows "Developer mode has been enabled." This may vary slightly between phones; search online for tutorials if you can't find it.
+2. Enable USB Debugging: After enabling Developer Mode, go to `Settings > Developer Options > USB Debugging` and enable it
+3. Some devices may require a restart after setting developer options for them to take effect. You can test by connecting your phone to your computer via USB cable and running `adb devices` to see if device information appears. If not, the connection has failed.
 
-**请务必仔细检查相关权限**
+**Please carefully check the relevant permissions**
 
-![权限](resources/screenshot-20251209-181423.png)
+![Permissions](resources/screenshot-20251210-120416.png)
 
-### 4. 安装 ADB Keyboard(用于文本输入)
+### 4. Install ADB Keyboard (for Text Input)
 
-下载 [安装包](https://github.com/senzhk/ADBKeyBoard/blob/master/ADBKeyboard.apk) 并在对应的安卓设备中进行安装。
-注意，安装完成后还需要到 `设置-输入法` 或者 `设置-键盘列表` 中启用 `ADB Keyboard` 才能生效(或使用命令`adb shell ime enable com.android.adbkeyboard/.AdbIME`[How-to-use](https://github.com/senzhk/ADBKeyBoard/blob/master/README.md#how-to-use))
+Download the [installation package](https://github.com/senzhk/ADBKeyBoard/blob/master/ADBKeyboard.apk) and install it on the corresponding Android device.
+Note: After installation, you need to enable `ADB Keyboard` in `Settings > Input Method` or `Settings > Keyboard List` for it to work.(or use command `adb shell ime enable com.android.adbkeyboard/.AdbIME`[How-to-use](https://github.com/senzhk/ADBKeyBoard/blob/master/README.md#how-to-use))
 
-## 部署准备工作
+## Deployment Preparation
 
-### 1. 安装依赖
+### 1. Install Dependencies
 
 ```bash
 pip install -r requirements.txt 
 pip install -e .
 ```
 
-### 2. 配置 ADB
+### 2. Configure ADB
 
-确认 **USB数据线具有数据传输功能**, 而不是仅有充电功能
+Make sure your **USB cable supports data transfer**, not just charging.
 
-确保已安装 ADB 并使用 **USB数据线** 连接设备：
+Ensure ADB is installed and connect the device via **USB cable**:
 
 ```bash
-# 检查已连接的设备
+# Check connected devices
 adb devices
 
-# 输出结果应显示你的设备，如：
+# Output should show your device, e.g.:
 # List of devices attached
 # emulator-5554   device
 ```
 
-### 3. 启动模型服务
+### 3. Start Model Service
 
-你可以选择自行部署模型服务，或使用第三方模型服务商。
+You can choose to deploy the model service yourself or use a third-party model service provider.
 
-#### 选项 A: 使用第三方模型服务
+#### Option A: Use Third-Party Model Services
 
-如果你不想自行部署模型，可以使用以下已部署我们模型的第三方服务：
+If you don't want to deploy the model yourself, you can use the following third-party services that have already deployed our model:
 
-**1. 智谱 BigModel**
+**1. z.ai**
 
-- 文档: https://docs.bigmodel.cn/cn/api/introduction
-- `--base-url`: `https://open.bigmodel.cn/api/paas/v4`
-- `--model`: `autoglm-phone`
-- `--apikey`: 在智谱平台申请你的 API Key
+- Documentation: https://docs.z.ai/api-reference/introduction
+- `--base-url`: `https://api.z.ai/api/paas/v4`
+- `--model`: `autoglm-phone-multilingual`
+- `--apikey`: Apply for your own API key on the z.ai platform
 
-**2. ModelScope(魔搭社区)**
+**2. Novita AI**
 
-- 文档: https://modelscope.cn/models/ZhipuAI/AutoGLM-Phone-9B
-- `--base-url`: `https://api-inference.modelscope.cn/v1`
-- `--model`: `ZhipuAI/AutoGLM-Phone-9B`
-- `--apikey`: 在 ModelScope 平台申请你的 API Key
+- Documentation: https://novita.ai/models/model-detail/zai-org-autoglm-phone-9b-multilingual
+- `--base-url`: `https://api.novita.ai/openai`
+- `--model`: `zai-org/autoglm-phone-9b-multilingual`
+- `--apikey`: Apply for your own API key on the Novita AI platform
 
-使用第三方服务的示例：
+**3. Parasail**
+
+- Documentation: https://www.saas.parasail.io/serverless?name=auto-glm-9b-multilingual
+- `--base-url`: `https://api.parasail.io/v1`
+- `--model`: `parasail-auto-glm-9b-multilingual`
+- `--apikey`: Apply for your own API key on the Parasail platform
+
+Example usage with third-party services:
 
 ```bash
-# 使用智谱 BigModel
-python main.py --base-url https://open.bigmodel.cn/api/paas/v4 --model "autoglm-phone" --apikey "your-bigmodel-api-key" "打开美团搜索附近的火锅店"
+# Using z.ai
+python main.py --base-url https://api.z.ai/api/paas/v4 --model "autoglm-phone-multilingual" --apikey "your-z-ai-api-key" "Open Chrome browser"
 
-# 使用 ModelScope
-python main.py --base-url https://api-inference.modelscope.cn/v1 --model "ZhipuAI/AutoGLM-Phone-9B" --apikey "your-modelscope-api-key" "打开美团搜索附近的火锅店"
+# Using Novita AI
+python main.py --base-url https://api.novita.ai/openai --model "zai-org/autoglm-phone-9b-multilingual" --apikey "your-novita-api-key" "Open Chrome browser"
+
+# Using Parasail
+python main.py --base-url https://api.parasail.io/v1 --model "parasail-auto-glm-9b-multilingual" --apikey "your-parasail-api-key" "Open Chrome browser"
 ```
 
-#### 选项 B: 自行部署模型
+#### Option B: Deploy Model Yourself
 
-如果你希望在本地或自己的服务器上部署模型：
+If you prefer to deploy the model locally or on your own server:
 
-1. 按照 `requirements.txt` 中 `For Model Deployment` 章节自行安装推理引擎框架。
-
-对于SGLang， 除了使用pip安装，你也可以使用官方docker:
->
-> ```shell
-> docker pull lmsysorg/sglang:v0.5.6.post1
-> ```
->
-> 进入容器，执行
->
-> ```
-> pip install nvidia-cudnn-cu12==9.16.0.29
-> ```
-
-对于 vLLM，除了使用pip 安装，你也可以使用官方docker:
->
-> ```shell
-> docker pull vllm/vllm-openai:v0.12.0
-> ```
->
-> 进入容器，执行
->
-> ```
-> pip install -U transformers --pre
-> ```
-
-**注意**: 上述步骤出现的关于 transformers 的依赖冲突可以忽略。
-
-1. 在对应容器或者实体机中(非容器安装)下载模型，通过 SGlang / vLLM 启动，得到 OpenAI 格式服务。这里提供一个 vLLM部署方案，请严格遵循我们提供的启动参数:
+1. Download the model and install the inference engine framework according to the `For Model Deployment` section in `requirements.txt`.
+2. Start via SGlang / vLLM to get an OpenAI-format service. Here's a vLLM deployment solution; please strictly follow the startup parameters we provide:
 
 - vLLM:
 
 ```shell
 python3 -m vllm.entrypoints.openai.api_server \
- --served-model-name autoglm-phone-9b \
+ --served-model-name autoglm-phone-9b-multilingual \
  --allowed-local-media-path /   \
  --mm-encoder-tp-mode data \
  --mm_processor_cache_type shm \
@@ -179,77 +156,34 @@ python3 -m vllm.entrypoints.openai.api_server \
  --max-model-len 25480  \
  --chat-template-content-format string \
  --limit-mm-per-prompt "{\"image\":10}" \
- --model zai-org/AutoGLM-Phone-9B \
+ --model zai-org/AutoGLM-Phone-9B-Multilingual \
  --port 8000
 ```
 
-- SGLang:
+- This model has the same architecture as `GLM-4.1V-9B-Thinking`. For detailed information about model deployment, you can also check [GLM-V](https://github.com/zai-org/GLM-V) for model deployment and usage guides.
 
-```shell
-python3 -m sglang.launch_server --model-path  zai-org/AutoGLM-Phone-9B \
-        --served-model-name autoglm-phone-9b  \
-        --context-length 25480  \
-        --mm-enable-dp-encoder   \
-        --mm-process-config '{"image":{"max_pixels":5000000}}'  \
-        --port 8000
-```
+- After successful startup, the model service will be accessible at `http://localhost:8000/v1`. If you deploy the model on a remote server, access it using that server's IP address.
 
-- 该模型结构与 `GLM-4.1V-9B-Thinking` 相同, 关于模型部署的详细内容，你也以查看 [GLM-V](https://github.com/zai-org/GLM-V)
-  获取模型部署和使用指南。
+## Using AutoGLM
 
-- 运行成功后，将可以通过 `http://localhost:8000/v1` 访问模型服务。 如果您在远程服务器部署模型, 使用该服务器的IP访问模型.
+### Command Line
 
-### 4. 检查模型部署
-
-模型服务启动后，可以使用检查脚本验证部署是否成功：
+Set the `--base-url` and `--model` parameters according to your deployed model. For example:
 
 ```bash
-python scripts/check_deployment_cn.py --base-url http://你的IP:你的端口/v1 --model 模型名称
-```
+# Interactive mode
+python main.py --base-url http://localhost:8000/v1 --model "autoglm-phone-9b-multilingual"
 
-脚本将发送测试请求并展示模型的推理结果，你可以根据输出判断模型部署是否正常工作。
+# Specify model endpoint
+python main.py --base-url http://localhost:8000/v1 "Open Maps and search for nearby coffee shops"
 
-基于给定的任务, 预期输出如下。**如果思维链长度很短, 或者出现了乱码, 很可能是模型部署失败**, 请仔细检查文档要求的配置和依赖。
-
-```
-<think>用户想要比较这个洗发水在京东和淘宝上的价格，然后选择最便宜的平台下单。当前在小红书app上，显示的是一个关于LUMMI MOOD洗发水的帖子。
-
-我需要：
-1. 先启动京东app，搜索这个洗发水
-2. 查看京东的价格
-3. 再启动淘宝app，搜索这个洗发水
-4. 查看淘宝的价格
-5. 比较价格后，选择最便宜的京东或淘宝下单
-
-首先，我需要从当前的小红书界面退出，然后启动京东app。</think>
-<answer>do(action="Launch", app="京东")
-```
-
-**参数说明：**
-- `--base-url`: 模型服务地址(根据实际部署地址修改)
-- `--model`: 模型名称
-- `--messages-file`: 可选，指定自定义测试消息文件(默认使用 `scripts/sample_messages.json`)
-
-## 使用 AutoGLM
-
-### 命令行
-
-根据你部署的模型, 设置 `--base-url` 和 `--model` 参数. 例如:
-
-```bash
-# 交互模式
-python main.py --base-url http://localhost:8000/v1 --model "autoglm-phone-9b"
-
-# 指定模型端点
-python main.py --base-url http://localhost:8000/v1 "打开美团搜索附近的火锅店"
-
-# 使用 API Key 进行认证
+# Use API key for authentication
 python main.py --apikey sk-xxxxx
 
-# 使用英文 system prompt
+# Use English system prompt
 python main.py --lang en --base-url http://localhost:8000/v1 "Open Chrome browser"
 
-# 列出支持的应用
+# List supported apps
 python main.py --list-apps
 ```
 
@@ -262,239 +196,235 @@ from phone_agent.model import ModelConfig
 # Configure model
 model_config = ModelConfig(
     base_url="http://localhost:8000/v1",
-    model_name="autoglm-phone-9b",
+    model_name="autoglm-phone-9b-multilingual",
 )
 
-# 创建 Agent
+# Create Agent
 agent = PhoneAgent(model_config=model_config)
 
-# 执行任务
-result = agent.run("打开淘宝搜索无线耳机")
+# Execute task
+result = agent.run("Open eBay and search for wireless earphones")
 print(result)
 ```
 
-## 远程调试
+## Remote Debugging
 
-Phone Agent 支持通过 WiFi/网络进行远程 ADB 调试，无需 USB 连接即可控制设备。
+Phone Agent supports remote ADB debugging via WiFi/network, allowing device control without a USB connection.
 
-### 配置远程调试
+### Configure Remote Debugging
 
-#### 在手机端开启无线调试
+#### Enable Wireless Debugging on Phone
 
-确保手机和电脑在同一个WiFi中，如图所示
+Ensure the phone and computer are on the same WiFi network, as shown below:
 
-![开启无线调试](resources/setting.png)
+![Enable Wireless Debugging](resources/screenshot-20251210-120630.png)
 
-#### 在电脑端使用标准 ADB 命令
+#### Use Standard ADB Commands on Computer
 
 ```bash
-
-# 通过 WiFi 连接, 改成手机显示的 IP 地址和端口
+# Connect via WiFi, replace with the IP address and port shown on your phone
 adb connect 192.168.1.100:5555
 
-# 验证连接
+# Verify connection
 adb devices
-# 应显示：192.168.1.100:5555    device
+# Should show: 192.168.1.100:5555    device
 ```
 
-### 设备管理命令
+### Device Management Commands
 
 ```bash
-# 列出所有已连接设备
+# List all connected devices
 adb devices
 
-# 连接远程设备
+# Connect to remote device
 adb connect 192.168.1.100:5555
 
-# 断开指定设备
+# Disconnect specific device
 adb disconnect 192.168.1.100:5555
 
-# 指定设备执行任务
-python main.py --device-id 192.168.1.100:5555 --base-url http://localhost:8000/v1 --model "autoglm-phone-9b" "打开抖音刷视频"
+# Execute task on specific device
+python main.py --device-id 192.168.1.100:5555 --base-url http://localhost:8000/v1 --model "autoglm-phone-9b-multilingual" "Open TikTok and browse videos"
 ```
 
-### Python API 远程连接
+### Python API Remote Connection
 
 ```python
 from phone_agent.adb import ADBConnection, list_devices
 
-# 创建连接管理器
+# Create connection manager
 conn = ADBConnection()
 
-# 连接远程设备
+# Connect to remote device
 success, message = conn.connect("192.168.1.100:5555")
-print(f"连接状态: {message}")
+print(f"Connection status: {message}")
 
-# 列出已连接设备
+# List connected devices
 devices = list_devices()
 for device in devices:
     print(f"{device.device_id} - {device.connection_type.value}")
 
-# 在 USB 设备上启用 TCP/IP
+# Enable TCP/IP on USB device
 success, message = conn.enable_tcpip(5555)
 ip = conn.get_device_ip()
-print(f"设备 IP: {ip}")
+print(f"Device IP: {ip}")
 
-# 断开连接
+# Disconnect
 conn.disconnect("192.168.1.100:5555")
 ```
 
-### 远程连接问题排查
+### Remote Connection Troubleshooting
 
-**连接被拒绝：**
+**Connection Refused:**
 
-- 确保设备和电脑在同一网络
-- 检查防火墙是否阻止 5555 端口
-- 确认已启用 TCP/IP 模式：`adb tcpip 5555`
+- Ensure the device and computer are on the same network
+- Check if the firewall is blocking port 5555
+- Confirm TCP/IP mode is enabled: `adb tcpip 5555`
 
-**连接断开：**
+**Connection Dropped:**
 
-- WiFi 可能断开了，使用 `--connect` 重新连接
-- 部分设备重启后会禁用 TCP/IP，需要通过 USB 重新启用
+- WiFi may have disconnected; use `--connect` to reconnect
+- Some devices disable TCP/IP after restart; re-enable via USB
 
-**多设备：**
+**Multiple Devices:**
 
-- 使用 `--device-id` 指定要使用的设备
-- 或使用 `--list-devices` 查看所有已连接设备
+- Use `--device-id` to specify which device to use
+- Or use `--list-devices` to view all connected devices
 
-## 配置
+## Configuration
 
-### 自定义SYSTEM PROMPT
+### Custom SYSTEM PROMPT
 
-系统提供中英文两套 prompt，通过 `--lang` 参数切换：
+The system provides both Chinese and English prompts, switchable via the `--lang` parameter:
 
-- `--lang cn` - 中文 prompt(默认)，配置文件：`phone_agent/config/prompts_zh.py`
-- `--lang en` - 英文 prompt，配置文件：`phone_agent/config/prompts_en.py`
+- `--lang cn` - Chinese prompt (default), config file: `phone_agent/config/prompts_zh.py`
+- `--lang en` - English prompt, config file: `phone_agent/config/prompts_en.py`
 
-可以直接修改对应的配置文件来增强模型在特定领域的能力，或通过注入 app 名称禁用某些 app。
+You can directly modify the corresponding config files to enhance model capabilities in specific domains or disable certain apps by injecting app names.
 
-### 环境变量
+### Environment Variables
 
-| 变量                      | 描述               | 默认值                        |
-|-------------------------|------------------|----------------------------|
-| `PHONE_AGENT_BASE_URL`  | 模型 API 地址        | `http://localhost:8000/v1` |
-| `PHONE_AGENT_MODEL`     | 模型名称             | `autoglm-phone-9b`         |
-| `PHONE_AGENT_API_KEY`   | 模型认证 API Key     | `EMPTY`                    |
-| `PHONE_AGENT_MAX_STEPS` | 每个任务最大步数         | `100`                      |
-| `PHONE_AGENT_DEVICE_ID` | ADB 设备 ID        | (自动检测)                     |
-| `PHONE_AGENT_LANG`      | 语言 (`cn` 或 `en`) | `cn`                       |
+| Variable                  | Description               | Default Value              |
+|---------------------------|---------------------------|----------------------------|
+| `PHONE_AGENT_BASE_URL`    | Model API URL             | `http://localhost:8000/v1` |
+| `PHONE_AGENT_MODEL`       | Model name                | `autoglm-phone-9b`         |
+| `PHONE_AGENT_API_KEY`     | API key for authentication| `EMPTY`                    |
+| `PHONE_AGENT_MAX_STEPS`   | Maximum steps per task    | `100`                      |
+| `PHONE_AGENT_DEVICE_ID`   | ADB device ID             | (auto-detect)              |
+| `PHONE_AGENT_LANG`        | Language (`cn` or `en`)   | `en`                       |
 
-### 模型配置
+### Model Configuration
 
 ```python
 from phone_agent.model import ModelConfig
 
 config = ModelConfig(
     base_url="http://localhost:8000/v1",
-    api_key="EMPTY",  # API 密钥(如需要)
-    model_name="autoglm-phone-9b",  # 模型名称
-    max_tokens=3000,  # 最大输出 token 数
-    temperature=0.1,  # 采样温度
-    frequency_penalty=0.2,  # 频率惩罚
+    api_key="EMPTY",  # API key (if required)
+    model_name="autoglm-phone-9b-multilingual",  # Model name
+    max_tokens=3000,  # Maximum output tokens
+    temperature=0.1,  # Sampling temperature
+    frequency_penalty=0.2,  # Frequency penalty
 )
 ```
 
-### Agent 配置
+### Agent Configuration
 
 ```python
 from phone_agent.agent import AgentConfig
 
 config = AgentConfig(
-    max_steps=100,  # 每个任务最大步数
-    device_id=None,  # ADB 设备 ID(None 为自动检测)
-    lang="cn",  # 语言选择：cn(中文)或 en(英文)
-    verbose=True,  # 打印调试信息(包括思考过程和执行动作)
+    max_steps=100,  # Maximum steps per task
+    device_id=None,  # ADB device ID (None for auto-detect)
+    lang="en",  # Language: cn (Chinese) or en (English)
+    verbose=True,  # Print debug info (including thinking process and actions)
 )
 ```
 
-### Verbose 模式输出
+### Verbose Mode Output
 
-当 `verbose=True` 时，Agent 会在每一步输出详细信息：
+When `verbose=True`, the Agent outputs detailed information at each step:
 
 ```
 ==================================================
-💭 思考过程:
+💭 Thinking Process:
 --------------------------------------------------
-当前在系统桌面，需要先启动小红书应用
+Currently on the system desktop, need to launch eBay app first
 --------------------------------------------------
-🎯 执行动作:
+🎯 Executing Action:
 {
   "_metadata": "do",
   "action": "Launch",
-  "app": "小红书"
+  "app": "eBay"
 }
 ==================================================
 
-... (执行动作后继续下一步)
+... (continues to next step after executing action)
 
 ==================================================
-💭 思考过程:
+💭 Thinking Process:
 --------------------------------------------------
-小红书已打开，现在需要点击搜索框
+eBay is now open, need to tap the search box
 --------------------------------------------------
-🎯 执行动作:
+🎯 Executing Action:
 {
   "_metadata": "do",
   "action": "Tap",
-  "element": [500, 100]
+  "element": [499, 182]
 }
 ==================================================
 
 🎉 ================================================
-✅ 任务完成: 已成功搜索美食攻略
+✅ Task Completed: Successfully opened eBay and searched for 'wireless earphones'
 ==================================================
 ```
 
-这样可以清楚地看到 AI 的推理过程和每一步的具体操作。
+This allows you to clearly see the AI's reasoning process and specific operations at each step.
 
-## 支持的应用
+## Supported Apps
 
-Phone Agent 支持 50+ 款主流中文应用：
+Phone Agent supports 50+ mainstream Chinese applications:
 
-| 分类   | 应用              |
-|------|-----------------|
-| 社交通讯 | 微信、QQ、微博        |
-| 电商购物 | 淘宝、京东、拼多多       |
-| 美食外卖 | 美团、饿了么、肯德基      |
-| 出行旅游 | 携程、12306、滴滴出行   |
-| 视频娱乐 | bilibili、抖音、爱奇艺 |
-| 音乐音频 | 网易云音乐、QQ音乐、喜马拉雅 |
-| 生活服务 | 大众点评、高德地图、百度地图  |
-| 内容社区 | 小红书、知乎、豆瓣       |
+| Category                 | Apps                                                                                   |
+|--------------------------|----------------------------------------------------------------------------------------|
+| Social & Messaging       | X, Tiktok, WhatsApp, Telegram, FacebookMessenger, GoogleChat, Quora, Reddit, Instagram |
+| Productivity & Office    | Gmail, GoogleCalendar, GoogleDrive, GoogleDocs, GoogleTasks, Joplin                    |
+| Life, Shopping & Finance | Amazon shopping, Temu, Bluecoins, Duolingo, GoogleFit, ebay                            |
+| Utilities & Media        | GoogleClock, Chrome, GooglePlayStore, GooglePlayBooks, FilesbyGoogle                   |
+| Travel & Navigation      | GoogleMaps, Booking.com, Trip.com, Expedia, OpenTracks                                 |
 
-运行 `python main.py --list-apps` 查看完整列表。
+Run `python main.py --list-apps` to see the complete list.
 
-## 可用操作
+## Available Actions
 
-Agent 可以执行以下操作：
+The Agent can perform the following actions:
 
-| 操作           | 描述              |
-|--------------|-----------------|
-| `Launch`     | 启动应用            |  
-| `Tap`        | 点击指定坐标          |
-| `Type`       | 输入文本            |
-| `Swipe`      | 滑动屏幕            |
-| `Back`       | 返回上一页           |
-| `Home`       | 返回桌面            |
-| `Long Press` | 长按              |
-| `Double Tap` | 双击              |
-| `Wait`       | 等待页面加载          |
-| `Take_over`  | 请求人工接管(登录/验证码等) |
+| Action         | Description                              |
+|----------------|------------------------------------------|
+| `Launch`       | Launch an app                            |  
+| `Tap`          | Tap at specified coordinates             |
+| `Type`         | Input text                               |
+| `Swipe`        | Swipe the screen                         |
+| `Back`         | Go back to previous page                 |
+| `Home`         | Return to home screen                    |
+| `Long Press`   | Long press                               |
+| `Double Tap`   | Double tap                               |
+| `Wait`         | Wait for page to load                    |
+| `Take_over`    | Request manual takeover (login/captcha)  |
 
-## 自定义回调
+## Custom Callbacks
 
-处理敏感操作确认和人工接管：
+Handle sensitive operation confirmation and manual takeover:
 
 ```python
 def my_confirmation(message: str) -> bool:
-    """敏感操作确认回调"""
-    return input(f"确认执行 {message}？(y/n): ").lower() == "y"
+    """Sensitive operation confirmation callback"""
+    return input(f"Confirm execution of {message}? (y/n): ").lower() == "y"
 
 
 def my_takeover(message: str) -> None:
-    """人工接管回调"""
-    print(f"请手动完成: {message}")
-    input("完成后按回车继续...")
+    """Manual takeover callback"""
+    print(f"Please complete manually: {message}")
+    input("Press Enter after completion...")
 
 
 agent = PhoneAgent(
@@ -503,59 +433,59 @@ agent = PhoneAgent(
 )
 ```
 
-## 示例
+## Examples
 
-查看 `examples/` 目录获取更多使用示例：
+Check the `examples/` directory for more usage examples:
 
-- `basic_usage.py` - 基础任务执行
-- 单步调试模式
-- 批量任务执行
-- 自定义回调
+- `basic_usage.py` - Basic task execution
+- Single-step debugging mode
+- Batch task execution
+- Custom callbacks
 
-## 二次开发
+## Development
 
-### 配置开发环境
+### Set Up Development Environment
 
-二次开发需要使用开发依赖：
+Development requires dev dependencies:
 
 ```bash
 pip install -e ".[dev]"
 ```
 
-### 运行测试
+### Run Tests
 
 ```bash
 pytest tests/
 ```
 
-### 完整项目结构
+### Complete Project Structure
 
 ```
 phone_agent/
-├── __init__.py          # 包导出
-├── agent.py             # PhoneAgent 主类
-├── adb/                 # ADB 工具
-│   ├── connection.py    # 远程/本地连接管理
-│   ├── screenshot.py    # 屏幕截图
-│   ├── input.py         # 文本输入 (ADB Keyboard)
-│   └── device.py        # 设备控制 (点击、滑动等)
-├── actions/             # 操作处理
-│   └── handler.py       # 操作执行器
-├── config/              # 配置
-│   ├── apps.py          # 支持的应用映射
-│   ├── prompts_zh.py    # 中文系统提示词
-│   └── prompts_en.py    # 英文系统提示词
-└── model/               # AI 模型客户端
-    └── client.py        # OpenAI 兼容客户端
+├── __init__.py          # Package exports
+├── agent.py             # PhoneAgent main class
+├── adb/                 # ADB utilities
+│   ├── connection.py    # Remote/local connection management
+│   ├── screenshot.py    # Screen capture
+│   ├── input.py         # Text input (ADB Keyboard)
+│   └── device.py        # Device control (tap, swipe, etc.)
+├── actions/             # Action handling
+│   └── handler.py       # Action executor
+├── config/              # Configuration
+│   ├── apps.py          # Supported app mappings
+│   ├── prompts_zh.py    # Chinese system prompts
+│   └── prompts_en.py    # English system prompts
+└── model/               # AI model client
+    └── client.py        # OpenAI-compatible client
 ```
 
-## 常见问题
+## FAQ
 
-我们列举了一些常见的问题，以及对应的解决方案：
+Here are some common issues and their solutions:
 
-### 设备未找到
+### Device Not Found
 
-尝试通过重启 ADB 服务来解决：
+Try resolving by restarting the ADB service:
 
 ```bash
 adb kill-server
@@ -563,47 +493,43 @@ adb start-server
 adb devices
 ```
 
-如果仍然无法识别，请检查：
+If the device is still not recognized, please check:
+1. Whether USB debugging is enabled
+2. Whether the USB cable supports data transfer (some cables only support charging)
+3. Whether you have tapped "Allow" on the authorization popup on your phone
+4. Try a different USB port or cable
 
-1. USB 调试是否已开启
-2. 数据线是否支持数据传输(部分数据线仅支持充电)
-3. 手机上弹出的授权框是否已点击「允许」
-4. 尝试更换 USB 接口或数据线
+### Can Open Apps but Cannot Tap
 
-### 能打开应用，但无法点击
+Some devices require both debugging options to be enabled:
+- **USB Debugging**
+- **USB Debugging (Security Settings)**
 
-部分机型需要同时开启两个调试选项才能正常使用：
+Please check in `Settings → Developer Options` that both options are enabled.
 
-- **USB 调试**
-- **USB 调试(安全设置)**
+### Text Input Not Working
 
-请在 `设置 → 开发者选项` 中检查这两个选项是否都已启用。
+1. Ensure ADB Keyboard is installed on the device
+2. Enable it in Settings > System > Language & Input > Virtual Keyboard
+3. The Agent will automatically switch to ADB Keyboard when input is needed
 
-### 文本输入不工作
+### Screenshot Failed (Black Screen)
 
-1. 确保设备已安装 ADB Keyboard
-2. 在设置 > 系统 > 语言和输入法 > 虚拟键盘 中启用
-3. Agent 会在需要输入时自动切换到 ADB Keyboard
+This usually means the app is displaying a sensitive page (payment, password, banking apps). The Agent will automatically detect this and request manual takeover.
 
-### 截图失败(黑屏)
+### Windows Encoding Issues
+Error message like `UnicodeEncodeError gbk code`
 
-这通常意味着应用正在显示敏感页面(支付、密码、银行类应用)。Agent 会自动检测并请求人工接管。
+Solution: Add the environment variable before running the code: `PYTHONIOENCODING=utf-8`
 
-### windows 编码异常问题
+### Interactive Mode Not Working in Non-TTY Environment
+Error like: `EOF when reading a line`
 
-报错信息形如 `UnicodeEncodeError gbk code`
+Solution: Use non-interactive mode to specify tasks directly, or switch to a TTY-mode terminal application.
 
-解决办法: 在运行代码的命令前面加上环境变量: `PYTHONIOENCODING=utf-8`
+### Citation
 
-### 交互模式非TTY环境无法使用
-
-报错形如: `EOF when reading a line`
-
-解决办法: 使用非交互模式直接指定任务, 或者切换到 TTY 模式的终端应用.
-
-### 引用
-
-如果你觉得我们的工作有帮助，请引用以下论文：
+If you find our work helpful, please cite the following papers:
 
 ```bibtex
 @article{liu2024autoglm,
@@ -622,147 +548,156 @@ adb devices
 
 ---
 
-## 自动化部署指南(面向 AI)
+## Automated Deployment Guide (For AI Assistants)
 
-> **本章节专为 AI 助手(如 Claude Code)设计，用于自动化部署 Open-AutoGLM。**
+> **This section is specifically designed for AI assistants (such as Claude Code) to automate the deployment of Open-AutoGLM.**
 >
-> 如果你是人类读者，可以跳过本章节，按照上面的文档操作即可。
+> If you are a human reader, you can skip this section and follow the documentation above.
 
 ---
 
-### 项目概述
+### Project Overview
 
-Open-AutoGLM 是一个手机 Agent 框架：
-- **输入**：用户的自然语言指令(如"打开微信发消息给张三")
-- **输出**：自动操作用户的安卓手机完成任务
-- **原理**：截图 → 视觉模型理解界面 → 输出点击坐标 → ADB 执行操作 → 循环
+Open-AutoGLM is a phone agent framework:
+- **Input**: User's natural language instructions (e.g., "Open WhatsApp and send a message to John")
+- **Output**: Automatically operates the user's Android phone to complete tasks
+- **Mechanism**: Screenshot → Vision model understands interface → Outputs tap coordinates → ADB executes actions → Loop
 
-架构分为两部分：
-1. **Agent 代码**(本仓库)：运行在用户电脑上，负责调用模型、解析动作、控制手机
-2. **视觉模型服务**：可以是远程 API，也可以本地部署
-
----
-
-### 部署前置检查
-
-在开始部署前，请逐项向用户确认以下内容：
-
-#### 硬件环境
-- [ ] 用户有一台安卓手机(Android 7.0+)
-- [ ] 用户有一根支持数据传输的 USB 数据线(不是仅充电线)
-- [ ] 手机和电脑可以通过数据线连接
-
-#### 手机端配置
-- [ ] 手机已开启「开发者模式」(设置 → 关于手机 → 连续点击版本号 7 次)
-- [ ] 手机已开启「USB 调试」(设置 → 开发者选项 → USB 调试)
-- [ ] 部分机型需要同时开启「USB 调试(安全设置)」
-- [ ] 手机已安装 ADB Keyboard 应用(下载地址：https://github.com/senzhk/ADBKeyBoard/blob/master/ADBKeyboard.apk)
-- [ ] ADB Keyboard 已在系统设置中启用(设置 → 语言和输入法 → 启用 ADB Keyboard)
-
-#### 模型服务确认(二选一)
-
-**请明确询问用户：你是否已有可用的 AutoGLM 模型服务？**
-
-- **选项 A：使用已部署的模型服务(推荐)**
-  - 用户提供模型服务的 URL(如 `http://xxx.xxx.xxx.xxx:8000/v1`)
-  - 无需本地 GPU，无需下载模型
-  - 直接使用该 URL 作为 `--base-url` 参数
-
-- **选项 B：本地部署模型(高配置要求)**
-  - 需要 NVIDIA GPU(建议 24GB+ 显存)
-  - 需要安装 vLLM 或 SGLang
-  - 需要下载约 20GB 的模型文件
-  - **如果用户是新手或不确定，强烈建议选择选项 A**
+The architecture consists of two parts:
+1. **Agent Code** (this repository): Runs on the user's computer, responsible for calling models, parsing actions, and controlling the phone
+2. **Vision Model Service**: Can be a remote API or deployed locally
 
 ---
 
-### 部署流程
+### Pre-Deployment Checklist
 
-#### 阶段一：环境准备
+Before starting deployment, confirm the following items with the user:
+
+#### Hardware Requirements
+- [ ] User has an Android phone (Android 7.0+)
+- [ ] User has a USB cable that supports data transfer (not just charging)
+- [ ] Phone and computer can be connected via USB cable
+
+#### Phone Configuration
+- [ ] Phone has Developer Mode enabled (Settings → About Phone → Tap Build Number 7 times)
+- [ ] Phone has USB Debugging enabled (Settings → Developer Options → USB Debugging)
+- [ ] Some models require enabling "USB Debugging (Security Settings)" as well
+- [ ] ADB Keyboard app is installed (Download: https://github.com/senzhk/ADBKeyBoard/blob/master/ADBKeyboard.apk)
+- [ ] ADB Keyboard is enabled in system settings (Settings → Language & Input → Enable ADB Keyboard)
+
+#### Model Service Confirmation (Choose One)
+
+**Ask the user explicitly: Do you already have access to an AutoGLM model service?**
+
+- **Option A: Use an already-deployed model service (Recommended)**
+  - User provides the model service URL (e.g., `http://xxx.xxx.xxx.xxx:8000/v1`)
+  - No local GPU required, no model download needed
+  - Use this URL directly as the `--base-url` parameter
+
+- **Option B: Deploy model locally (High system requirements)**
+  - Requires NVIDIA GPU (24GB+ VRAM recommended)
+  - Requires installation of vLLM or SGLang
+  - Requires downloading approximately 20GB of model files
+  - **If the user is a beginner or unsure, strongly recommend Option A**
+
+---
+
+### Deployment Process
+
+#### Phase 1: Environment Setup
 
 ```bash
-# 1. 安装 ADB 工具
+# 1. Install ADB tools
 # MacOS:
 brew install android-platform-tools
-# 或手动下载：https://developer.android.com/tools/releases/platform-tools
+# Or download manually: https://developer.android.com/tools/releases/platform-tools
 
-# Windows: 下载后解压，添加到 PATH 环境变量
+# Windows: Download, extract, and add to PATH environment variable
 
-# 2. 验证 ADB 安装
+# 2. Verify ADB installation
 adb version
-# 应输出版本信息
+# Should output version information
 
-# 3. 连接手机并验证
-# 用数据线连接手机，手机上点击「允许 USB 调试」
+# 3. Connect phone and verify
+# Connect phone via USB cable, tap "Allow USB debugging" on phone
 adb devices
-# 应输出设备列表，如：
+# Should output device list, e.g.:
 # List of devices attached
 # XXXXXXXX    device
 ```
 
-**如果 `adb devices` 显示空列表或 unauthorized：**
-1. 检查手机上是否弹出授权框，点击「允许」
-2. 检查 USB 调试是否开启
-3. 尝试更换数据线或 USB 接口
-4. 执行 `adb kill-server && adb start-server` 后重试
+**If `adb devices` shows empty list or unauthorized:**
+1. Check if authorization popup appeared on phone, tap "Allow"
+2. Check if USB debugging is enabled
+3. Try a different cable or USB port
+4. Run `adb kill-server && adb start-server` and retry
 
-#### 阶段二：安装 Agent
+#### Phase 2: Install Agent
 
 ```bash
-# 1. 克隆仓库(如果还没有克隆)
+# 1. Clone repository (if not already cloned)
 git clone https://github.com/zai-org/Open-AutoGLM.git
 cd Open-AutoGLM
 
-# 2. 创建虚拟环境(推荐)
+# 2. Create virtual environment (recommended)
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 
-# 3. 安装依赖
+# 3. Install dependencies
 pip install -r requirements.txt
 pip install -e .
 ```
 
-**注意：不需要 clone 模型仓库，模型通过 API 调用。**
+**Note: No need to clone model repository; models are called via API.**
 
-#### 阶段三：配置模型服务
+#### Phase 3: Configure Model Service
 
-**如果用户选择选项 A(使用已部署的模型)：**
+**If user chooses Option A (using already-deployed model):**
 
-你可以使用以下第三方模型服务：
+You can use the following third-party model services:
 
-1. **智谱 BigModel**
-   - 文档：https://docs.bigmodel.cn/cn/api/introduction
-   - `--base-url`：`https://open.bigmodel.cn/api/paas/v4`
-   - `--model`：`autoglm-phone`
-   - `--apikey`：在智谱平台申请你的 API Key
+1. **z.ai**
+   - Documentation: https://docs.z.ai/api-reference/introduction
+   - `--base-url`: `https://api.z.ai/api/paas/v4`
+   - `--model`: `autoglm-phone-multilingual`
+   - `--apikey`: Apply for your own API key on the z.ai platform
 
-2. **ModelScope(魔搭社区)**
-   - 文档：https://modelscope.cn/models/ZhipuAI/AutoGLM-Phone-9B
-   - `--base-url`：`https://api-inference.modelscope.cn/v1`
-   - `--model`：`ZhipuAI/AutoGLM-Phone-9B`
-   - `--apikey`：在 ModelScope 平台申请你的 API Key
+2. **Novita AI**
+   - Documentation: https://novita.ai/models/model-detail/zai-org-autoglm-phone-9b-multilingual
+   - `--base-url`: `https://api.novita.ai/openai`
+   - `--model`: `zai-org/autoglm-phone-9b-multilingual`
+   - `--apikey`: Apply for your own API key on the Novita AI platform
 
-使用示例：
+3. **Parasail**
+   - Documentation: https://www.saas.parasail.io/serverless?name=auto-glm-9b-multilingual
+   - `--base-url`: `https://api.parasail.io/v1`
+   - `--model`: `parasail-auto-glm-9b-multilingual`
+   - `--apikey`: Apply for your own API key on the Parasail platform
+
+Example usage:
 
 ```bash
-# 使用智谱 BigModel
-python main.py --base-url https://open.bigmodel.cn/api/paas/v4 --model "autoglm-phone" --apikey "your-bigmodel-api-key" "打开美团搜索附近的火锅店"
+# Using z.ai
+python main.py --base-url https://api.z.ai/api/paas/v4 --model "autoglm-phone-multilingual" --apikey "your-z-ai-api-key" "Open Chrome browser"
 
-# 使用 ModelScope
-python main.py --base-url https://api-inference.modelscope.cn/v1 --model "ZhipuAI/AutoGLM-Phone-9B" --apikey "your-modelscope-api-key" "打开美团搜索附近的火锅店"
+# Using Novita AI
+python main.py --base-url https://api.novita.ai/openai --model "zai-org/autoglm-phone-9b-multilingual" --apikey "your-novita-api-key" "Open Chrome browser"
+
+# Using Parasail
+python main.py --base-url https://api.parasail.io/v1 --model "parasail-auto-glm-9b-multilingual" --apikey "your-parasail-api-key" "Open Chrome browser"
 ```
 
-或者直接使用用户提供的其他模型服务 URL，跳过本地模型部署步骤。
+Or use the URL provided by the user directly and skip local model deployment steps.
 
-**如果用户选择选项 B(本地部署模型)：**
+**If user chooses Option B (deploy model locally):**
 
 ```bash
-# 1. 安装 vLLM
+# 1. Install vLLM
 pip install vllm
 
-# 2. 启动模型服务(会自动下载模型，约 20GB)
+# 2. Start model service (will auto-download model, ~20GB)
 python3 -m vllm.entrypoints.openai.api_server \
-  --served-model-name autoglm-phone-9b \
+  --served-model-name autoglm-phone-9b-multilingual \
   --allowed-local-media-path / \
   --mm-encoder-tp-mode data \
   --mm_processor_cache_type shm \
@@ -770,74 +705,74 @@ python3 -m vllm.entrypoints.openai.api_server \
   --max-model-len 25480 \
   --chat-template-content-format string \
   --limit-mm-per-prompt "{\"image\":10}" \
-  --model zai-org/AutoGLM-Phone-9B \
+  --model zai-org/AutoGLM-Phone-9B-Multilingual \
   --port 8000
 
-# 模型服务 URL 为：http://localhost:8000/v1
+# Model service URL: http://localhost:8000/v1
 ```
 
-#### 阶段四：验证部署
+#### Phase 4: Verify Deployment
 
 ```bash
-# 在 Open-AutoGLM 目录下执行
-# 将 {MODEL_URL} 替换为实际的模型服务地址
+# Execute in the Open-AutoGLM directory
+# Replace {MODEL_URL} with the actual model service address
 
-python main.py --base-url {MODEL_URL} --model "autoglm-phone-9b" "打开微信，对文件传输助手发送消息：部署成功"
+python main.py --base-url {MODEL_URL} --model "autoglm-phone-9b-multilingual" "Open Gmail and send an email to File Transfer Assistant: Deployment successful"
 ```
 
-**预期结果：**
-- 手机自动打开微信
-- 自动搜索「文件传输助手」
-- 自动发送消息「部署成功」
+**Expected Result:**
+- Phone automatically opens Gmail
+- Automatically searches for recipient
+- Automatically sends the message "Deployment successful"
 
 ---
 
-### 异常处理
+### Troubleshooting
 
-| 错误现象 | 可能原因 | 解决方案 |
-|---------|---------|---------|
-| `adb devices` 无输出 | USB 调试未开启或数据线问题 | 检查开发者选项，更换数据线 |
-| `adb devices` 显示 unauthorized | 手机未授权 | 手机上点击「允许 USB 调试」|
-| 能打开应用但无法点击 | 缺少安全调试权限 | 开启「USB 调试(安全设置)」|
-| 中文输入变成乱码或无输入 | ADB Keyboard 未启用 | 在系统设置中启用 ADB Keyboard |
-| 截图返回黑屏 | 敏感页面(支付/银行) | 正常现象，系统会自动处理 |
-| 连接模型服务失败 | URL 错误或服务未启动 | 检查 URL，确认服务正在运行 |
-| `ModuleNotFoundError` | 依赖未安装 | 执行 `pip install -r requirements.txt` |
-
----
-
-### 部署要点
-
-1. **优先确认手机连接**：在安装任何代码之前，先确保 `adb devices` 能看到设备
-2. **不要跳过 ADB Keyboard**：没有它，中文输入会失败
-3. **模型服务是外部依赖**：Agent 代码本身不包含模型，需要单独的模型服务
-4. **遇到权限问题先检查手机设置**：大部分问题都是手机端配置不完整
-5. **部署完成后用简单任务测试**：建议用「打开微信发消息给文件传输助手」作为验收标准
+| Error Symptom | Possible Cause | Solution |
+|---------------|----------------|----------|
+| `adb devices` shows nothing | USB debugging not enabled or cable issue | Check developer options, replace cable |
+| `adb devices` shows unauthorized | Phone not authorized | Tap "Allow USB debugging" on phone |
+| Can open apps but cannot tap | Missing security debugging permission | Enable "USB Debugging (Security Settings)" |
+| Chinese/text input corrupted or missing | ADB Keyboard not enabled | Enable ADB Keyboard in system settings |
+| Screenshot returns black screen | Sensitive page (payment/banking) | Normal behavior, system will handle automatically |
+| Cannot connect to model service | Wrong URL or service not running | Check URL, confirm service is running |
+| `ModuleNotFoundError` | Dependencies not installed | Run `pip install -r requirements.txt` |
 
 ---
 
-### 命令速查
+### Deployment Key Points
+
+1. **Prioritize confirming phone connection**: Before installing any code, ensure `adb devices` can see the device
+2. **Don't skip ADB Keyboard**: Without it, text input will fail
+3. **Model service is an external dependency**: Agent code doesn't include the model; a separate model service is required
+4. **Check phone settings first for permission issues**: Most problems are due to incomplete phone-side configuration
+5. **Test with simple tasks after deployment**: Recommend using "Open Gmail and send message to File Transfer Assistant" as acceptance criteria
+
+---
+
+### Command Quick Reference
 
 ```bash
-# 检查 ADB 连接
+# Check ADB connection
 adb devices
 
-# 重启 ADB 服务
+# Restart ADB service
 adb kill-server && adb start-server
 
-# 安装依赖
+# Install dependencies
 pip install -r requirements.txt && pip install -e .
 
-# 运行 Agent(交互模式)
-python main.py --base-url {MODEL_URL} --model "autoglm-phone-9b"
+# Run Agent (interactive mode)
+python main.py --base-url {MODEL_URL} --model "autoglm-phone-9b-multilingual"
 
-# 运行 Agent(单次任务)
-python main.py --base-url {MODEL_URL} --model "autoglm-phone-9b" "你的任务描述"
+# Run Agent (single task)
+python main.py --base-url {MODEL_URL} --model "autoglm-phone-9b-multilingual" "your task description"
 
-# 查看支持的应用列表
+# View supported apps list
 python main.py --list-apps
 ```
 
 ---
 
-**部署完成的标志：手机能自动执行用户的自然语言指令。**
+**Deployment success indicator: The phone can automatically execute user's natural language instructions.**

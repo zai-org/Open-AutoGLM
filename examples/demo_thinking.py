@@ -41,7 +41,7 @@ def main(lang: str = "cn"):
 
     # Execute task
     print(f"\n📱 {msgs['starting_task']}...\n")
-    result = agent.run("打开小红书搜索美食攻略")
+    result = agent.run("Open Instagram and search for food guides")
 
     print("\n" + "=" * 60)
     print(f"📊 {msgs['final_result']}: {result}")
