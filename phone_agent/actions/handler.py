@@ -1,5 +1,7 @@
 """Action handler for processing AI model outputs."""
 
+import ast
+import re
 import time
 from dataclasses import dataclass
 from typing import Any, Callable
@@ -17,6 +19,14 @@ from phone_agent.adb import (
     tap,
     type_text,
 )
+from phone_agent.config.apps import APP_PACKAGES
+from phone_agent.utils.logger import get_logger
+from phone_agent.utils.validation import (
+    validate_app_name,
+    validate_relative_coordinates,
+)
+
+logger = get_logger(__name__)
 
 
 @dataclass
@@ -119,40 +129,53 @@ class ActionHandler:
         self, element: list[int], screen_width: int, screen_height: int
     ) -> tuple[int, int]:
         """Convert relative coordinates (0-1000) to absolute pixels."""
-        x = int(element[0] / 1000 * screen_width)
-        y = int(element[1] / 1000 * screen_height)
-        return x, y
+        return validate_relative_coordinates(element, screen_width, screen_height)
 
     def _handle_launch(self, action: dict, width: int, height: int) -> ActionResult:
         """Handle app launch action."""
         app_name = action.get("app")
         if not app_name:
+            logger.error("Launch action: No app name specified")
             return ActionResult(False, False, "No app name specified")
 
-        success = launch_app(app_name, self.device_id)
-        if success:
-            return ActionResult(True, False)
-        return ActionResult(False, False, f"App not found: {app_name}")
+        try:
+            validated_app = validate_app_name(app_name, set(APP_PACKAGES.keys()))
+            success = launch_app(validated_app, self.device_id)
+            if success:
+                logger.info(f"Successfully launched app: {validated_app}")
+                return ActionResult(True, False)
+            logger.warning(f"Failed to launch app: {validated_app}")
+            return ActionResult(False, False, f"App not found: {validated_app}")
+        except ValueError as e:
+            logger.error(f"Invalid app name: {e}")
+            return ActionResult(False, False, str(e))
 
     def _handle_tap(self, action: dict, width: int, height: int) -> ActionResult:
         """Handle tap action."""
         element = action.get("element")
         if not element:
+            logger.error("Tap action: No element coordinates provided")
             return ActionResult(False, False, "No element coordinates")
 
-        x, y = self._convert_relative_to_absolute(element, width, height)
+        try:
+            x, y = self._convert_relative_to_absolute(element, width, height)
+            logger.debug(f"Tapping at coordinates: ({x}, {y})")
 
-        # Check for sensitive operation
-        if "message" in action:
-            if not self.confirmation_callback(action["message"]):
-                return ActionResult(
-                    success=False,
-                    should_finish=True,
-                    message="User cancelled sensitive operation",
-                )
+            # Check for sensitive operation
+            if "message" in action:
+                if not self.confirmation_callback(action["message"]):
+                    logger.info("User cancelled sensitive operation")
+                    return ActionResult(
+                        success=False,
+                        should_finish=True,
+                        message="User cancelled sensitive operation",
+                    )
 
-        tap(x, y, self.device_id)
-        return ActionResult(True, False)
+            tap(x, y, self.device_id)
+            return ActionResult(True, False)
+        except ValueError as e:
+            logger.error(f"Invalid coordinates: {e}")
+            return ActionResult(False, False, str(e))
 
     def _handle_type(self, action: dict, width: int, height: int) -> ActionResult:
         """Handle text input action."""
@@ -267,7 +290,11 @@ class ActionHandler:
 
 def parse_action(response: str) -> dict[str, Any]:
     """
-    Parse action from model response.
+    Parse action from model response safely without using eval().
+
+    This function safely parses action strings like:
+    - do(action="Tap", element=[100, 200])
+    - finish(message="Task completed")
 
     Args:
         response: Raw response string from the model.
@@ -279,20 +306,164 @@ def parse_action(response: str) -> dict[str, Any]:
         ValueError: If the response cannot be parsed.
     """
     try:
-        # Try to evaluate as Python dict/function call
         response = response.strip()
+        
+        # Handle finish() calls
+        if response.startswith("finish"):
+            return _parse_finish_action(response)
+        
+        # Handle do() calls
         if response.startswith("do"):
-            action = eval(response)
-        elif response.startswith("finish"):
-            action = {
-                "_metadata": "finish",
-                "message": response.replace("finish(message=", "")[1:-2],
-            }
-        else:
-            raise ValueError(f"Failed to parse action: {response}")
-        return action
+            return _parse_do_action(response)
+        
+        # Try to parse as JSON-like structure
+        try:
+            # Attempt to parse as JSON first
+            import json
+            action = json.loads(response)
+            if isinstance(action, dict):
+                return action
+        except (json.JSONDecodeError, ValueError):
+            pass
+        
+        raise ValueError(f"Failed to parse action: {response}")
     except Exception as e:
         raise ValueError(f"Failed to parse action: {e}")
+
+
+def _parse_finish_action(response: str) -> dict[str, Any]:
+    """Safely parse finish() action."""
+    # Pattern: finish(message="...")
+    match = re.match(r'finish\(message=["\']([^"\']*)["\']\)', response)
+    if match:
+        return {
+            "_metadata": "finish",
+            "message": match.group(1),
+        }
+    
+    # Pattern: finish(message='...')
+    match = re.match(r"finish\(message=['\"]([^'\"]*)['\"]\)", response)
+    if match:
+        return {
+            "_metadata": "finish",
+            "message": match.group(1),
+        }
+    
+    # Fallback: try to extract message manually
+    if "message=" in response:
+        # Extract content between quotes
+        match = re.search(r'message=["\']([^"\']*)["\']', response)
+        if match:
+            return {
+                "_metadata": "finish",
+                "message": match.group(1),
+            }
+    
+    # Default finish action
+    return {
+        "_metadata": "finish",
+        "message": response.replace("finish(", "").replace(")", "").strip(),
+    }
+
+
+def _parse_do_action(response: str) -> dict[str, Any]:
+    """Safely parse do() action using AST."""
+    try:
+        # Use AST to safely parse the function call
+        # This is safer than eval() as it only parses, doesn't execute
+        tree = ast.parse(response, mode="eval")
+        
+        if isinstance(tree.body, ast.Call):
+            call = tree.body
+            if isinstance(call.func, ast.Name) and call.func.id == "do":
+                action = {"_metadata": "do"}
+                
+                # Parse keyword arguments
+                for keyword in call.keywords:
+                    key = keyword.arg
+                    if key is None:
+                        continue
+                    
+                    value = _ast_to_python_value(keyword.value)
+                    action[key] = value
+                
+                return action
+    except (SyntaxError, ValueError, AttributeError):
+        pass
+    
+    # Fallback: use regex to parse common patterns
+    action = {"_metadata": "do"}
+    
+    # Extract action name
+    action_match = re.search(r'action=["\']([^"\']*)["\']', response)
+    if action_match:
+        action["action"] = action_match.group(1)
+    
+    # Extract element coordinates [x, y]
+    element_match = re.search(r'element=\[(\d+),\s*(\d+)\]', response)
+    if element_match:
+        action["element"] = [int(element_match.group(1)), int(element_match.group(2))]
+    
+    # Extract app name
+    app_match = re.search(r'app=["\']([^"\']*)["\']', response)
+    if app_match:
+        action["app"] = app_match.group(1)
+    
+    # Extract text
+    text_match = re.search(r'text=["\']([^"\']*)["\']', response)
+    if text_match:
+        action["text"] = text_match.group(1)
+    
+    # Extract start and end coordinates for swipe
+    start_match = re.search(r'start=\[(\d+),\s*(\d+)\]', response)
+    if start_match:
+        action["start"] = [int(start_match.group(1)), int(start_match.group(2))]
+    
+    end_match = re.search(r'end=\[(\d+),\s*(\d+)\]', response)
+    if end_match:
+        action["end"] = [int(end_match.group(1)), int(end_match.group(2))]
+    
+    # Extract message
+    message_match = re.search(r'message=["\']([^"\']*)["\']', response)
+    if message_match:
+        action["message"] = message_match.group(1)
+    
+    # Extract duration
+    duration_match = re.search(r'duration=["\']([^"\']*)["\']', response)
+    if duration_match:
+        action["duration"] = duration_match.group(1)
+    
+    return action
+
+
+def _ast_to_python_value(node: ast.AST) -> Any:
+    """Convert AST node to Python value safely."""
+    if isinstance(node, ast.Constant):
+        return node.value
+    elif isinstance(node, ast.Str):  # Python < 3.8 compatibility
+        return node.s
+    elif isinstance(node, ast.Num):  # Python < 3.8 compatibility
+        return node.n
+    elif isinstance(node, ast.List):
+        return [_ast_to_python_value(item) for item in node.elts]
+    elif isinstance(node, ast.Tuple):
+        return tuple(_ast_to_python_value(item) for item in node.elts)
+    elif isinstance(node, ast.Dict):
+        return {
+            _ast_to_python_value(k): _ast_to_python_value(v)
+            for k, v in zip(node.keys, node.values)
+        }
+    elif isinstance(node, ast.NameConstant):  # Python < 3.8 compatibility
+        return node.value
+    elif isinstance(node, ast.Name):
+        # Handle built-in constants
+        if node.id == "True":
+            return True
+        elif node.id == "False":
+            return False
+        elif node.id == "None":
+            return None
+    raise ValueError(f"Unsupported AST node type: {type(node)}")
 
 
 def do(**kwargs) -> dict[str, Any]:

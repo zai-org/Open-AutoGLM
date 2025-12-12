@@ -255,6 +255,8 @@ python main.py --list-apps
 
 ### Python API
 
+#### Synchronous API
+
 ```python
 from phone_agent import PhoneAgent
 from phone_agent.model import ModelConfig
@@ -272,6 +274,37 @@ agent = PhoneAgent(model_config=model_config)
 result = agent.run("打开淘宝搜索无线耳机")
 print(result)
 ```
+
+#### Asynchronous API (Better Performance)
+
+```python
+import asyncio
+from phone_agent.async_agent import AsyncPhoneAgent
+from phone_agent.model import ModelConfig
+
+async def main():
+    # Configure model
+    model_config = ModelConfig(
+        base_url="http://localhost:8000/v1",
+        model_name="autoglm-phone-9b",
+    )
+    
+    # 创建 Async Agent
+    agent = AsyncPhoneAgent(model_config=model_config)
+    
+    # 执行任务 (异步)
+    result = await agent.run("打开淘宝搜索无线耳机")
+    print(result)
+
+# Run async function
+asyncio.run(main())
+```
+
+**Benefits of Async API**:
+- Better performance for I/O-bound operations
+- Non-blocking network requests
+- Can handle concurrent tasks
+- See `examples/async_usage.py` for more examples
 
 ## 远程调试
 

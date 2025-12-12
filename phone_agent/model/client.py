@@ -6,6 +6,11 @@ from typing import Any
 
 from openai import OpenAI
 
+from phone_agent.utils.logger import get_logger
+from phone_agent.utils.retry import retry
+
+logger = get_logger(__name__)
+
 
 @dataclass
 class ModelConfig:
@@ -42,9 +47,10 @@ class ModelClient:
         self.config = config or ModelConfig()
         self.client = OpenAI(base_url=self.config.base_url, api_key=self.config.api_key)
 
+    @retry(max_attempts=3, delay=1.0, exceptions=(ConnectionError, TimeoutError))
     def request(self, messages: list[dict[str, Any]]) -> ModelResponse:
         """
-        Send a request to the model.
+        Send a request to the model with automatic retry on failure.
 
         Args:
             messages: List of message dictionaries in OpenAI format.
@@ -54,24 +60,31 @@ class ModelClient:
 
         Raises:
             ValueError: If the response cannot be parsed.
+            ConnectionError: If connection fails after retries.
         """
-        response = self.client.chat.completions.create(
-            messages=messages,
-            model=self.config.model_name,
-            max_tokens=self.config.max_tokens,
-            temperature=self.config.temperature,
-            top_p=self.config.top_p,
-            frequency_penalty=self.config.frequency_penalty,
-            extra_body=self.config.extra_body,
-            stream=False,
-        )
+        try:
+            response = self.client.chat.completions.create(
+                messages=messages,
+                model=self.config.model_name,
+                max_tokens=self.config.max_tokens,
+                temperature=self.config.temperature,
+                top_p=self.config.top_p,
+                frequency_penalty=self.config.frequency_penalty,
+                extra_body=self.config.extra_body,
+                stream=False,
+            )
 
-        raw_content = response.choices[0].message.content
+            raw_content = response.choices[0].message.content
 
-        # Parse thinking and action from response
-        thinking, action = self._parse_response(raw_content)
+            # Parse thinking and action from response
+            thinking, action = self._parse_response(raw_content)
 
-        return ModelResponse(thinking=thinking, action=action, raw_content=raw_content)
+            logger.debug(f"Model response parsed successfully. Action: {action[:100]}...")
+
+            return ModelResponse(thinking=thinking, action=action, raw_content=raw_content)
+        except Exception as e:
+            logger.error(f"Model request failed: {e}")
+            raise
 
     def _parse_response(self, content: str) -> tuple[str, str]:
         """

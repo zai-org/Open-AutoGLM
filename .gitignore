@@ -15,20 +15,26 @@ lib64/
 parts/
 sdist/
 var/
+sdist/
+var/
 wheels/
+pip-wheel-metadata/
+share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
 
-# Virtual environments
+# Virtual Environment
 venv/
-ENV/
 env/
-.venv/
+ENV/
+env.bak/
+venv.bak/
 
 # IDE
-.idea/
 .vscode/
+.idea/
 *.swp
 *.swo
 *~
@@ -38,23 +44,25 @@ env/
 .coverage
 htmlcov/
 .tox/
-.nox/
+.hypothesis/
 
-# Type checking
-.mypy_cache/
+# Jupyter Notebook
+.ipynb_checkpoints
 
-# Jupyter
-.ipynb_checkpoints/
+# Environment variables
+.env
+.env.local
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Project specific
+# Temporary files
+*.tmp
 *.log
-/tmp/
-screenshots/
+temp_clone/
 
-# Keep old files during transition
-call_model.py
-app_package_name.py
+# Model files (if downloaded locally)
+models/
+*.bin
+*.safetensors

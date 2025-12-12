@@ -1,6 +1,6 @@
-"""Device control utilities for Android automation."""
+"""Async device control utilities for Android automation."""
 
-import os
+import asyncio
 import subprocess
 import time
 from typing import List, Optional, Tuple
@@ -12,10 +12,9 @@ from phone_agent.utils.retry import retry_adb_command
 logger = get_logger(__name__)
 
 
-@retry_adb_command(max_attempts=3, delay=1.0)
-def get_current_app(device_id: str | None = None) -> str:
+async def get_current_app_async(device_id: str | None = None) -> str:
     """
-    Get the currently focused app name.
+    Get the currently focused app name (async).
 
     Args:
         device_id: Optional ADB device ID for multi-device setups.
@@ -23,6 +22,11 @@ def get_current_app(device_id: str | None = None) -> str:
     Returns:
         The app name if recognized, otherwise "System Home".
     """
+    return await asyncio.to_thread(_get_current_app_sync, device_id)
+
+
+def _get_current_app_sync(device_id: str | None = None) -> str:
+    """Synchronous helper for get_current_app."""
     adb_prefix = _get_adb_prefix(device_id)
 
     result = subprocess.run(
@@ -31,11 +35,11 @@ def get_current_app(device_id: str | None = None) -> str:
         text=True,
         timeout=10,
     )
-    
+
     if result.returncode != 0:
         logger.warning(f"Failed to get current app: {result.stderr}")
         return "System Home"
-    
+
     output = result.stdout
 
     # Parse window focus info
@@ -49,10 +53,11 @@ def get_current_app(device_id: str | None = None) -> str:
     return "System Home"
 
 
-@retry_adb_command(max_attempts=2, delay=0.5)
-def tap(x: int, y: int, device_id: str | None = None, delay: float = 1.0) -> None:
+async def tap_async(
+    x: int, y: int, device_id: str | None = None, delay: float = 1.0
+) -> None:
     """
-    Tap at the specified coordinates.
+    Tap at the specified coordinates (async).
 
     Args:
         x: X coordinate.
@@ -60,6 +65,11 @@ def tap(x: int, y: int, device_id: str | None = None, delay: float = 1.0) -> Non
         device_id: Optional ADB device ID.
         delay: Delay in seconds after tap.
     """
+    await asyncio.to_thread(_tap_sync, x, y, device_id, delay)
+
+
+def _tap_sync(x: int, y: int, device_id: str | None = None, delay: float = 1.0) -> None:
+    """Synchronous helper for tap."""
     adb_prefix = _get_adb_prefix(device_id)
 
     result = subprocess.run(
@@ -67,19 +77,19 @@ def tap(x: int, y: int, device_id: str | None = None, delay: float = 1.0) -> Non
         capture_output=True,
         timeout=5,
     )
-    
+
     if result.returncode != 0:
         logger.warning(f"Tap command failed: {result.stderr}")
         raise RuntimeError(f"Failed to tap at ({x}, {y}): {result.stderr}")
-    
+
     time.sleep(delay)
 
 
-def double_tap(
+async def double_tap_async(
     x: int, y: int, device_id: str | None = None, delay: float = 1.0
 ) -> None:
     """
-    Double tap at the specified coordinates.
+    Double tap at the specified coordinates (async).
 
     Args:
         x: X coordinate.
@@ -87,19 +97,11 @@ def double_tap(
         device_id: Optional ADB device ID.
         delay: Delay in seconds after double tap.
     """
-    adb_prefix = _get_adb_prefix(device_id)
-
-    subprocess.run(
-        adb_prefix + ["shell", "input", "tap", str(x), str(y)], capture_output=True
-    )
-    time.sleep(0.1)
-    subprocess.run(
-        adb_prefix + ["shell", "input", "tap", str(x), str(y)], capture_output=True
-    )
-    time.sleep(delay)
+    await tap_async(x, y, device_id, delay=0.1)
+    await tap_async(x, y, device_id, delay=delay)
 
 
-def long_press(
+async def long_press_async(
     x: int,
     y: int,
     duration_ms: int = 3000,
@@ -107,7 +109,7 @@ def long_press(
     delay: float = 1.0,
 ) -> None:
     """
-    Long press at the specified coordinates.
+    Long press at the specified coordinates (async).
 
     Args:
         x: X coordinate.
@@ -116,17 +118,29 @@ def long_press(
         device_id: Optional ADB device ID.
         delay: Delay in seconds after long press.
     """
+    await asyncio.to_thread(_long_press_sync, x, y, duration_ms, device_id, delay)
+
+
+def _long_press_sync(
+    x: int,
+    y: int,
+    duration_ms: int = 3000,
+    device_id: str | None = None,
+    delay: float = 1.0,
+) -> None:
+    """Synchronous helper for long_press."""
     adb_prefix = _get_adb_prefix(device_id)
 
     subprocess.run(
         adb_prefix
         + ["shell", "input", "swipe", str(x), str(y), str(x), str(y), str(duration_ms)],
         capture_output=True,
+        timeout=5,
     )
     time.sleep(delay)
 
 
-def swipe(
+async def swipe_async(
     start_x: int,
     start_y: int,
     end_x: int,
@@ -136,7 +150,7 @@ def swipe(
     delay: float = 1.0,
 ) -> None:
     """
-    Swipe from start to end coordinates.
+    Swipe from start to end coordinates (async).
 
     Args:
         start_x: Starting X coordinate.
@@ -147,6 +161,19 @@ def swipe(
         device_id: Optional ADB device ID.
         delay: Delay in seconds after swipe.
     """
+    await asyncio.to_thread(_swipe_sync, start_x, start_y, end_x, end_y, duration_ms, device_id, delay)
+
+
+def _swipe_sync(
+    start_x: int,
+    start_y: int,
+    end_x: int,
+    end_y: int,
+    duration_ms: int | None = None,
+    device_id: str | None = None,
+    delay: float = 1.0,
+) -> None:
+    """Synchronous helper for swipe."""
     adb_prefix = _get_adb_prefix(device_id)
 
     if duration_ms is None:
@@ -168,45 +195,60 @@ def swipe(
             str(duration_ms),
         ],
         capture_output=True,
+        timeout=5,
     )
     time.sleep(delay)
 
 
-def back(device_id: str | None = None, delay: float = 1.0) -> None:
+async def back_async(device_id: str | None = None, delay: float = 1.0) -> None:
     """
-    Press the back button.
+    Press the back button (async).
 
     Args:
         device_id: Optional ADB device ID.
         delay: Delay in seconds after pressing back.
     """
+    await asyncio.to_thread(_back_sync, device_id, delay)
+
+
+def _back_sync(device_id: str | None = None, delay: float = 1.0) -> None:
+    """Synchronous helper for back."""
     adb_prefix = _get_adb_prefix(device_id)
 
     subprocess.run(
-        adb_prefix + ["shell", "input", "keyevent", "4"], capture_output=True
+        adb_prefix + ["shell", "input", "keyevent", "4"], capture_output=True, timeout=5
     )
     time.sleep(delay)
 
 
-def home(device_id: str | None = None, delay: float = 1.0) -> None:
+async def home_async(device_id: str | None = None, delay: float = 1.0) -> None:
     """
-    Press the home button.
+    Press the home button (async).
 
     Args:
         device_id: Optional ADB device ID.
         delay: Delay in seconds after pressing home.
     """
+    await asyncio.to_thread(_home_sync, device_id, delay)
+
+
+def _home_sync(device_id: str | None = None, delay: float = 1.0) -> None:
+    """Synchronous helper for home."""
     adb_prefix = _get_adb_prefix(device_id)
 
     subprocess.run(
-        adb_prefix + ["shell", "input", "keyevent", "KEYCODE_HOME"], capture_output=True
+        adb_prefix + ["shell", "input", "keyevent", "KEYCODE_HOME"],
+        capture_output=True,
+        timeout=5,
     )
     time.sleep(delay)
 
 
-def launch_app(app_name: str, device_id: str | None = None, delay: float = 1.0) -> bool:
+async def launch_app_async(
+    app_name: str, device_id: str | None = None, delay: float = 1.0
+) -> bool:
     """
-    Launch an app by name.
+    Launch an app by name (async).
 
     Args:
         app_name: The app name (must be in APP_PACKAGES).
@@ -216,6 +258,15 @@ def launch_app(app_name: str, device_id: str | None = None, delay: float = 1.0) 
     Returns:
         True if app was launched, False if app not found.
     """
+    return await asyncio.to_thread(_launch_app_sync, app_name, device_id, delay)
+
+
+def _launch_app_sync(
+    app_name: str, device_id: str | None = None, delay: float = 1.0
+) -> bool:
+    """Synchronous helper for launch_app."""
+    from phone_agent.config.apps import APP_PACKAGES
+
     if app_name not in APP_PACKAGES:
         return False
 
@@ -234,6 +285,7 @@ def launch_app(app_name: str, device_id: str | None = None, delay: float = 1.0) 
             "1",
         ],
         capture_output=True,
+        timeout=10,
     )
     time.sleep(delay)
     return True
@@ -244,3 +296,4 @@ def _get_adb_prefix(device_id: str | None) -> list:
     if device_id:
         return ["adb", "-s", device_id]
     return ["adb"]
+

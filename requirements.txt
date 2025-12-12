@@ -11,7 +11,8 @@ openai>=2.9.0
 # transformers>=5.0.0rc0
 
 # Optional: for development
-# pytest>=7.0.0
-# pre-commit>=4.5.0
-# black>=23.0.0
-# mypy>=1.0.0
+pytest>=7.0.0
+pytest-cov>=4.0.0
+pre-commit>=4.5.0
+black>=23.0.0
+mypy>=1.0.0
