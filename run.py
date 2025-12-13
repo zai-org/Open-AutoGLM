@@ -59,10 +59,6 @@ def 刷新搜索结果(agent: PhoneAgent) -> bool:
     )
 
 
-def 连按六次返回键(agent: PhoneAgent):
-    agent.run("连按六次返回键。", "连按六次返回键")
-
-
 def 用户获取(agent: PhoneAgent):
     进入搜索结果界面(agent)
     while True:
