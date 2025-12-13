@@ -52,7 +52,7 @@ def 关注要男朋友的(agent: PhoneAgent) -> bool:
 
 def 翻评论区(agent: PhoneAgent):
     agent.run(
-        "在评论区向下滚动仅一次。警告：滑动的距离尽量小一点，起点y轴比终点y轴大288左右。",
+        "仅在评论区向下滚动仅一次，然后什么都别做。警告：滑动的距离尽量小一点（从屏幕偏下较大的y值start，到屏幕中间较小的y值end，y轴之间相差300）。",
         "翻评论区",
     )
 
@@ -119,11 +119,11 @@ def run():
     agent = PhoneAgent(model_config, agent_config)
 
     # 执行任务
-    while True:
-        agent.action_handler._handle_launch(dict(app="快手"), 0, 0)
-        用户获取(agent)
-        agent.action_handler._handle_back(dict(), 0, 0)
-        agent.action_handler._handle_back(dict(), 0, 0)
+    翻评论区(agent)
+    #     agent.action_handler._handle_launch(dict(app="快手"), 0, 0)
+    #     用户获取(agent)
+    #     agent.action_handler._handle_back(dict(), 0, 0)
+    #     agent.action_handler._handle_back(dict(), 0, 0)
 
 
 if __name__ == "__main__":
