@@ -1,6 +1,9 @@
 Pillow>=12.0.0
 openai>=2.9.0
 
+# For iOS Support
+requests>=2.31.0
+
 # For Model Deployment
 
 ## After installing sglang or vLLM, please run pip install -U transformers again to upgrade to 5.0.0rc0.

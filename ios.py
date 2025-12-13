@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """
-Phone Agent CLI - AI-powered phone automation.
+Phone Agent iOS CLI - AI-powered iOS phone automation.
 
 Usage:
-    python main.py [OPTIONS]
+    python ios.py [OPTIONS]
 
 Environment Variables:
     PHONE_AGENT_BASE_URL: Model API base URL (default: http://localhost:8000/v1)
     PHONE_AGENT_MODEL: Model name (default: autoglm-phone-9b)
-    PHONE_AGENT_API_KEY: API key for model authentication (default: EMPTY)
     PHONE_AGENT_MAX_STEPS: Maximum steps per task (default: 100)
-    PHONE_AGENT_DEVICE_ID: ADB device ID for multi-device setups
+    PHONE_AGENT_WDA_URL: WebDriverAgent URL (default: http://localhost:8100)
+    PHONE_AGENT_DEVICE_ID: iOS device UDID for multi-device setups
 """
 
 import argparse
@@ -22,21 +22,23 @@ from urllib.parse import urlparse
 
 from openai import OpenAI
 
-from phone_agent import PhoneAgent
-from phone_agent.adb import ADBConnection, list_devices
-from phone_agent.agent import AgentConfig
-from phone_agent.config.apps import list_supported_apps
+from phone_agent.agent_ios import IOSAgentConfig, IOSPhoneAgent
+from phone_agent.config.apps_ios import list_supported_apps
 from phone_agent.model import ModelConfig
+from phone_agent.xctest import XCTestConnection, list_devices
 
 
-def check_system_requirements() -> bool:
+def check_system_requirements(wda_url: str = "http://localhost:8100") -> bool:
     """
     Check system requirements before running the agent.
 
     Checks:
-    1. ADB tools installed
-    2. At least one device connected
-    3. ADB Keyboard installed on the device
+    1. libimobiledevice tools installed
+    2. At least one iOS device connected
+    3. WebDriverAgent is running
+
+    Args:
+        wda_url: WebDriverAgent URL to check.
 
     Returns:
         True if all checks pass, False otherwise.
@@ -46,112 +48,102 @@ def check_system_requirements() -> bool:
 
     all_passed = True
 
-    # Check 1: ADB installed
-    print("1. Checking ADB installation...", end=" ")
-    if shutil.which("adb") is None:
+    # Check 1: libimobiledevice installed
+    print("1. Checking libimobiledevice installation...", end=" ")
+    if shutil.which("idevice_id") is None:
         print("❌ FAILED")
-        print("   Error: ADB is not installed or not in PATH.")
-        print("   Solution: Install Android SDK Platform Tools:")
-        print("     - macOS: brew install android-platform-tools")
-        print("     - Linux: sudo apt install android-tools-adb")
-        print(
-            "     - Windows: Download from https://developer.android.com/studio/releases/platform-tools"
-        )
+        print("   Error: libimobiledevice is not installed or not in PATH.")
+        print("   Solution: Install libimobiledevice:")
+        print("     - macOS: brew install libimobiledevice")
+        print("     - Linux: sudo apt-get install libimobiledevice-utils")
         all_passed = False
     else:
-        # Double check by running adb version
+        # Double check by running idevice_id
         try:
             result = subprocess.run(
-                ["adb", "version"], capture_output=True, text=True, timeout=10
+                ["idevice_id", "-ln"], capture_output=True, text=True, timeout=10
             )
             if result.returncode == 0:
-                version_line = result.stdout.strip().split("\n")[0]
-                print(f"✅ OK ({version_line})")
+                print("✅ OK")
             else:
                 print("❌ FAILED")
-                print("   Error: ADB command failed to run.")
+                print("   Error: idevice_id command failed to run.")
                 all_passed = False
         except FileNotFoundError:
             print("❌ FAILED")
-            print("   Error: ADB command not found.")
+            print("   Error: idevice_id command not found.")
             all_passed = False
         except subprocess.TimeoutExpired:
             print("❌ FAILED")
-            print("   Error: ADB command timed out.")
+            print("   Error: idevice_id command timed out.")
             all_passed = False
 
-    # If ADB is not installed, skip remaining checks
+    # If libimobiledevice is not installed, skip remaining checks
     if not all_passed:
         print("-" * 50)
         print("❌ System check failed. Please fix the issues above.")
         return False
 
-    # Check 2: Device connected
-    print("2. Checking connected devices...", end=" ")
+    # Check 2: iOS Device connected
+    print("2. Checking connected iOS devices...", end=" ")
     try:
-        result = subprocess.run(
-            ["adb", "devices"], capture_output=True, text=True, timeout=10
-        )
-        lines = result.stdout.strip().split("\n")
-        # Filter out header and empty lines, look for 'device' status
-        devices = [line for line in lines[1:] if line.strip() and "\tdevice" in line]
+        devices = list_devices()
 
         if not devices:
             print("❌ FAILED")
-            print("   Error: No devices connected.")
+            print("   Error: No iOS devices connected.")
             print("   Solution:")
-            print("     1. Enable USB debugging on your Android device")
-            print("     2. Connect via USB and authorize the connection")
-            print("     3. Or connect remotely: python main.py --connect <ip>:<port>")
+            print("     1. Connect your iOS device via USB")
+            print("     2. Unlock the device and tap 'Trust This Computer'")
+            print("     3. Verify connection: idevice_id -l")
+            print("     4. Or connect via WiFi using device IP")
             all_passed = False
         else:
-            device_ids = [d.split("\t")[0] for d in devices]
-            print(f"✅ OK ({len(devices)} device(s): {', '.join(device_ids)})")
-    except subprocess.TimeoutExpired:
-        print("❌ FAILED")
-        print("   Error: ADB command timed out.")
-        all_passed = False
+            device_names = [
+                d.device_name or d.device_id[:8] + "..." for d in devices
+            ]
+            print(f"✅ OK ({len(devices)} device(s): {', '.join(device_names)})")
     except Exception as e:
         print("❌ FAILED")
         print(f"   Error: {e}")
         all_passed = False
 
-    # If no device connected, skip ADB Keyboard check
+    # If no device connected, skip WebDriverAgent check
     if not all_passed:
         print("-" * 50)
         print("❌ System check failed. Please fix the issues above.")
         return False
 
-    # Check 3: ADB Keyboard installed
-    print("3. Checking ADB Keyboard...", end=" ")
+    # Check 3: WebDriverAgent running
+    print(f"3. Checking WebDriverAgent ({wda_url})...", end=" ")
     try:
-        result = subprocess.run(
-            ["adb", "shell", "ime", "list", "-s"],
-            capture_output=True,
-            text=True,
-            timeout=10,
-        )
-        ime_list = result.stdout.strip()
+        conn = XCTestConnection(wda_url=wda_url)
 
-        if "com.android.adbkeyboard/.AdbIME" in ime_list:
+        if conn.is_wda_ready():
             print("✅ OK")
+            # Get WDA status for additional info
+            status = conn.get_wda_status()
+            if status:
+                session_id = status.get("sessionId", "N/A")
+                print(f"   Session ID: {session_id}")
         else:
             print("❌ FAILED")
-            print("   Error: ADB Keyboard is not installed on the device.")
+            print("   Error: WebDriverAgent is not running or not accessible.")
             print("   Solution:")
-            print("     1. Download ADB Keyboard APK from:")
+            print("     1. Run WebDriverAgent on your iOS device via Xcode")
+            print("     2. For USB: Set up port forwarding: iproxy 8100 8100")
             print(
-                "        https://github.com/senzhk/ADBKeyBoard/blob/master/ADBKeyboard.apk"
+                "     3. For WiFi: Use device IP, e.g., --wda-url http://192.168.1.100:8100"
             )
-            print("     2. Install it on your device: adb install ADBKeyboard.apk")
+            print("     4. Verify in browser: open http://localhost:8100/status")
+            print("\n   Quick setup guide:")
             print(
-                "     3. Enable it in Settings > System > Languages & Input > Virtual Keyboard"
+                "     git clone https://github.com/appium/WebDriverAgent.git && cd WebDriverAgent"
             )
+            print("     ./Scripts/bootstrap.sh")
+            print("     open WebDriverAgent.xcodeproj")
+            print("     # Configure signing, then Product > Test (Cmd+U)")
             all_passed = False
-    except subprocess.TimeoutExpired:
-        print("❌ FAILED")
-        print("   Error: ADB command timed out.")
-        all_passed = False
     except Exception as e:
         print("❌ FAILED")
         print(f"   Error: {e}")
@@ -167,7 +159,7 @@ def check_system_requirements() -> bool:
     return all_passed
 
 
-def check_model_api(base_url: str, model_name: str, api_key: str = "EMPTY") -> bool:
+def check_model_api(base_url: str, api_key: str, model_name: str) -> bool:
     """
     Check if the model API is accessible and the specified model exists.
 
@@ -178,7 +170,6 @@ def check_model_api(base_url: str, model_name: str, api_key: str = "EMPTY") -> b
     Args:
         base_url: The API base URL
         model_name: The model name to check
-        api_key: The API key for authentication
 
     Returns:
         True if all checks pass, False otherwise.
@@ -188,27 +179,33 @@ def check_model_api(base_url: str, model_name: str, api_key: str = "EMPTY") -> b
 
     all_passed = True
 
-    # Check 1: Network connectivity using chat API
+    # Check 1: Network connectivity
     print(f"1. Checking API connectivity ({base_url})...", end=" ")
     try:
+        # Parse the URL to get host and port
+        parsed = urlparse(base_url)
+
         # Create OpenAI client
-        client = OpenAI(base_url=base_url, api_key=api_key, timeout=30.0)
+        client = OpenAI(base_url=base_url, api_key=api_key, timeout=10.0)
 
-        # Use chat completion to test connectivity (more universally supported than /models)
-        response = client.chat.completions.create(
-            model=model_name,
-            messages=[{"role": "user", "content": "Hi"}],
-            max_tokens=5,
-            temperature=0.0,
-            stream=False,
-        )
+        # Try to list models (this tests connectivity)
+        models_response = client.models.list()
+        available_models = [model.id for model in models_response.data]
 
-        # Check if we got a valid response
-        if response.choices and len(response.choices) > 0:
+        print("✅ OK")
+
+        # Check 2: Model exists
+        print(f"2. Checking model '{model_name}'...", end=" ")
+        if model_name in available_models:
             print("✅ OK")
         else:
             print("❌ FAILED")
-            print("   Error: Received empty response from API")
+            print(f"   Error: Model '{model_name}' not found.")
+            print(f"   Available models:")
+            for m in available_models[:10]:  # Show first 10 models
+                print(f"     - {m}")
+            if len(available_models) > 10:
+                print(f"     ... and {len(available_models) - 10} more")
             all_passed = False
 
     except Exception as e:
@@ -221,7 +218,7 @@ def check_model_api(base_url: str, model_name: str, api_key: str = "EMPTY") -> b
             print("   Solution:")
             print("     1. Check if the model server is running")
             print("     2. Verify the base URL is correct")
-            print(f"     3. Try: curl {base_url}/chat/completions")
+            print(f"     3. Try: curl {base_url}/models")
         elif "timed out" in error_msg.lower() or "timeout" in error_msg.lower():
             print(f"   Error: Connection to {base_url} timed out")
             print("   Solution:")
@@ -253,33 +250,33 @@ def check_model_api(base_url: str, model_name: str, api_key: str = "EMPTY") -> b
 def parse_args() -> argparse.Namespace:
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(
-        description="Phone Agent - AI-powered phone automation",
+        description="Phone Agent iOS - AI-powered iOS phone automation",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
     # Run with default settings
-    python main.py
+    python ios.py
 
     # Specify model endpoint
-    python main.py --base-url http://localhost:8000/v1
-
-    # Use API key for authentication
-    python main.py --apikey sk-xxxxx
+    python ios.py --base-url http://localhost:8000/v1
 
     # Run with specific device
-    python main.py --device-id emulator-5554
+    python ios.py --device-id <UDID>
 
-    # Connect to remote device
-    python main.py --connect 192.168.1.100:5555
+    # Use WiFi connection
+    python ios.py --wda-url http://192.168.1.100:8100
 
     # List connected devices
-    python main.py --list-devices
+    python ios.py --list-devices
 
-    # Enable TCP/IP on USB device and get connection info
-    python main.py --enable-tcpip
+    # Check device pairing status
+    python ios.py --pair
 
     # List supported apps
-    python main.py --list-apps
+    python ios.py --list-apps
+
+    # Run a specific task
+    python ios.py "Open Safari and search for iPhone tips"
         """,
     )
 
@@ -292,17 +289,17 @@ Examples:
     )
 
     parser.add_argument(
+        "--api-key",
+        type=str,
+        default="EMPTY",
+        help="Model API KEY",
+    )
+
+    parser.add_argument(
         "--model",
         type=str,
         default=os.getenv("PHONE_AGENT_MODEL", "autoglm-phone-9b"),
         help="Model name",
-    )
-
-    parser.add_argument(
-        "--apikey",
-        type=str,
-        default=os.getenv("PHONE_AGENT_API_KEY", "EMPTY"),
-        help="API key for model authentication",
     )
 
     parser.add_argument(
@@ -312,43 +309,36 @@ Examples:
         help="Maximum steps per task",
     )
 
-    # Device options
+    # iOS Device options
     parser.add_argument(
         "--device-id",
         "-d",
         type=str,
         default=os.getenv("PHONE_AGENT_DEVICE_ID"),
-        help="ADB device ID",
+        help="iOS device UDID",
     )
 
     parser.add_argument(
-        "--connect",
-        "-c",
+        "--wda-url",
         type=str,
-        metavar="ADDRESS",
-        help="Connect to remote device (e.g., 192.168.1.100:5555)",
+        default=os.getenv("PHONE_AGENT_WDA_URL", "http://localhost:8100"),
+        help="WebDriverAgent URL (default: http://localhost:8100)",
     )
 
     parser.add_argument(
-        "--disconnect",
-        type=str,
-        nargs="?",
-        const="all",
-        metavar="ADDRESS",
-        help="Disconnect from remote device (or 'all' to disconnect all)",
+        "--list-devices", action="store_true", help="List connected iOS devices and exit"
     )
 
     parser.add_argument(
-        "--list-devices", action="store_true", help="List connected devices and exit"
+        "--pair",
+        action="store_true",
+        help="Pair with iOS device (required for some operations)",
     )
 
     parser.add_argument(
-        "--enable-tcpip",
-        type=int,
-        nargs="?",
-        const=5555,
-        metavar="PORT",
-        help="Enable TCP/IP debugging on USB device (default port: 5555)",
+        "--wda-status",
+        action="store_true",
+        help="Show WebDriverAgent status and exit",
     )
 
     # Other options
@@ -380,69 +370,74 @@ Examples:
 
 def handle_device_commands(args) -> bool:
     """
-    Handle device-related commands.
+    Handle iOS device-related commands.
 
     Returns:
         True if a device command was handled (should exit), False otherwise.
     """
-    conn = ADBConnection()
+    conn = XCTestConnection(wda_url=args.wda_url)
 
     # Handle --list-devices
     if args.list_devices:
         devices = list_devices()
         if not devices:
-            print("No devices connected.")
+            print("No iOS devices connected.")
+            print("\nTroubleshooting:")
+            print("  1. Connect device via USB")
+            print("  2. Unlock device and trust this computer")
+            print("  3. Run: idevice_id -l")
         else:
-            print("Connected devices:")
-            print("-" * 60)
+            print("Connected iOS devices:")
+            print("-" * 70)
             for device in devices:
-                status_icon = "✓" if device.status == "device" else "✗"
                 conn_type = device.connection_type.value
-                model_info = f" ({device.model})" if device.model else ""
-                print(
-                    f"  {status_icon} {device.device_id:<30} [{conn_type}]{model_info}"
-                )
+                model_info = f"{device.model}" if device.model else "Unknown"
+                ios_info = f"iOS {device.ios_version}" if device.ios_version else ""
+                name_info = device.device_name or "Unnamed"
+
+                print(f"  ✓ {name_info}")
+                print(f"    UDID: {device.device_id}")
+                print(f"    Model: {model_info}")
+                print(f"    OS: {ios_info}")
+                print(f"    Connection: {conn_type}")
+                print("-" * 70)
         return True
 
-    # Handle --connect
-    if args.connect:
-        print(f"Connecting to {args.connect}...")
-        success, message = conn.connect(args.connect)
+    # Handle --pair
+    if args.pair:
+        print("Pairing with iOS device...")
+        success, message = conn.pair_device(args.device_id)
         print(f"{'✓' if success else '✗'} {message}")
-        if success:
-            # Set as default device
-            args.device_id = args.connect
-        return not success  # Continue if connection succeeded
+        return True
 
-    # Handle --disconnect
-    if args.disconnect:
-        if args.disconnect == "all":
-            print("Disconnecting all remote devices...")
-            success, message = conn.disconnect()
+    # Handle --wda-status
+    if args.wda_status:
+        print(f"Checking WebDriverAgent status at {args.wda_url}...")
+        print("-" * 50)
+
+        if conn.is_wda_ready():
+            print("✓ WebDriverAgent is running")
+
+            status = conn.get_wda_status()
+            if status:
+                print(f"\nStatus details:")
+                value = status.get("value", {})
+                print(f"  Session ID: {status.get('sessionId', 'N/A')}")
+                print(f"  Build: {value.get('build', {}).get('time', 'N/A')}")
+
+                current_app = value.get("currentApp", {})
+                if current_app:
+                    print(f"\nCurrent App:")
+                    print(f"  Bundle ID: {current_app.get('bundleId', 'N/A')}")
+                    print(f"  Process ID: {current_app.get('pid', 'N/A')}")
         else:
-            print(f"Disconnecting from {args.disconnect}...")
-            success, message = conn.disconnect(args.disconnect)
-        print(f"{'✓' if success else '✗'} {message}")
-        return True
+            print("✗ WebDriverAgent is not running")
+            print("\nPlease start WebDriverAgent on your iOS device:")
+            print("  1. Open WebDriverAgent.xcodeproj in Xcode")
+            print("  2. Select your device")
+            print("  3. Run WebDriverAgentRunner (Product > Test or Cmd+U)")
+            print(f"  4. For USB: Run port forwarding: iproxy 8100 8100")
 
-    # Handle --enable-tcpip
-    if args.enable_tcpip:
-        port = args.enable_tcpip
-        print(f"Enabling TCP/IP debugging on port {port}...")
-
-        success, message = conn.enable_tcpip(port, args.device_id)
-        print(f"{'✓' if success else '✗'} {message}")
-
-        if success:
-            # Try to get device IP
-            ip = conn.get_device_ip(args.device_id)
-            if ip:
-                print(f"\nYou can now connect remotely using:")
-                print(f"  python main.py --connect {ip}:{port}")
-                print(f"\nOr via ADB directly:")
-                print(f"  adb connect {ip}:{port}")
-            else:
-                print("\nCould not determine device IP. Check device WiFi settings.")
         return True
 
     return False
@@ -454,9 +449,15 @@ def main():
 
     # Handle --list-apps (no system check needed)
     if args.list_apps:
-        print("Supported apps:")
+        print("Supported iOS apps:")
+        print("\nNote: For iOS apps, Bundle IDs are configured in:")
+        print("  phone_agent/config/apps_ios.py")
+        print("\nCurrently configured apps:")
         for app in sorted(list_supported_apps()):
             print(f"  - {app}")
+        print(
+            "\nTo add iOS apps, find the Bundle ID and add to APP_PACKAGES_IOS dictionary."
+        )
         return
 
     # Handle device commands (these may need partial system checks)
@@ -464,39 +465,41 @@ def main():
         return
 
     # Run system requirements check before proceeding
-    if not check_system_requirements():
+    if not check_system_requirements(wda_url=args.wda_url):
         sys.exit(1)
 
     # Check model API connectivity and model availability
-    if not check_model_api(args.base_url, args.model, args.apikey):
-        sys.exit(1)
+    # if not check_model_api(args.base_url, args.api_key, args.model):
+    #     sys.exit(1)
 
     # Create configurations
     model_config = ModelConfig(
         base_url=args.base_url,
         model_name=args.model,
-        api_key=args.apikey,
+        api_key=args.api_key
     )
 
-    agent_config = AgentConfig(
+    agent_config = IOSAgentConfig(
         max_steps=args.max_steps,
+        wda_url=args.wda_url,
         device_id=args.device_id,
         verbose=not args.quiet,
         lang=args.lang,
     )
 
-    # Create agent
-    agent = PhoneAgent(
+    # Create iOS agent
+    agent = IOSPhoneAgent(
         model_config=model_config,
         agent_config=agent_config,
     )
 
     # Print header
     print("=" * 50)
-    print("Phone Agent - AI-powered phone automation")
+    print("Phone Agent iOS - AI-powered iOS automation")
     print("=" * 50)
     print(f"Model: {model_config.model_name}")
     print(f"Base URL: {model_config.base_url}")
+    print(f"WDA URL: {args.wda_url}")
     print(f"Max Steps: {agent_config.max_steps}")
     print(f"Language: {agent_config.lang}")
 
@@ -505,7 +508,9 @@ def main():
     if agent_config.device_id:
         print(f"Device: {agent_config.device_id}")
     elif devices:
-        print(f"Device: {devices[0].device_id} (auto-detected)")
+        device = devices[0]
+        print(f"Device: {device.device_name or device.device_id[:16]}")
+        print(f"        {device.model}, iOS {device.ios_version}")
 
     print("=" * 50)
 

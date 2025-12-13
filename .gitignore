@@ -58,3 +58,6 @@ screenshots/
 # Keep old files during transition
 call_model.py
 app_package_name.py
+
+.claude/
+.venv
