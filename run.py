@@ -17,9 +17,6 @@ def acquisition(agent: PhoneAgent):
         except Exception as e:
             print("进入搜索结果界面失败：", e)
             continue
-        except Exception as e:
-            print("设置搜索条件失败：", e)
-            continue
         while True:
             try:
                 print("正在进入作品界面……")
@@ -61,10 +58,20 @@ def acquisition(agent: PhoneAgent):
                                 raise Exception(result)
                         except Exception as e:
                             print("点关注失败：", e)
+                        print("正在翻评论区……")
+                        try:
+                            result = agent.run(
+                                "确保你在评论区界面，如果不在则尝试返回。在评论区的情况下向下滚动仅一次。警告：滑动的距离尽量小一点，起点y轴与终点y轴的差距不要超过300。"
+                            )
+                            if result != "成功":
+                                raise Exception(result)
+                        except Exception as e:
+                            print("翻评论区失败：", e)
+                            continue
                         print("正在判断到底提示……")
                         try:
                             result = agent.run(
-                                "确保你在评论区界面，如果不在则尝试返回，如果返回不了则仅输出“y”然后停止所有工作。在评论区的情况下向下滚动仅一次，然后判断：若看到“部分评论被折叠”字样，则仅输出“y”并停止一切工作，若没看到则仅输出“n”并停止一切工作，其他什么都不要输出，严格按照这个格式来。警告：滑动的距离尽量小一点，起点y轴与终点y轴的差距不要超过300。"
+                                "判断：若看到“部分评论被折叠”字样，则仅输出“y”，若没看到则仅输出“n”，其他什么都不要输出，严格按照这个格式来。"
                             )
                             if result == "y":
                                 break
@@ -126,10 +133,20 @@ def run():
                 raise Exception(result)
         except Exception as e:
             print("点关注失败：", e)
+        print("正在翻评论区……")
+        try:
+            result = agent.run(
+                "确保你在评论区界面，如果不在则尝试返回。在评论区的情况下向下滚动仅一次。警告：滑动的距离尽量小一点，起点y轴与终点y轴的差距不要超过300。"
+            )
+            if result != "成功":
+                raise Exception(result)
+        except Exception as e:
+            print("翻评论区失败：", e)
+            continue
         print("正在判断到底提示……")
         try:
             result = agent.run(
-                "确保你在评论区界面，如果不在则尝试返回，如果返回不了则仅输出“y”然后停止所有工作。在评论区的情况下向下滚动仅一次，然后判断：若看到“部分评论被折叠”字样，则仅输出“y”并停止一切工作，若没看到则仅输出“n”并停止一切工作，其他什么都不要输出，严格按照这个格式来。警告：滑动的距离尽量小一点，起点y轴与终点y轴的差距不要超过300。"
+                "判断：若看到“部分评论被折叠”字样，则仅输出“y”，若没看到则仅输出“n”，其他什么都不要输出，严格按照这个格式来。"
             )
             if result == "y":
                 break
