@@ -1,9 +1,11 @@
 """Action handler for processing AI model outputs."""
 
 import time
+import ast
+import re
+import json
 from dataclasses import dataclass
 from typing import Any, Callable
-import json
 
 from phone_agent.adb import (
     back,
@@ -281,15 +283,56 @@ def parse_action(response: str) -> dict[str, Any]:
     """
     try:
         response = response.strip()
-        obj = json.loads(response)
-        if not isinstance(obj, dict):
-            raise ValueError("Action must be a JSON object")
-        metadata = obj.get("_metadata")
-        if metadata not in ("do", "finish"):
-            raise ValueError("Invalid or missing '_metadata' field")
-        return obj
-    except json.JSONDecodeError as e:
-        raise ValueError(f"Failed to parse action: invalid JSON: {e}")
+
+        # Preferred: JSON encoded action
+        try:
+            obj = json.loads(response)
+            if not isinstance(obj, dict):
+                raise ValueError("Action must be a JSON object")
+            metadata = obj.get("_metadata")
+            if metadata not in ("do", "finish"):
+                raise ValueError("Invalid or missing '_metadata' field")
+            return obj
+        except json.JSONDecodeError:
+            pass
+
+        # Fallback: legacy function-call-like syntax, parsed safely with AST
+        if response.startswith("do"):
+            try:
+                tree = ast.parse(response, mode="eval")
+                if not isinstance(tree.body, ast.Call):
+                    raise ValueError("Expected a function call")
+                call = tree.body
+                action = {"_metadata": "do"}
+                for keyword in call.keywords:
+                    key = keyword.arg
+                    value = ast.literal_eval(keyword.value)
+                    action[key] = value
+                return action
+            except (SyntaxError, ValueError) as e:
+                raise ValueError(f"Failed to parse do() action: {e}")
+
+        if response.startswith("finish"):
+            # Try AST-based parsing for finish(...)
+            try:
+                tree = ast.parse(response, mode="eval")
+                if isinstance(tree.body, ast.Call):
+                    call = tree.body
+                    action = {"_metadata": "finish"}
+                    for kw in call.keywords:
+                        action[kw.arg] = ast.literal_eval(kw.value)
+                    return action
+            except Exception:
+                # Fallback regex + literal eval for simple legacy formats
+                m = re.search(r"finish\(\s*message\s*=\s*(.+)\s*\)", response)
+                if m:
+                    try:
+                        msg = ast.literal_eval(m.group(1))
+                        return {"_metadata": "finish", "message": msg}
+                    except Exception as e:
+                        raise ValueError(f"Failed to parse finish() message: {e}")
+
+        raise ValueError(f"Failed to parse action: {response}")
     except Exception as e:
         raise ValueError(f"Failed to parse action: {e}")
 

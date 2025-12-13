@@ -18,9 +18,7 @@ class ModelConfig:
     temperature: float = 0.0
     top_p: float = 0.85
     frequency_penalty: float = 0.2
-    extra_body: dict[str, Any] = field(
-        default_factory=lambda: {"skip_special_tokens": False}
-    )
+    extra_body: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -57,7 +55,7 @@ class ModelClient:
         Raises:
             ValueError: If the response cannot be parsed.
         """
-        response = self.client.chat.completions.create(
+        stream = self.client.chat.completions.create(
             messages=messages,
             model=self.config.model_name,
             max_tokens=self.config.max_tokens,
@@ -65,9 +63,57 @@ class ModelClient:
             top_p=self.config.top_p,
             frequency_penalty=self.config.frequency_penalty,
             extra_body=self.config.extra_body,
+            stream=True,
         )
 
-        raw_content = response.choices[0].message.content
+        raw_content = ""
+        buffer = ""  # Buffer to hold content that might be part of a marker
+        action_markers = ["finish(message=", "do(action="]
+        in_action_phase = False  # Track if we've entered the action phase
+
+        for chunk in stream:
+            if len(chunk.choices) == 0:
+                continue
+            if chunk.choices[0].delta.content is not None:
+                content = chunk.choices[0].delta.content
+                raw_content += content
+
+                if in_action_phase:
+                    # Already in action phase, just accumulate content without printing
+                    continue
+
+                buffer += content
+
+                # Check if any marker is fully present in buffer
+                marker_found = False
+                for marker in action_markers:
+                    if marker in buffer:
+                        # Marker found, print everything before it
+                        thinking_part = buffer.split(marker, 1)[0]
+                        print(thinking_part, end="", flush=True)
+                        print()  # Print newline after thinking is complete
+                        in_action_phase = True
+                        marker_found = True
+                        break
+
+                if marker_found:
+                    continue  # Continue to collect remaining content
+
+                # Check if buffer ends with a prefix of any marker
+                # If so, don't print yet (wait for more content)
+                is_potential_marker = False
+                for marker in action_markers:
+                    for i in range(1, len(marker)):
+                        if buffer.endswith(marker[:i]):
+                            is_potential_marker = True
+                            break
+                    if is_potential_marker:
+                        break
+
+                if not is_potential_marker:
+                    # Safe to print the buffer
+                    print(buffer, end="", flush=True)
+                    buffer = ""
 
         # Parse thinking and action from response
         thinking, action = self._parse_response(raw_content)
@@ -78,20 +124,43 @@ class ModelClient:
         """
         Parse the model response into thinking and action parts.
 
+        Parsing rules:
+        1. If content contains 'finish(message=', everything before is thinking,
+           everything from 'finish(message=' onwards is action.
+        2. If rule 1 doesn't apply but content contains 'do(action=',
+           everything before is thinking, everything from 'do(action=' onwards is action.
+        3. Fallback: If content contains '<answer>', use legacy parsing with XML tags.
+        4. Otherwise, return empty thinking and full content as action.
+
         Args:
             content: Raw response content.
 
         Returns:
             Tuple of (thinking, action).
         """
-        if "<answer>" not in content:
-            return "", content
+        # Rule 1: Check for finish(message=
+        if "finish(message=" in content:
+            parts = content.split("finish(message=", 1)
+            thinking = parts[0].strip()
+            action = "finish(message=" + parts[1]
+            return thinking, action
 
-        parts = content.split("<answer>", 1)
-        thinking = parts[0].replace("<think>", "").replace("</think>", "").strip()
-        action = parts[1].replace("</answer>", "").strip()
+        # Rule 2: Check for do(action=
+        if "do(action=" in content:
+            parts = content.split("do(action=", 1)
+            thinking = parts[0].strip()
+            action = "do(action=" + parts[1]
+            return thinking, action
 
-        return thinking, action
+        # Rule 3: Fallback to legacy XML tag parsing
+        if "<answer>" in content:
+            parts = content.split("<answer>", 1)
+            thinking = parts[0].replace("<think>", "").replace("</think>", "").strip()
+            action = parts[1].replace("</answer>", "").strip()
+            return thinking, action
+
+        # Rule 4: No markers found, return content as action
+        return "", content
 
 
 class MessageBuilder:
