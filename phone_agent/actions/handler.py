@@ -3,6 +3,7 @@
 import time
 from dataclasses import dataclass
 from typing import Any, Callable
+import json
 
 from phone_agent.adb import (
     back,
@@ -279,18 +280,16 @@ def parse_action(response: str) -> dict[str, Any]:
         ValueError: If the response cannot be parsed.
     """
     try:
-        # Try to evaluate as Python dict/function call
         response = response.strip()
-        if response.startswith("do"):
-            action = eval(response)
-        elif response.startswith("finish"):
-            action = {
-                "_metadata": "finish",
-                "message": response.replace("finish(message=", "")[1:-2],
-            }
-        else:
-            raise ValueError(f"Failed to parse action: {response}")
-        return action
+        obj = json.loads(response)
+        if not isinstance(obj, dict):
+            raise ValueError("Action must be a JSON object")
+        metadata = obj.get("_metadata")
+        if metadata not in ("do", "finish"):
+            raise ValueError("Invalid or missing '_metadata' field")
+        return obj
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Failed to parse action: invalid JSON: {e}")
     except Exception as e:
         raise ValueError(f"Failed to parse action: {e}")
 
