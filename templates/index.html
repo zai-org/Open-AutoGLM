@@ -141,10 +141,73 @@
             font-size: 12px;
             font-weight: 600;
             color: var(--text-primary);
-            margin-bottom: 12px;
+            margin-bottom: 0px;
+            /* Reduced margin */
             display: flex;
             align-items: center;
             justify-content: space-between;
+            cursor: pointer;
+            padding: 8px 0;
+            user-select: none;
+        }
+
+        .section-title:hover {
+            opacity: 0.8;
+        }
+
+        .chevron {
+            font-size: 10px;
+            transition: transform 0.2s;
+            color: var(--text-muted);
+        }
+
+        .section.collapsed .chevron {
+            transform: rotate(-90deg);
+        }
+
+        .section-content {
+            overflow: hidden;
+            transition: max-height 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease-out;
+            max-height: 500px;
+            /* Arbitrary large value */
+            opacity: 1;
+            margin-bottom: 24px;
+        }
+
+        .section.collapsed .section-content {
+            max-height: 0;
+            opacity: 0;
+            margin-bottom: 0;
+            padding: 0;
+        }
+
+        /* Layout adjustments for sidebar header actions */
+        .sidebar-header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+
+        .header-actions-sidebar {
+            display: flex;
+            gap: 8px;
+        }
+
+        .icon-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+
+        .icon-btn:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
         }
 
         .badge {
@@ -337,6 +400,43 @@
             opacity: 0.7;
         }
 
+        /* Queue */
+        .queue-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .queue-text {
+            flex: 1;
+            margin-right: 8px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .queue-remove {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 4px;
+            font-size: 14px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .queue-remove:hover {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error);
+        }
+
         /* History */
         .search-box {
             position: relative;
@@ -478,6 +578,18 @@
             background: var(--error);
             color: white;
             border-color: var(--error);
+        }
+
+        .live-console {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+            font-size: 11px;
+            padding: 12px;
+            overflow-y: auto;
+            height: 200px;
+            white-space: pre-wrap;
+            border-bottom: 1px solid var(--border-color);
         }
 
         .execution-log {
@@ -630,13 +742,74 @@
             filter: grayscale(1);
         }
 
-        .empty-text {
-            font-size: 14px;
-            margin-bottom: 6px;
+        .action-value {
+            color: var(--text-primary);
+            font-size: 12px;
+            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
         }
 
-        .empty-subtext {
-            font-size: 12px;
+        /* API Logs */
+        .log-icon-api {
+            background: var(--bg-tertiary);
+            color: var(--text-muted);
+            border: 1px dashed var(--border-color);
+            font-size: 10px;
+        }
+
+        .api-details {
+            margin-top: 8px;
+            margin-left: 36px;
+        }
+
+        .api-summary {
+            cursor: pointer;
+            color: var(--text-muted);
+            font-size: 11px;
+            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .api-summary:hover {
+            color: var(--accent-primary);
+        }
+
+        .api-content {
+            background: #000;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 12px;
+            margin-top: 6px;
+            overflow-x: auto;
+            color: #a1a1aa;
+            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+            font-size: 11px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+
+        .api-direction {
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .direction-request {
+            color: var(--accent-primary);
+        }
+
+        .direction-response {
+            color: var(--success);
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-muted);
         }
 
         /* Scrollbar */
@@ -675,6 +848,235 @@
                 height: auto;
             }
         }
+
+        /* Chat Input Area */
+        .input-area {
+            padding: 20px;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .input-group-chat {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 10px;
+            transition: border-color 0.2s;
+        }
+
+        .input-group-chat:focus-within {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+        }
+
+        .input-field-chat {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-size: 14px;
+            resize: none;
+            height: 24px;
+            /* Init height */
+            max-height: 150px;
+            line-height: 1.5;
+            font-family: inherit;
+            padding: 0;
+        }
+
+        .input-field-chat:focus {
+            outline: none;
+        }
+
+        .btn-send {
+            background: var(--accent-primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            height: 32px;
+        }
+
+        .btn-send:hover {
+            background: var(--accent-secondary);
+        }
+
+        .btn-send:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .input-actions {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            padding: 0 4px;
+        }
+
+        .btn-link {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 12px;
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        .btn-link:hover {
+            color: var(--accent-primary);
+        }
+
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+
+        .toast {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 12px 16px;
+            border-radius: var(--radius-md);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            min-width: 300px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: auto;
+        }
+
+        .toast.hiding {
+            animation: toastFadeOut 0.2s ease-out forwards;
+        }
+
+        .toast-icon {
+            font-size: 16px;
+        }
+
+        .toast-message {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .toast-success {
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+
+        .toast-success .toast-icon {
+            color: var(--success);
+        }
+
+        .toast-error {
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        .toast-error .toast-icon {
+            color: var(--error);
+        }
+
+        .toast-info {
+            border-color: rgba(37, 99, 235, 0.3);
+        }
+
+        .toast-info .toast-icon {
+            color: var(--accent-primary);
+        }
+
+        @keyframes toastSlideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes toastFadeOut {
+            to {
+                transform: translateY(-10px);
+                opacity: 0;
+            }
+        }
+
+        /* Modal Dialog */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s ease-out;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-container {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            width: 400px;
+            max-width: 90%;
+            padding: 24px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+            transform: scale(0.95);
+            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .modal-overlay.active .modal-container {
+            transform: scale(1);
+        }
+
+        .modal-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .modal-message {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+            line-height: 1.5;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
     </style>
 </head>
 
@@ -683,92 +1085,119 @@
         <!-- Sidebar -->
         <div class="sidebar">
             <div class="sidebar-header">
-                <div class="logo">
-                    <div class="logo-icon">🤖</div>
-                    <div>
-                        <div class="logo-text">AI_Phone</div>
+                <div class="sidebar-header-row">
+                    <div class="logo">
+                        <div class="logo-icon">🤖</div>
+                        <div>
+                            <div class="logo-text">AI_Phone</div>
+                        </div>
                     </div>
-                </div>
-                <div class="subtitle">智能手机控制平台</div>
-                <a href="/guide" target="_blank" class="guide-link">📖 安装指南</a>
-            </div>
-
-            <div class="sidebar-content">
-                <!-- Task Input -->
-                <div class="section">
-                    <div class="section-title">任务控制</div>
-                    <div class="input-group">
-                        <textarea id="taskInput" class="input-field"
-                            placeholder="输入任务描述...&#10;例如: 打开微信 / 打开抖音刷视频"></textarea>
-                    </div>
-                    <div class="btn-group">
-                        <button id="executeBtn" class="btn btn-primary" onclick="executeTask()">
-                            <span id="btnText">立即执行</span>
-                            <span id="btnSpinner" class="spinner" style="display:none;"></span>
+                    <div class="header-actions-sidebar">
+                        <button class="icon-btn" title="Collapse All" onclick="toggleAllSections()">
+                            <i id="collapseAllIcon">🔽</i>
                         </button>
-                        <button class="btn btn-secondary" onclick="addToQueue()">➕ 加入队列</button>
                     </div>
                 </div>
+                <div class="subtitle">智能手机控制平台</div><a href="/guide" target="_blank" class="guide-link">📖 安装指南</a>
+            </div>
+            <div class="sidebar-content">
 
                 <!-- Queue -->
-                <div class="section">
-                    <div class="section-title">
-                        任务队列
-                        <span class="badge" id="queueBadge">0</span>
+                <div class="section" id="section-queue">
+                    <div class="section-title" onclick="toggleSection('section-queue')">
+                        <span>任务队列 <span class="badge" id="queueBadge">0</span></span>
+                        <span class="chevron">▼</span>
                     </div>
-                    <div id="queueList">
-                        <div class="empty-state" style="padding:15px;font-size:11px;">
-                            队列为空
+                    <div class="section-content">
+                        <div id="queueList">
+                            <div class="empty-state" style="padding:15px;font-size:11px;">队列为空 </div>
                         </div>
                     </div>
                 </div>
-
                 <!-- Popular Tasks -->
-                <div class="section">
-                    <div class="section-title">高频任务</div>
-                    <div id="popularList" class="popular-grid">
-                        <div class="empty-state" style="padding:15px;font-size:11px;">
-                            暂无数据
+                <div class="section" id="section-popular">
+                    <div class="section-title" onclick="toggleSection('section-popular')">
+                        <span>高频任务</span>
+                        <span class="chevron">▼</span>
+                    </div>
+                    <div class="section-content">
+                        <div id="popularList" class="popular-grid">
+                            <div class="empty-state" style="padding:15px;font-size:11px;">暂无数据 </div>
                         </div>
                     </div>
                 </div>
-
                 <!-- History -->
-                <div class="section">
-                    <div class="section-title">历史记录</div>
-                    <div class="search-box">
-                        <span class="search-icon">🔍</span>
-                        <input type="text" id="searchInput" class="input-field" placeholder="搜索历史任务..."
-                            onkeyup="searchHistory()">
+                <div class="section" id="section-history">
+                    <div class="section-title" onclick="toggleSection('section-history')">
+                        <span>历史记录</span>
+                        <span class="chevron">▼</span>
                     </div>
-                    <div id="historyList" class="history-list">
-                        <div class="empty-state" style="padding:15px;font-size:11px;">
-                            暂无历史
+                    <div class="section-content">
+                        <div class="search-box"><span class="search-icon">🔍</span><input type="text" id="searchInput"
+                                class="input-field" placeholder="搜索历史任务..." onkeyup="searchHistory()"></div>
+                        <div id="historyList" class="history-list">
+                            <div class="empty-state" style="padding:15px;font-size:11px;">暂无历史
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
+
         </div>
 
         <!-- Main Content -->
         <div class="main-content">
-            <div class="main-header">
+            <div class="main-header"
+                style="border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
                 <div class="task-info">
                     <div class="task-label">当前任务</div>
                     <div class="task-name" id="currentTask">等待任务...</div>
                 </div>
                 <div class="header-actions">
-                    <button id="stopBtn" class="stop-btn" onclick="stopTask()" style="display:none;">⏹ 停止</button>
-                    <div class="status-badge status-idle" id="statusBadge">IDLE</div>
+                    <button id="installBtn" class="btn btn-secondary" onclick="installKeyboard()" title="一键安装并设置ADB键盘">
+                        ⌨️ 安装输入法
+                    </button>
+                    <span id="taskStatus" class="status-badge status-idle">空闲</span>
+                    <button class="stop-btn" onclick="stopTask()" disabled id="stopBtn">停止任务</button>
                 </div>
             </div>
 
+            <div id="liveConsole" class="live-console" style="display: none;"></div>
+
             <div class="execution-log" id="executionLog">
                 <div class="empty-state">
-                    <div class="empty-icon">🚀</div>
-                    <div class="empty-text">准备就绪</div>
-                    <div class="empty-subtext">输入任务并执行开始</div>
+                    <div class="empty-icon">📱</div>
+                    <div>在左侧输入任务开始控制手机</div>
                 </div>
+            </div>
+            <!-- Input Area (Chat Style) -->
+            <div class="input-area">
+                <div class="input-group-chat">
+                    <textarea id="taskInput" class="input-field-chat"
+                        placeholder="输入任务描述... (Ctrl+Enter 执行)"></textarea>
+                    <button id="executeBtn" class="btn-send" onclick="executeTask()">
+                        <span id="btnText">发送</span>
+                        <span id="btnSpinner" class="spinner" style="display:none;"></span>
+                    </button>
+                </div>
+                <div class="input-actions">
+                    <button class="btn-link" onclick="addToQueue()">➕ 加入队列</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Modal Template -->
+    <div id="modalOverlay" class="modal-overlay">
+        <div class="modal-container">
+            <div id="modalTitle" class="modal-title">Confirm Action</div>
+            <div id="modalMessage" class="modal-message">Are you sure?</div>
+            <div class="modal-actions">
+                <button id="modalCancel" class="btn btn-secondary">Cancel</button>
+                <button id="modalConfirm" class="btn btn-primary">Confirm</button>
             </div>
         </div>
     </div>
@@ -778,13 +1207,77 @@
         let statusCheckInterval = null;
         let lastStepCount = 0;
 
+        // Custom Toast Notification
+        function showToast(message, type = 'info', duration = 3000) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+
+            toast.className = `toast toast-${type}`;
+
+            const iconMap = {
+                'success': '✅',
+                'error': '❌',
+                'info': 'ℹ️'
+            }
+
+                ;
+
+            toast.innerHTML = `<div class="toast-icon">${iconMap[type]}</div><div class="toast-message">${escapeHtml(message)}</div>`;
+
+            container.appendChild(toast);
+
+            // Remove after duration
+            setTimeout(() => {
+                toast.classList.add('hiding');
+
+                toast.addEventListener('animationend', () => {
+                    if (toast.parentElement) {
+                        toast.parentElement.removeChild(toast);
+                    }
+                });
+            }
+
+                , duration);
+        }
+
+        // Custom Confirm Modal
+        function showConfirmModal(message, onConfirm) {
+            const overlay = document.getElementById('modalOverlay');
+            const titleEl = document.getElementById('modalTitle');
+            const messageEl = document.getElementById('modalMessage');
+            const confirmBtn = document.getElementById('modalConfirm');
+            const cancelBtn = document.getElementById('modalCancel');
+
+            messageEl.textContent = message;
+
+            const close = () => {
+                overlay.classList.remove('active');
+                confirmBtn.onclick = null;
+                cancelBtn.onclick = null;
+            }
+
+                ;
+
+            confirmBtn.onclick = () => {
+                close();
+                if (onConfirm) onConfirm();
+            }
+
+                ;
+
+            cancelBtn.onclick = close;
+
+            overlay.classList.add('active');
+        }
+
         // 立即执行任务
         async function executeTask() {
             if (isExecuting) return;
 
             const task = document.getElementById('taskInput').value.trim();
+
             if (!task) {
-                alert('请输入任务描述');
+                showToast('请输入任务描述', 'error');
                 return;
             }
 
@@ -794,75 +1287,118 @@
                 updateExecuteButton(true);
                 updateTaskHeader(task, 'running');
                 clearExecutionLog();
+
+                const liveConsole = document.getElementById('liveConsole');
+                liveConsole.textContent = '';
+                liveConsole.style.display = 'none';
+
                 addLogItem('start', '任务开始', task, new Date().toLocaleTimeString());
 
                 const response = await fetch('/api/execute', {
+
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ task: task })
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+
+                    ,
+                    body: JSON.stringify({
+                        task: task
+                    })
                 });
 
                 const data = await response.json();
+
                 if (data.success) {
                     startStatusPolling();
-                } else {
+                }
+
+                else {
                     isExecuting = false;
                     updateExecuteButton(false);
+
                     if (data.message.includes('队列')) {
-                        if (confirm(data.message + '，是否添加到队列？')) {
+                        showConfirmModal(data.message + '，是否添加到队列？', () => {
                             addToQueue();
-                        }
-                    } else {
-                        alert(data.message);
+                        });
+                    }
+
+                    else {
+                        showToast(data.message, 'error');
                     }
                 }
-            } catch (error) {
+            }
+
+            catch (error) {
                 isExecuting = false;
                 updateExecuteButton(false);
-                alert('执行失败: ' + error.message);
+                showToast('执行失败: ' + error.message, 'error');
             }
         }
 
         // 添加到队列
         async function addToQueue() {
             const task = document.getElementById('taskInput').value.trim();
+
             if (!task) {
-                alert('请输入任务描述');
+                showToast('请输入任务描述', 'error');
                 return;
             }
 
             try {
                 const response = await fetch('/api/queue/add', {
+
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ task: task })
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+
+                    ,
+                    body: JSON.stringify({
+                        task: task
+                    })
                 });
 
                 const data = await response.json();
+
                 if (data.success) {
+                    showToast('任务已添加到队列', 'success');
                     document.getElementById('taskInput').value = '';
                     loadQueue();
-                } else {
-                    alert(data.message);
                 }
-            } catch (error) {
-                alert('添加失败: ' + error.message);
+
+                else {
+                    showToast(data.message, 'error');
+                }
+            }
+
+            catch (error) {
+                showToast('添加失败: ' + error.message, 'error');
             }
         }
 
         // 停止任务
         async function stopTask() {
-            if (!confirm('确定要停止当前任务吗？')) return;
+            showConfirmModal('确定要停止当前任务吗？', async () => {
+                try {
+                    const response = await fetch('/api/stop', {
+                        method: 'POST'
+                    });
+                    const data = await response.json();
 
-            try {
-                const response = await fetch('/api/stop', { method: 'POST' });
-                const data = await response.json();
-                if (!data.success) {
-                    alert(data.message);
+                    if (data.success) {
+                        showToast('已发送停止信号', 'info');
+                    }
+
+                    else {
+                        showToast(data.message, 'error');
+                    }
                 }
-            } catch (error) {
-                alert('停止失败: ' + error.message);
-            }
+
+                catch (error) {
+                    showToast('停止失败: ' + error.message, 'error');
+                }
+            });
         }
 
         // 开始轮询
@@ -887,12 +1423,23 @@
                 // 更新停止按钮
                 document.getElementById('stopBtn').style.display = data.can_stop ? 'block' : 'none';
 
+                // Live Console Update
+                if (data.realtime_log) {
+                    const liveConsole = document.getElementById('liveConsole');
+                    liveConsole.style.display = 'block';
+                    if (liveConsole.textContent !== data.realtime_log) {
+                        liveConsole.textContent = data.realtime_log;
+                        liveConsole.scrollTop = liveConsole.scrollHeight;
+                    }
+                }
+
                 // 更新新增的步骤
                 if (data.steps && data.steps.length > lastStepCount) {
                     for (let i = lastStepCount; i < data.steps.length; i++) {
                         const step = data.steps[i];
                         addLogItem(step.type, getStepTitle(step.type), step.content || step.message || step.error || step.task, step.timestamp);
                     }
+
                     lastStepCount = data.steps.length;
                 }
 
@@ -906,7 +1453,9 @@
                     loadPopular();
                     loadQueue();
                 }
-            } catch (error) {
+            }
+
+            catch (error) {
                 console.error('状态检查失败:', error);
             }
         }
@@ -917,7 +1466,9 @@
                 const response = await fetch('/api/queue/list');
                 const data = await response.json();
                 renderQueue(data.queue || []);
-            } catch (error) {
+            }
+
+            catch (error) {
                 console.error('加载队列失败:', error);
             }
         }
@@ -934,13 +1485,9 @@
             }
 
             let html = '';
+
             queue.forEach(item => {
-                html += `
-                    <div class="queue-item">
-                        <div class="queue-text">${escapeHtml(item.task)}</div>
-                        <button class="queue-remove" onclick="removeFromQueue('${item.id}')">✕</button>
-                    </div>
-                `;
+                html += `<div class="queue-item"><div class="queue-text">${escapeHtml(item.task)}</div><button class="queue-remove" onclick="removeFromQueue('${item.id}')">✕</button></div>`;
             });
             list.innerHTML = html;
         }
@@ -949,14 +1496,24 @@
         async function removeFromQueue(taskId) {
             try {
                 const response = await fetch('/api/queue/remove', {
+
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ task_id: taskId })
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+
+                    ,
+                    body: JSON.stringify({
+                        task_id: taskId
+                    })
                 });
+
                 if (response.ok) {
                     loadQueue();
                 }
-            } catch (error) {
+            }
+
+            catch (error) {
                 console.error('移除失败:', error);
             }
         }
@@ -967,7 +1524,9 @@
                 const response = await fetch('/api/popular');
                 const data = await response.json();
                 renderPopular(data.popular || []);
-            } catch (error) {
+            }
+
+            catch (error) {
                 console.error('加载高频任务失败:', error);
             }
         }
@@ -982,25 +1541,25 @@
             }
 
             let html = '';
+
             popular.slice(0, 10).forEach(item => {
-                html += `
-                    <div class="popular-item" onclick="setTask('${escapeHtml(item.task)}')">
-                        <div class="popular-text">${escapeHtml(item.task)}</div>
-                        <div class="popular-count">${item.count}次</div>
-                    </div>
-                `;
+                html += `<div class="popular-item" onclick="setTask(this.dataset.task)" data-task="${escapeHtml(item.task)}"><div class="popular-text">${escapeHtml(item.task)}</div><div class="popular-count">${item.count}次</div></div>`;
             });
             list.innerHTML = html;
         }
 
         // 搜索历史
         let searchTimeout;
+
         async function searchHistory() {
             clearTimeout(searchTimeout);
+
             searchTimeout = setTimeout(async () => {
                 const search = document.getElementById('searchInput').value;
                 await loadHistory(search);
-            }, 300);
+            }
+
+                , 300);
         }
 
         // 加载历史
@@ -1010,7 +1569,9 @@
                 const response = await fetch(url);
                 const data = await response.json();
                 renderHistory(data.history || []);
-            } catch (error) {
+            }
+
+            catch (error) {
                 console.error('加载历史失败:', error);
             }
         }
@@ -1025,13 +1586,9 @@
             }
 
             let html = '';
+
             history.slice(0, 20).forEach(item => {
-                html += `
-                    <div class="history-item" onclick='viewHistory(${JSON.stringify(item).replace(/'/g, "&apos;")})'>
-                        <div class="history-task">${escapeHtml(item.task)}</div>
-                        <div class="history-time">${item.timestamp}</div>
-                    </div>
-                `;
+                html += `<div class="history-item" onclick='viewHistory(${JSON.stringify(item).replace(/'/g, "&apos;")})'><div class="history-task">${escapeHtml(item.task)}</div><div class="history-time">${item.timestamp}</div></div>`;
             });
             list.innerHTML = html;
         }
@@ -1044,12 +1601,10 @@
 
             if (item.steps && item.steps.length > 0) {
                 item.steps.forEach(step => {
-                    addLogItem(
-                        step.type,
+                    addLogItem(step.type,
                         getStepTitle(step.type),
                         step.content || step.message || step.error || step.task,
-                        step.timestamp
-                    );
+                        step.timestamp);
                 });
             }
         }
@@ -1068,14 +1623,17 @@
                 'success': '任务完成',
                 'complete': '执行完成',
                 'error': '执行错误'
-            };
+            }
+
+                ;
             return titles[type] || type;
         }
 
         // 更新任务头部
         function updateTaskHeader(task, status) {
             document.getElementById('currentTask').textContent = task || '等待任务...';
-            const badge = document.getElementById('statusBadge');
+            const badge = document.getElementById('taskStatus');
+
             badge.className = `status-badge status-${status}`;
             badge.textContent = status.toUpperCase();
         }
@@ -1108,8 +1666,11 @@
                 'action': '⚡',
                 'success': '✅',
                 'complete': '🎉',
-                'error': '❌'
-            };
+                'error': '❌',
+                'api_log': '🔌'
+            }
+
+                ;
 
             const iconClass = {
                 'start': 'log-icon-action',
@@ -1117,41 +1678,42 @@
                 'action': 'log-icon-action',
                 'success': 'log-icon-success',
                 'complete': 'log-icon-success',
-                'error': 'log-icon-error'
-            };
+                'error': 'log-icon-error',
+                'api_log': 'log-icon-api'
+            }
 
-            let contentHtml = '';
-            if (typeof content === 'object') {
+                ;
+
+            // Handle API Logs specially
+            if (type === 'api_log') {
+                const direction = content.direction; // request or response
+                const payload = content.content;
+                const isRequest = direction === 'request';
+                const directionClass = isRequest ? 'direction-request' : 'direction-response';
+                const directionIcon = isRequest ? '⬆️' : '⬇️';
+
+                title = `<span class="${directionClass}">API ${direction.toUpperCase()}</span>`;
+
+                contentHtml = `<div class="api-details"><details><summary class="api-summary">${directionIcon} View ${isRequest ? 'Payload' : 'Response'} JSON </summary><div class="api-content">${escapeHtml(JSON.stringify(payload, null, 2))}</div></details></div>`;
+            }
+
+            else if (typeof content === 'object') {
                 contentHtml = '<div class="action-details">';
+
                 for (const [key, value] of Object.entries(content)) {
                     if (key !== '_metadata') {
-                        contentHtml += `
-                            <div class="action-row">
-                                <div class="action-key">${key}:</div>
-                                <div class="action-value">${JSON.stringify(value)}</div>
-                            </div>
-                        `;
+                        contentHtml += ` <div class="action-row"><div class="action-key">${key}:</div><div class="action-value">${JSON.stringify(value)}</div></div>`;
                     }
                 }
+
                 contentHtml += '</div>';
-            } else {
+            }
+
+            else {
                 contentHtml = `<div class="log-content">${escapeHtml(content)}</div>`;
             }
 
-            item.innerHTML = `
-                <div class="log-card">
-                    <div class="log-header">
-                        <div class="log-icon ${iconClass[type] || 'log-icon-action'}">
-                            ${iconMap[type] || '📋'}
-                        </div>
-                        <div class="log-meta">
-                            <div class="log-type">${title}</div>
-                            <div class="log-time">${time}</div>
-                        </div>
-                    </div>
-                    ${contentHtml}
-                </div>
-            `;
+            item.innerHTML = ` <div class="log-card"><div class="log-header"><div class="log-icon ${iconClass[type] || 'log-icon-action'}">${iconMap[type] || '📋'}</div><div class="log-meta"><div class="log-type">${title}</div><div class="log-time">${time}</div></div></div>${contentHtml}</div>`;
 
             log.appendChild(item);
             log.scrollTop = log.scrollHeight;
@@ -1180,6 +1742,33 @@
             // 定期更新队列
             setInterval(loadQueue, 3000);
         });
+
+        // Collapsible Sections
+        function toggleSection(id) {
+            const section = document.getElementById(id);
+            section.classList.toggle('collapsed');
+        }
+
+        let allCollapsed = false;
+        function toggleAllSections() {
+            const sections = ['section-task', 'section-queue', 'section-popular', 'section-history'];
+            allCollapsed = !allCollapsed;
+
+            sections.forEach(id => {
+                const section = document.getElementById(id);
+                if (allCollapsed) {
+                    section.classList.add('collapsed');
+                } else {
+                    section.classList.remove('collapsed');
+                }
+            });
+
+            // Update icon
+            const icon = document.getElementById('collapseAllIcon');
+            icon.textContent = allCollapsed ? '▶️' : '🔽';
+            icon.style.display = 'inline-block';
+            icon.style.transform = allCollapsed ? 'rotate(0deg)' : 'rotate(0deg)'; // Icon change is enough
+        }
     </script>
 </body>
 

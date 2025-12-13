@@ -65,19 +65,125 @@ task_thread = None
 stop_flag = False
 
 
+class StreamLogger:
+    """Redirect stdout to both terminal and buffer for real-time processing"""
+    
+    def __init__(self, stream, callback, raw_callback=None):
+        self.stream = stream
+        self.callback = callback
+        self.raw_callback = raw_callback
+        self.buffer = ""
+        self.delimiter = "=" * 50
+
+    def write(self, data):
+        # Write to original stream (terminal)
+        self.stream.write(data)
+        self.stream.flush()
+        
+        # Real-time raw callback
+        if self.raw_callback:
+            self.raw_callback(data)
+        
+        # Add to buffer and process
+        self.buffer += data
+        self.process_buffer()
+
+    def flush(self):
+        self.stream.flush()
+
+    def process_buffer(self):
+        if self.delimiter in self.buffer:
+            parts = self.buffer.split(self.delimiter)
+            # Process all complete parts
+            for part in parts[:-1]:
+                if part.strip():
+                    self.callback(part)
+            
+            # Keep the last incomplete part
+            self.buffer = parts[-1]
+            
+    def flush_buffer(self):
+        """Process remaining buffer content"""
+        if self.buffer.strip():
+            self.callback(self.buffer)
+        self.buffer = ""
+
+
 class CustomPhoneAgent(PhoneAgent):
     """自定义Agent，捕获详细执行信息"""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.steps_callback = None
-        self.should_stop = False
+        self.stop_check_callback = None
+        self.raw_callback = None
+        
+        # Intercept model client request
+        self._original_request = self.model_client.request
+        self.model_client.request = self._wrapped_request
+
+    def _wrapped_request(self, messages):
+        """Intercept request to log API calls"""
+        # 0. Check Stop Signal
+        if self.stop_check_callback and self.stop_check_callback():
+             if self.steps_callback:
+                self.steps_callback({
+                    "type": "error",
+                    "error": "任务已被用户停止",
+                    "timestamp": datetime.now().strftime("%H:%M:%S")
+                })
+             raise Exception("Task stopped by user")
+
+        # 1. Log Request
+        if self.steps_callback:
+            # Create a copy to avoid modifying original
+            safe_messages = []
+            for msg in messages:
+                safe_msg = msg.copy()
+                if isinstance(safe_msg.get('content'), list):
+                    # Filter out image data for logging
+                    safe_content = []
+                    for item in safe_msg['content']:
+                        if item.get('type') == 'text':
+                            safe_content.append(item)
+                        elif item.get('type') == 'image_url':
+                            safe_content.append({"type": "image_url", "image_url": "t... (base64 image hidden)"})
+                    safe_msg['content'] = safe_content
+                safe_messages.append(safe_msg)
+
+            self.steps_callback({
+                "type": "api_log",
+                "direction": "request",
+                "content": safe_messages,
+                "timestamp": datetime.now().strftime("%H:%M:%S")
+            })
+
+        # 2. Call original
+        response = self._original_request(messages)
+
+        # 3. Log Response
+        if self.steps_callback:
+            self.steps_callback({
+                "type": "api_log",
+                "direction": "response",
+                "content": {
+                    "thinking": response.thinking,
+                    "action": response.action,
+                    "raw_content": response.raw_content
+                },
+                "timestamp": datetime.now().strftime("%H:%M:%S")
+            })
+
+        return response
 
     def set_steps_callback(self, callback):
         self.steps_callback = callback
 
-    def set_stop_flag(self, flag):
-        self.should_stop = flag
+    def set_stop_check(self, callback):
+        self.stop_check_callback = callback
+        
+    def set_raw_callback(self, callback):
+        self.raw_callback = callback
 
     def run(self, task):
         if self.steps_callback:
@@ -88,24 +194,18 @@ class CustomPhoneAgent(PhoneAgent):
             })
 
         original_stdout = sys.stdout
-        captured_output = io.StringIO()
+        # Use StreamLogger instead of StringIO
+        stream_logger = StreamLogger(original_stdout, self._process_step_text, self.raw_callback)
 
         try:
-            sys.stdout = captured_output
+            sys.stdout = stream_logger
             result = super().run(task)
+            
+            # Flush remaining buffer
+            stream_logger.flush_buffer()
+            
+            # Restore stdout
             sys.stdout = original_stdout
-
-            output = captured_output.getvalue()
-
-            # 保存原始日志
-            if self.steps_callback:
-                self.steps_callback({
-                    "type": "raw_log",
-                    "content": output,
-                    "timestamp": datetime.now().strftime("%H:%M:%S")
-                })
-
-            self._parse_and_send_steps(output)
 
             if self.steps_callback:
                 self.steps_callback({
@@ -126,63 +226,75 @@ class CustomPhoneAgent(PhoneAgent):
                 })
             raise
 
-    def _parse_and_send_steps(self, output):
+    def _process_step_text(self, step_text):
+        """Process a single step block"""
         if not self.steps_callback:
             return
 
-        steps = output.split("=" * 50)
-
-        for step_text in steps:
-            # 检查停止标志
-            if self.should_stop:
-                if self.steps_callback:
-                    self.steps_callback({
-                        "type": "error",
-                        "error": "任务已被用户停止",
-                        "timestamp": datetime.now().strftime("%H:%M:%S")
-                    })
-                raise Exception("任务已被用户停止")
-
-            step_text = step_text.strip()
-            if not step_text:
-                continue
-
-            think_match = re.search(r'💭 思考过程:.*?-{50}(.*?)-{50}', step_text, re.DOTALL)
-            if think_match:
-                thinking = think_match.group(1).strip()
+        # 检查停止标志
+        if self.stop_check_callback and self.stop_check_callback():
+            if self.steps_callback:
                 self.steps_callback({
-                    "type": "thinking",
-                    "content": thinking,
+                    "type": "error",
+                    "error": "任务已被用户停止",
+                    "timestamp": datetime.now().strftime("%H:%M:%S")
+                })
+            raise Exception("任务已被用户停止")
+
+        step_text = step_text.strip()
+        if not step_text:
+            return
+
+        # Log raw content just in case (optional, might be noisy if we do it for every chunk)
+        # We can append to raw logs here if needed, but let's stick to parsing for now.
+        # Actually, adding 'raw_log' event for every chunk updates the UI execution log nicely.
+        self.steps_callback({
+            "type": "raw_log",
+            "content": step_text,
+            "timestamp": datetime.now().strftime("%H:%M:%S")
+        })
+
+        think_match = re.search(r'💭 思考过程:.*?-{50}(.*?)-{50}', step_text, re.DOTALL)
+        if think_match:
+            thinking = think_match.group(1).strip()
+            self.steps_callback({
+                "type": "thinking",
+                "content": thinking,
+                "timestamp": datetime.now().strftime("%H:%M:%S")
+            })
+
+        action_match = re.search(r'🎯 执行动作:(.*?)(?=={50}|$)', step_text, re.DOTALL)
+        if action_match:
+            action = action_match.group(1).strip()
+            try:
+                action_clean = re.sub(r'^```json\n|```$', '', action, flags=re.MULTILINE).strip()
+                action_json = json.loads(action_clean)
+                self.steps_callback({
+                    "type": "action",
+                    "content": action_json,
+                    "timestamp": datetime.now().strftime("%H:%M:%S")
+                })
+            except:
+                self.steps_callback({
+                    "type": "action",
+                    "content": action,
                     "timestamp": datetime.now().strftime("%H:%M:%S")
                 })
 
-            action_match = re.search(r'🎯 执行动作:(.*?)(?=={50}|$)', step_text, re.DOTALL)
-            if action_match:
-                action = action_match.group(1).strip()
-                try:
-                    action_clean = re.sub(r'^```json\n|```$', '', action, flags=re.MULTILINE).strip()
-                    action_json = json.loads(action_clean)
-                    self.steps_callback({
-                        "type": "action",
-                        "content": action_json,
-                        "timestamp": datetime.now().strftime("%H:%M:%S")
-                    })
-                except:
-                    self.steps_callback({
-                        "type": "action",
-                        "content": action,
-                        "timestamp": datetime.now().strftime("%H:%M:%S")
-                    })
+        if "✅ 任务完成:" in step_text:
+            complete_match = re.search(r'✅ 任务完成:(.*?)(?=={50}|$)', step_text, re.DOTALL)
+            if complete_match:
+                message = complete_match.group(1).strip()
+                self.steps_callback({
+                    "type": "success",
+                    "message": message,
+                    "timestamp": datetime.now().strftime("%H:%M:%S")
+                })
 
-            if "✅ 任务完成:" in step_text:
-                complete_match = re.search(r'✅ 任务完成:(.*?)(?=={50}|$)', step_text, re.DOTALL)
-                if complete_match:
-                    message = complete_match.group(1).strip()
-                    self.steps_callback({
-                        "type": "success",
-                        "message": message,
-                        "timestamp": datetime.now().strftime("%H:%M:%S")
-                    })
+# ...
+
+# ... (In api_status)
+
 
 
 # ========== 文件操作 ==========
@@ -291,6 +403,7 @@ def execute_task(task, task_id):
         current_task["task"] = task
         current_task["status"] = "running"
         current_task["steps"] = []
+        current_task["realtime_log"] = ""  # Initialize realtime log
         current_task["current_step"] = 0
         current_task["can_stop"] = True
         current_task["task_id"] = task_id
@@ -304,7 +417,16 @@ def execute_task(task, task_id):
 
         agent = CustomPhoneAgent(model_config=model_config)
         agent.set_steps_callback(steps_callback)
-        agent.set_stop_flag(stop_flag)
+        agent.set_stop_check(lambda: stop_flag)
+        
+        # Set raw callback for realtime logging
+        def raw_log_callback(text):
+            global current_task
+            if "realtime_log" not in current_task:
+                current_task["realtime_log"] = ""
+            current_task["realtime_log"] += text
+            
+        agent.set_raw_callback(raw_log_callback)
 
         result = agent.run(task)
 
@@ -444,6 +566,7 @@ def api_status():
         "result": current_task["result"],
         "status": current_task["status"],
         "steps": current_task["steps"],
+        "realtime_log": current_task.get("realtime_log", ""),
         "current_step": current_task["current_step"],
         "can_stop": current_task["can_stop"],
         "queue_length": len(task_queue)
@@ -492,6 +615,20 @@ def api_stats():
 def guide():
     """安装指南页面"""
     return render_template('guide.html')
+
+
+@app.route('/api/tools/install-keyboard', methods=['POST'])
+def api_install_keyboard():
+    """Install and setup ADB Keyboard"""
+    from phone_agent.adb.input import install_and_set_adb_keyboard
+    
+    # Optional: Get device ID from request if needed, but defaults are fine for single device
+    success = install_and_set_adb_keyboard()
+    
+    if success:
+        return jsonify({"success": True, "message": "ADB Keyboard installed and set successfully"})
+    else:
+        return jsonify({"success": False, "message": "Failed to install ADB Keyboard"})
 
 
 if __name__ == '__main__':
