@@ -41,19 +41,31 @@ Usage examples:
     )
 
     parser.add_argument(
-        "--max-tokens", type=int, default=3000, help="Maximum generation tokens (default: 3000)"
+        "--max-tokens",
+        type=int,
+        default=3000,
+        help="Maximum generation tokens (default: 3000)",
     )
 
     parser.add_argument(
-        "--temperature", type=float, default=0.0, help="Sampling temperature (default: 0.0)"
+        "--temperature",
+        type=float,
+        default=0.0,
+        help="Sampling temperature (default: 0.0)",
     )
 
     parser.add_argument(
-        "--top_p", type=float, default=0.85, help="Nucleus sampling parameter (default: 0.85)"
+        "--top_p",
+        type=float,
+        default=0.85,
+        help="Nucleus sampling parameter (default: 0.85)",
     )
 
     parser.add_argument(
-        "--frequency_penalty", type=float, default=0.2, help="Frequency penalty parameter (default: 0.2)"
+        "--frequency_penalty",
+        type=float,
+        default=0.2,
+        help="Frequency penalty parameter (default: 0.2)",
     )
 
     args = parser.parse_args()
@@ -103,7 +115,9 @@ Usage examples:
             print(f"  - Completion tokens: {response.usage.completion_tokens}")
             print(f"  - Total tokens: {response.usage.total_tokens}")
 
-        print(f"\nPlease evaluate the above inference result to determine if the model deployment meets expectations.")
+        print(
+            f"\nPlease evaluate the above inference result to determine if the model deployment meets expectations."
+        )
 
     except Exception as e:
         print(f"\nError occurred while calling API:")
