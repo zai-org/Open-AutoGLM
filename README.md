@@ -8,6 +8,18 @@
 <p align="center">
     👋 加入我们的 <a href="resources/WECHAT.md" target="_blank">微信</a> 社区
 </p>
+<p align="center">
+    🎤 进一步在我们的产品 <a href="https://autoglm.zhipuai.cn/autotyper/" target="_blank">智谱 AI 输入法</a> 体验“用嘴发指令”
+</p>
+
+## 懒人版快速安装
+
+你可以使用Claude Code，配置 [GLM Coding Plan](https://bigmodel.cn/glm-coding) 后，输入以下提示词，快速部署本项目。
+
+```
+访问文档，为我安装 AutoGLM
+https://raw.githubusercontent.com/zai-org/Open-AutoGLM/refs/heads/main/README.md
+```
 
 ## 项目介绍
 
@@ -42,7 +54,7 @@ ADB 调试能力，可通过 WiFi 或网络连接设备，实现灵活的远程�
 - MacOS 配置方法：在 `Terminal` 或者任何命令行工具里
 
   ```bash
-  # 假设解压后的目录为 ~/Downlaods/platform-tools。如果不是请自行调整命令。
+  # 假设解压后的目录为 ~/Downloads/platform-tools。如果不是请自行调整命令。
   export PATH=${PATH}:~/Downloads/platform-tools
   ```
 
@@ -63,7 +75,7 @@ ADB 调试能力，可通过 WiFi 或网络连接设备，实现灵活的远程�
 ### 4. 安装 ADB Keyboard(用于文本输入)
 
 下载 [安装包](https://github.com/senzhk/ADBKeyBoard/blob/master/ADBKeyboard.apk) 并在对应的安卓设备中进行安装。
-注意，安装完成后还需要到 `设置-输入法` 或者 `设置-键盘列表` 中启用 `ADB Keyboard` 才能生效
+注意，安装完成后还需要到 `设置-输入法` 或者 `设置-键盘列表` 中启用 `ADB Keyboard` 才能生效(或使用命令`adb shell ime enable com.android.adbkeyboard/.AdbIME`[How-to-use](https://github.com/senzhk/ADBKeyBoard/blob/master/README.md#how-to-use))
 
 ## 部署准备工作
 

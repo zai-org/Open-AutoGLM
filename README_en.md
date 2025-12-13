@@ -6,12 +6,22 @@
 <img src=resources/logo.svg width="20%"/>
 </div>
 <p align="center">
-    👋 Join our <a href="resources/WECHAT.md" target="_blank">WeChat</a> and <a href="https://discord.gg/QR7SARHRxK" target="_blank">Discord</a> communities
+    👋 Join our <a href="resources/WECHAT.md" target="_blank">WeChat</a> or <a href="https://discord.gg/QR7SARHRxK" target="_blank">Discord</a> communities
 </p>
+
+## Quick Start
+
+You can use Claude Code with [GLM Coding Plan](https://z.ai/subscribe) and enter the following prompt to quickly deploy this project:
+
+```
+Access the documentation and install AutoGLM for me
+https://raw.githubusercontent.com/zai-org/Open-AutoGLM/refs/heads/main/README_en.md
+```
 
 ## Project Introduction
 
 Phone Agent is a mobile intelligent assistant framework built on AutoGLM. It understands phone screen content in a multimodal manner and helps users complete tasks through automated operations. The system controls devices via ADB (Android Debug Bridge), perceives screens using vision-language models, and generates and executes operation workflows through intelligent planning. Users simply describe their needs in natural language, such as "Open eBay and search for wireless earphones." and Phone Agent will automatically parse the intent, understand the current interface, plan the next action, and complete the entire workflow. The system also includes a sensitive operation confirmation mechanism and supports manual takeover during login or verification code scenarios. Additionally, it provides remote ADB debugging capabilities, allowing device connection via WiFi or network for flexible remote control and development.
+
 > ⚠️ This project is for research and learning purposes only. It is strictly prohibited to use for illegal information acquisition, system interference, or any illegal activities. Please carefully review the [Terms of Use](resources/privacy_policy_en.txt).
 
 ## Model Download Links
@@ -56,7 +66,7 @@ Python 3.10 or higher is recommended.
 ### 4. Install ADB Keyboard (for Text Input)
 
 Download the [installation package](https://github.com/senzhk/ADBKeyBoard/blob/master/ADBKeyboard.apk) and install it on the corresponding Android device.
-Note: After installation, you need to enable `ADB Keyboard` in `Settings > Input Method` or `Settings > Keyboard List` for it to work.
+Note: After installation, you need to enable `ADB Keyboard` in `Settings > Input Method` or `Settings > Keyboard List` for it to work.(or use command `adb shell ime enable com.android.adbkeyboard/.AdbIME`[How-to-use](https://github.com/senzhk/ADBKeyBoard/blob/master/README.md#how-to-use))
 
 ## Deployment Preparation
 
@@ -150,6 +160,26 @@ python3 -m vllm.entrypoints.openai.api_server \
 - This model has the same architecture as `GLM-4.1V-9B-Thinking`. For detailed information about model deployment, you can also check [GLM-V](https://github.com/zai-org/GLM-V) for model deployment and usage guides.
 
 - After successful startup, the model service will be accessible at `http://localhost:8000/v1`. If you deploy the model on a remote server, access it using that server's IP address.
+
+### 4. Check Model Deployment
+
+After starting the model service, you can use the following command to verify the deployment:
+
+```bash
+python scripts/check_deployment_en.py --base-url http://localhost:8000/v1 --model autoglm-phone-9b-multilingual
+```
+
+If using a third-party model service:
+
+```bash
+# Novita AI
+python scripts/check_deployment_en.py --base-url https://api.novita.ai/openai --model zai-org/autoglm-phone-9b-multilingual --apikey your-novita-api-key
+
+# Parasail
+python scripts/check_deployment_en.py --base-url https://api.parasail.io/v1 --model parasail-auto-glm-9b-multilingual --apikey your-parasail-api-key
+```
+
+Upon successful execution, the script will display the model's inference result and token statistics, helping you confirm whether the model deployment is working correctly.
 
 ## Using AutoGLM
 

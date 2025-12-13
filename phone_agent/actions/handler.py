@@ -1,5 +1,7 @@
 """Action handler for processing AI model outputs."""
 
+import ast
+import re
 import time
 from dataclasses import dataclass
 from typing import Any, Callable
@@ -279,10 +281,26 @@ def parse_action(response: str) -> dict[str, Any]:
         ValueError: If the response cannot be parsed.
     """
     try:
-        # Try to evaluate as Python dict/function call
         response = response.strip()
         if response.startswith("do"):
-            action = eval(response)
+            # Use AST parsing instead of eval for safety
+            try:
+                tree = ast.parse(response, mode='eval')
+                if not isinstance(tree.body, ast.Call):
+                    raise ValueError("Expected a function call")
+
+                call = tree.body
+                # Extract keyword arguments safely
+                action = {"_metadata": "do"}
+                for keyword in call.keywords:
+                    key = keyword.arg
+                    value = ast.literal_eval(keyword.value)
+                    action[key] = value
+
+                return action
+            except (SyntaxError, ValueError) as e:
+                raise ValueError(f"Failed to parse do() action: {e}")
+
         elif response.startswith("finish"):
             action = {
                 "_metadata": "finish",

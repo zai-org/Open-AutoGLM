@@ -55,7 +55,7 @@ class ModelClient:
         Raises:
             ValueError: If the response cannot be parsed.
         """
-        response = self.client.chat.completions.create(
+        stream = self.client.chat.completions.create(
             messages=messages,
             model=self.config.model_name,
             max_tokens=self.config.max_tokens,
@@ -63,10 +63,57 @@ class ModelClient:
             top_p=self.config.top_p,
             frequency_penalty=self.config.frequency_penalty,
             extra_body=self.config.extra_body,
-            stream=False,
+            stream=True,
         )
 
-        raw_content = response.choices[0].message.content
+        raw_content = ""
+        buffer = ""  # Buffer to hold content that might be part of a marker
+        action_markers = ["finish(message=", "do(action="]
+        in_action_phase = False  # Track if we've entered the action phase
+
+        for chunk in stream:
+            if len(chunk.choices) == 0:
+                continue
+            if chunk.choices[0].delta.content is not None:
+                content = chunk.choices[0].delta.content
+                raw_content += content
+
+                if in_action_phase:
+                    # Already in action phase, just accumulate content without printing
+                    continue
+
+                buffer += content
+
+                # Check if any marker is fully present in buffer
+                marker_found = False
+                for marker in action_markers:
+                    if marker in buffer:
+                        # Marker found, print everything before it
+                        thinking_part = buffer.split(marker, 1)[0]
+                        print(thinking_part, end="", flush=True)
+                        print()  # Print newline after thinking is complete
+                        in_action_phase = True
+                        marker_found = True
+                        break
+
+                if marker_found:
+                    continue  # Continue to collect remaining content
+
+                # Check if buffer ends with a prefix of any marker
+                # If so, don't print yet (wait for more content)
+                is_potential_marker = False
+                for marker in action_markers:
+                    for i in range(1, len(marker)):
+                        if buffer.endswith(marker[:i]):
+                            is_potential_marker = True
+                            break
+                    if is_potential_marker:
+                        break
+
+                if not is_potential_marker:
+                    # Safe to print the buffer
+                    print(buffer, end="", flush=True)
+                    buffer = ""
 
         # Parse thinking and action from response
         thinking, action = self._parse_response(raw_content)
