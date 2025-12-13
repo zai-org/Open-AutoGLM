@@ -1,6 +1,7 @@
 """Model client for AI inference using OpenAI-compatible API."""
 
 import json
+import re
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -125,12 +126,12 @@ class ModelClient:
         Parse the model response into thinking and action parts.
 
         Parsing rules:
-        1. If content contains 'finish(message=', everything before is thinking,
-           everything from 'finish(message=' onwards is action.
-        2. If rule 1 doesn't apply but content contains 'do(action=',
-           everything before is thinking, everything from 'do(action=' onwards is action.
-        3. Fallback: If content contains '<answer>', use legacy parsing with XML tags.
-        4. Otherwise, return empty thinking and full content as action.
+        1. If content contains 'finish(message=', everything before is thinking.
+        2. If content contains 'do(action=', everything before is thinking.
+        3. If content contains '</think>', split by it.
+        4. Fallback: If content contains '<answer>', use legacy parsing.
+        5. Regex fallback for loose 'do(' or 'finish(' patterns.
+        6. Otherwise, return empty thinking and full content as action.
 
         Args:
             content: Raw response content.
@@ -141,25 +142,45 @@ class ModelClient:
         # Rule 1: Check for finish(message=
         if "finish(message=" in content:
             parts = content.split("finish(message=", 1)
-            thinking = parts[0].strip()
+            thinking = parts[0].replace("<think>", "").replace("</think>", "").strip()
             action = "finish(message=" + parts[1]
             return thinking, action
 
         # Rule 2: Check for do(action=
         if "do(action=" in content:
             parts = content.split("do(action=", 1)
-            thinking = parts[0].strip()
+            thinking = parts[0].replace("<think>", "").replace("</think>", "").strip()
             action = "do(action=" + parts[1]
             return thinking, action
 
-        # Rule 3: Fallback to legacy XML tag parsing
+        # Rule 3: Check for </think> delimiter (handling missing action prefixes)
+        if "</think>" in content:
+            parts = content.split("</think>", 1)
+            thinking = parts[0].replace("<think>", "").strip()
+            action = parts[1].strip()
+            return thinking, action
+
+        # Rule 4: Fallback to legacy XML tag parsing
         if "<answer>" in content:
             parts = content.split("<answer>", 1)
             thinking = parts[0].replace("<think>", "").replace("</think>", "").strip()
             action = parts[1].replace("</answer>", "").strip()
             return thinking, action
 
-        # Rule 4: No markers found, return content as action
+        # Rule 5: Regex fallback (catch variations like 'do (' or 'finish (')
+        match = re.search(r"(.*?)(do\s*\(|finish\s*\()", content, re.DOTALL)
+        if match:
+            thinking = match.group(1).replace("<think>", "").replace("</think>", "").strip()
+            # Reconstruct action part
+            action_start = match.group(2)
+            rest_of_content = content[match.end():]
+            action = (action_start + rest_of_content).strip()
+            # Cleanup any closing tags if present in action
+            if "</answer>" in action:
+                action = action.replace("</answer>", "").strip()
+            return thinking, action
+
+        # Rule 6: No markers found, return content as action
         return "", content
 
 
