@@ -1162,16 +1162,8 @@
                 </div>
             </div>
 
-            <div id="liveConsole" class="live-console" style="display: none;"></div>
-
-            <div class="execution-log" id="executionLog">
-                <div class="empty-state">
-                    <div class="empty-icon">📱</div>
-                    <div>在左侧输入任务开始控制手机</div>
-                </div>
-            </div>
-            <!-- Input Area (Chat Style) -->
-            <div class="input-area">
+            <!-- Input Area (Moved to Top) -->
+            <div class="input-area" style="padding: 16px; border-bottom: 1px solid var(--border-color);">
                 <div class="input-group-chat">
                     <textarea id="taskInput" class="input-field-chat"
                         placeholder="输入任务描述... (Ctrl+Enter 执行)"></textarea>
@@ -1184,6 +1176,15 @@
                     <button class="btn-link" onclick="addToQueue()">➕ 加入队列</button>
                 </div>
             </div>
+
+            <div class="execution-log" id="executionLog">
+                <div class="empty-state">
+                    <div class="empty-icon">📱</div>
+                    <div>在上方输入任务开始控制手机</div>
+                </div>
+            </div>
+            <!-- Input Area (Chat Style) -->
+
         </div>
     </div>
 
@@ -1288,11 +1289,22 @@
                 updateTaskHeader(task, 'running');
                 clearExecutionLog();
 
-                const liveConsole = document.getElementById('liveConsole');
-                liveConsole.textContent = '';
-                liveConsole.style.display = 'none';
+                updateTaskHeader(task, 'running');
+                clearExecutionLog();
 
                 addLogItem('start', '任务开始', task, new Date().toLocaleTimeString());
+
+                // Create Live Console inside execution log
+                const logContainer = document.getElementById('executionLog');
+                const liveConsole = document.createElement('div');
+                liveConsole.id = 'liveConsole';
+                liveConsole.className = 'live-console';
+                liveConsole.style.display = 'none';
+                // Remove border-bottom to blend in
+                liveConsole.style.borderBottom = 'none';
+                liveConsole.style.marginTop = '10px';
+                liveConsole.style.borderRadius = 'var(--radius-md)';
+                logContainer.appendChild(liveConsole);
 
                 const response = await fetch('/api/execute', {
 
