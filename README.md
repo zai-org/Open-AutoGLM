@@ -40,7 +40,7 @@ ADB 调试能力，可通过 WiFi 或网络连接设备，实现灵活的远程�
 
 其中，`AutoGLM-Phone-9B` 是针对中文手机应用优化的模型，而 `AutoGLM-Phone-9B-Multilingual` 支持英语场景，适用于包含英文等其他语言内容的应用。
 
-## 环境准备
+## Android 环境准备
 
 ### 1. Python 环境
 
@@ -76,6 +76,55 @@ ADB 调试能力，可通过 WiFi 或网络连接设备，实现灵活的远程�
 
 下载 [安装包](https://github.com/senzhk/ADBKeyBoard/blob/master/ADBKeyboard.apk) 并在对应的安卓设备中进行安装。
 注意，安装完成后还需要到 `设置-输入法` 或者 `设置-键盘列表` 中启用 `ADB Keyboard` 才能生效(或使用命令`adb shell ime enable com.android.adbkeyboard/.AdbIME`[How-to-use](https://github.com/senzhk/ADBKeyBoard/blob/master/README.md#how-to-use))
+
+## iPhone 环境准备
+
+### 1. Python 环境
+
+建议使用 Python 3.10 及以上版本。
+
+### 2. 设置 WebDriverAgent 
+
+WebDriverAgent 是 iOS 自动化的核心组件,需要在 iOS 设备上运行。
+
+注意：需要提前安装好Xcode、并注册好苹果开发者账号（不需要付费）
+
+#### 1. 克隆 WebDriverAgent
+
+```bash
+
+git clone https://github.com/appium/WebDriverAgent.git
+cd WebDriverAgent
+```
+在 Xcode 中打开WebDriverAgent.xcodeproj
+
+#### 2. 设置 Signing & Capabilities
+
+![设置签名](resources/setup-xcode-wda.png)
+
+把Bundle ID改成 YOUR_NAME.WebDriverAgentRunner。
+
+#### 3. 开始UI测试
+
+需要在Finder勾选过“在WiFi中显示这台iPhone”，且Mac与iPhone处于同一WiFi网络之下，可以不用连接数据线，即可在设备中选择到。
+
+**注意：** 不建议插数据线运行，因为插数据线还必须要同时运行iproxy才可以把端口映射出来，不及直接WiFi运行稳定。
+
+先从项目Target选择WebDriverAgentRunner，然后再选择你的设备。
+
+![选择设备](resources/select-your-iphone-device.png)
+
+选好后，长按"▶️"运行按钮选择“Test”后开始编译并部署到你的iPhone上。
+
+![信任设备](resources/start-wda-testing.png)
+
+这时需要你在iPhone上输入解锁密码，在设置 -> 通用 -> VPN与设备管理 中信任开发者App，还需要在 设置 -> 开发者  中，打开UI自动化设置。
+
+
+
+![信任设备](resources/trust-dev-app.jpg)
+
+![启用UI自动化](resources/enable-ui-automation.jpg)
 
 ## 部署准备工作
 
