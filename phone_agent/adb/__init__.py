@@ -23,6 +23,10 @@ from phone_agent.adb.input import (
     restore_keyboard,
     type_text,
 )
+from phone_agent.adb.power import (
+    is_screen_on,
+    wake_screen_if_needed,
+)
 from phone_agent.adb.screenshot import get_screenshot
 
 __all__ = [
@@ -42,6 +46,9 @@ __all__ = [
     "double_tap",
     "long_press",
     "launch_app",
+    # Power management
+    "is_screen_on",
+    "wake_screen_if_needed",
     # Connection management
     "ADBConnection",
     "DeviceInfo",
