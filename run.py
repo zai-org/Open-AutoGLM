@@ -66,16 +66,10 @@ def 判断评论区有没有到底(agent: PhoneAgent) -> bool:
     )
     for i in result:
         text = i["text"]
-        if text == "快来抢首评吧":
-            agent.run(
-                "按一次返回键。",
-                "按一次返回键"
-            )
+        if text == "0条评论":
+            agent.run("按一次返回键。", "按一次返回键")
             return True
-        if ("快来发布首条评论吧" in text
-            or "部分评论被折叠" in text
-            or "没有更多评论" in text
-        ):
+        if "部分评论被折叠" in text or "没有更多评论" in text:
             return True
     return False
 
