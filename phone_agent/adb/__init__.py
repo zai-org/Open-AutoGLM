@@ -24,6 +24,15 @@ from phone_agent.adb.input import (
     type_text,
 )
 from phone_agent.adb.screenshot import get_screenshot
+from phone_agent.adb.ui_hierarchy import (
+    UIElement,
+    get_ui_elements,
+    get_ui_hierarchy_xml,
+    find_element_by_text,
+    find_element_by_resource_id,
+    find_element_by_index,
+    format_elements_for_llm,
+)
 
 __all__ = [
     # Screenshot
@@ -48,4 +57,12 @@ __all__ = [
     "ConnectionType",
     "quick_connect",
     "list_devices",
+    # UI Hierarchy
+    "UIElement",
+    "get_ui_elements",
+    "get_ui_hierarchy_xml",
+    "find_element_by_text",
+    "find_element_by_resource_id",
+    "find_element_by_index",
+    "format_elements_for_llm",
 ]
