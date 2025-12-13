@@ -21,7 +21,7 @@ def get_current_app(device_id: str | None = None) -> str:
     adb_prefix = _get_adb_prefix(device_id)
 
     result = subprocess.run(
-        adb_prefix + ["shell", "dumpsys", "window"], capture_output=True, text=True
+        adb_prefix + ["shell", "dumpsys", "window"], capture_output=True, text=True, encoding="utf8"
     )
     output = result.stdout
 
