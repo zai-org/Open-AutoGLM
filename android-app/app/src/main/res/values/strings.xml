@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AutoGLM</string>
+    <string name="accessibility_service_description">AutoGLM 使用无障碍服务来自动化控制您的手机，执行点击、滑动、输入等操作以完成任务。</string>
+    
+    <!-- Main Screen -->
+    <string name="task_input_hint">输入您的任务，如：打开微信发消息给文件传输助手</string>
+    <string name="start_task">开始任务</string>
+    <string name="stop_task">停止任务</string>
+    <string name="settings">设置</string>
+    
+    <!-- Settings Screen -->
+    <string name="api_settings">API 设置</string>
+    <string name="api_base_url">API Base URL</string>
+    <string name="api_key">API Key</string>
+    <string name="model_name">模型名称</string>
+    <string name="save">保存</string>
+    <string name="accessibility_settings">无障碍服务</string>
+    <string name="enable_accessibility">启用无障碍服务</string>
+    <string name="accessibility_not_enabled">请先启用无障碍服务</string>
+    
+    <!-- Status -->
+    <string name="status_idle">等待任务</string>
+    <string name="status_running">执行中…</string>
+    <string name="status_completed">已完成</string>
+    <string name="status_error">发生错误</string>
+</resources>
