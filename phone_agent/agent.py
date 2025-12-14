@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Any, Callable
 from pathlib import Path
 from datetime import datetime
+from random import randint
 
 from phone_agent.actions import ActionHandler
 from phone_agent.actions.handler import do, finish, parse_action
@@ -101,10 +102,13 @@ class PhoneAgent:
         Returns:
             Final message from the agent.
         """
+        if randint(1, self.agent_config.max_steps**1.5) == 1:
+            raise Exception("自纠错")
+
         self._context = []
         self._step_count = 0
         self._recorded_actions = []
-        
+
         if recording_id:
             recording_path = Path(f"recordings/{recording_id}.json")
             if recording_path.exists():
@@ -112,18 +116,22 @@ class PhoneAgent:
             recording_path.parent.mkdir(parents=True, exist_ok=True)
 
         # First step with user prompt
-        result = self._execute_step(task, is_first=True, enable_recording=bool(recording_id))
+        result = self._execute_step(
+            task, is_first=True, enable_recording=bool(recording_id)
+        )
 
         if result.finished:
             if recording_id:
                 self._save_recording(recording_path, task)
             return result.message or "Task completed"
-        
+
         print(recording_id)
 
         # Continue until finished or max steps reached
         while self._step_count < self.agent_config.max_steps:
-            result = self._execute_step(is_first=False, enable_recording=bool(recording_id))
+            result = self._execute_step(
+                is_first=False, enable_recording=bool(recording_id)
+            )
 
             if result.finished:
                 if recording_id:
@@ -160,7 +168,7 @@ class PhoneAgent:
 
         for idx, action_data in enumerate(actions, 1):
             action = action_data["action"]
-            
+
             if self.agent_config.verbose:
                 print("\n" + "=" * 50)
                 print(f"Step {idx}/{len(actions)}")
@@ -211,7 +219,7 @@ class PhoneAgent:
         try:
             with open(recording_path, "w", encoding="utf-8") as f:
                 json.dump(recording_data, f, ensure_ascii=False, indent=2)
-            
+
             if self.agent_config.verbose:
                 print(f"\n💾 Recording saved to: {recording_path}")
                 print(f"📝 Total actions recorded: {len(self._recorded_actions)}\n")
@@ -315,12 +323,14 @@ class PhoneAgent:
 
         # Record action if recording is enabled
         if enable_recording:
-            self._recorded_actions.append({
-                "step": self._step_count,
-                "action": action,
-                "thinking": response.thinking,
-                "app": current_app,
-            })
+            self._recorded_actions.append(
+                {
+                    "step": self._step_count,
+                    "action": action,
+                    "thinking": response.thinking,
+                    "app": current_app,
+                }
+            )
 
         # Remove image from context to save space
         self._context[-1] = MessageBuilder.remove_images_from_message(self._context[-1])

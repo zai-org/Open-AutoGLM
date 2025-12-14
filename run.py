@@ -119,7 +119,18 @@ def run():
 
     # 执行任务
     agent.action_handler._handle_launch(dict(app="快手"), 0, 0)
-    用户获取(agent)
+    while True:
+        try:
+            用户获取(agent)
+        except:
+            while True:
+                try:
+                    agent.run("回到快手首页")
+                except:
+                    continue
+                break
+            continue
+        break
     agent.action_handler._handle_back(dict(), 0, 0)
     agent.action_handler._handle_back(dict(), 0, 0)
 
