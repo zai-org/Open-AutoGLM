@@ -9,6 +9,7 @@
     <!-- Foreground service for long-running tasks -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     
     <!-- Query all packages for app launching -->
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
@@ -47,6 +48,12 @@
                 android:name="android.accessibilityservice"
                 android:resource="@xml/accessibility_service_config" />
         </service>
+        
+        <!-- Task Execution Foreground Service -->
+        <service
+            android:name=".service.TaskExecutionService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse" />
 
     </application>
 

@@ -1,15 +1,18 @@
 package com.autoglm.phone.viewmodel
 
 import android.app.Application
+import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
+import android.content.ServiceConnection
+import android.os.IBinder
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.autoglm.phone.AutoGLMApplication
-import com.autoglm.phone.agent.PhoneAgent
-import com.autoglm.phone.api.ModelConfig
 import com.autoglm.phone.data.SettingsRepository
-import com.autoglm.phone.service.AutoGLMAccessibilityService
-import com.autoglm.phone.service.ScreenshotHelper
-import kotlinx.coroutines.Dispatchers
+import com.autoglm.phone.data.TaskHistoryEntry
+import com.autoglm.phone.data.TaskHistoryRepository
+import com.autoglm.phone.service.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -17,7 +20,8 @@ data class UiState(
     val taskInput: String = "",
     val isRunning: Boolean = false,
     val currentStep: Int = 0,
-    val statusMessage: String = "等待任务"
+    val currentAction: String = "等待任务",
+    val showHistory: Boolean = false
 )
 
 data class SettingsState(
@@ -29,20 +33,72 @@ data class SettingsState(
 class MainViewModel(application: Application) : AndroidViewModel(application) {
     
     private val settingsRepository = (application as AutoGLMApplication).settingsRepository
+    private val historyRepository = TaskHistoryRepository(application)
     
     private val _uiState = MutableStateFlow(UiState())
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
     
-    private val _logs = MutableStateFlow<List<String>>(emptyList())
-    val logs: StateFlow<List<String>> = _logs.asStateFlow()
+    private val _logs = MutableStateFlow<List<LogEntry>>(emptyList())
+    val logs: StateFlow<List<LogEntry>> = _logs.asStateFlow()
     
     private val _settings = MutableStateFlow(SettingsState())
     val settings: StateFlow<SettingsState> = _settings.asStateFlow()
     
-    private var currentAgent: PhoneAgent? = null
+    private val _history = MutableStateFlow<List<TaskHistoryEntry>>(emptyList())
+    val history: StateFlow<List<TaskHistoryEntry>> = _history.asStateFlow()
+    
+    // Service binding
+    private var taskService: TaskExecutionService? = null
+    private var isBound = false
+    
+    private val serviceConnection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+            val binder = service as TaskExecutionService.LocalBinder
+            taskService = binder.getService()
+            isBound = true
+            
+            // Observe service state
+            observeServiceState()
+        }
+        
+        override fun onServiceDisconnected(name: ComponentName?) {
+            taskService = null
+            isBound = false
+        }
+    }
     
     init {
         loadSettings()
+        loadHistory()
+        bindService()
+    }
+    
+    private fun bindService() {
+        val context = getApplication<Application>()
+        val intent = Intent(context, TaskExecutionService::class.java)
+        context.bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
+    }
+    
+    private fun observeServiceState() {
+        val service = taskService ?: return
+        
+        viewModelScope.launch {
+            service.executionState.collect { state ->
+                _uiState.update { 
+                    it.copy(
+                        isRunning = state.isRunning,
+                        currentStep = state.currentStep,
+                        currentAction = state.currentAction
+                    )
+                }
+            }
+        }
+        
+        viewModelScope.launch {
+            service.logs.collect { logs ->
+                _logs.value = logs
+            }
+        }
     }
     
     private fun loadSettings() {
@@ -59,78 +115,64 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
     
+    private fun loadHistory() {
+        viewModelScope.launch {
+            historyRepository.history.collect { entries ->
+                _history.value = entries
+            }
+        }
+    }
+    
     fun updateTaskInput(text: String) {
         _uiState.update { it.copy(taskInput = text) }
     }
     
+    fun toggleHistory() {
+        _uiState.update { it.copy(showHistory = !it.showHistory) }
+    }
+    
     fun startTask() {
-        val service = AutoGLMAccessibilityService.getInstance() ?: run {
-            addLog("❌ 无障碍服务未启用")
-            return
-        }
-        
-        val currentSettings = _settings.value
-        if (currentSettings.apiKey.isBlank()) {
-            addLog("❌ 请先配置 API Key")
-            return
-        }
-        
         val task = _uiState.value.taskInput
-        if (task.isBlank()) {
-            addLog("❌ 请输入任务描述")
-            return
+        if (task.isBlank()) return
+        
+        val context = getApplication<Application>()
+        val intent = Intent(context, TaskExecutionService::class.java).apply {
+            action = TaskExecutionService.ACTION_START_TASK
+            putExtra(TaskExecutionService.EXTRA_TASK, task)
         }
-        
-        _uiState.update { it.copy(isRunning = true) }
-        _logs.value = emptyList()
-        
-        val config = ModelConfig(
-            baseUrl = currentSettings.baseUrl,
-            apiKey = currentSettings.apiKey,
-            modelName = currentSettings.modelName
-        )
-        
-        val screenshotHelper = ScreenshotHelper(getApplication())
-        
-        val agent = PhoneAgent(
-            config = config,
-            accessibilityService = service,
-            screenshotHelper = screenshotHelper,
-            onLog = { log -> addLog(log) },
-            onStep = { step, status -> 
-                _uiState.update { it.copy(currentStep = step, statusMessage = status) }
-            }
-        )
-        currentAgent = agent
-        
-        viewModelScope.launch(Dispatchers.Default) {
-            try {
-                val result = agent.run(task)
-                addLog("📋 最终结果: $result")
-            } catch (e: Exception) {
-                addLog("❌ 执行错误: ${e.message}")
-            } finally {
-                _uiState.update { it.copy(isRunning = false) }
-                currentAgent = null
-            }
-        }
+        context.startService(intent)
+    }
+    
+    fun startTaskFromHistory(task: String) {
+        _uiState.update { it.copy(taskInput = task, showHistory = false) }
+        startTask()
     }
     
     fun stopTask() {
-        currentAgent?.stop()
-        _uiState.update { it.copy(isRunning = false) }
+        val context = getApplication<Application>()
+        val intent = Intent(context, TaskExecutionService::class.java).apply {
+            action = TaskExecutionService.ACTION_STOP_TASK
+        }
+        context.startService(intent)
     }
     
     fun saveSettings(baseUrl: String, apiKey: String, modelName: String) {
         viewModelScope.launch {
             settingsRepository.saveSettings(baseUrl, apiKey, modelName)
-            addLog("✅ 设置已保存")
         }
     }
     
-    private fun addLog(message: String) {
-        val timestamp = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault())
-            .format(java.util.Date())
-        _logs.update { it + "[$timestamp] $message" }
+    fun clearHistory() {
+        viewModelScope.launch {
+            historyRepository.clearHistory()
+        }
+    }
+    
+    override fun onCleared() {
+        super.onCleared()
+        if (isBound) {
+            getApplication<Application>().unbindService(serviceConnection)
+            isBound = false
+        }
     }
 }
