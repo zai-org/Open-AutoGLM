@@ -236,7 +236,7 @@ class TaskExecutionService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "AutoPhone 任务执行",
+                "AI-Phone 任务执行",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
                 description = "显示任务执行进度"
@@ -265,7 +265,7 @@ class TaskExecutionService : Service() {
         )
         
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("AutoPhone 执行中")
+            .setContentTitle("AI-Phone 执行中")
             .setContentText(text)
             .setSmallIcon(android.R.drawable.ic_menu_manage)
             .setContentIntent(pendingIntent)

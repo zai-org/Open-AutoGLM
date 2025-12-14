@@ -157,7 +157,7 @@ fun MainScreen(
                             )
                         }
                         Spacer(modifier = Modifier.width(12.dp))
-                        Text("AutoPhone", fontWeight = FontWeight.Bold)
+                        Text("AI-Phone", fontWeight = FontWeight.Bold)
                     }
                 },
                 actions = {
