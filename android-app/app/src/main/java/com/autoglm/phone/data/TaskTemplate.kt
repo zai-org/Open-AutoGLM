@@ -17,6 +17,7 @@ data class TaskTemplate(
  * Task template categories.
  */
 object TemplateCategories {
+    const val GAME = "游戏助手"
     const val SOCIAL = "社交娱乐"
     const val SHOPPING = "电商购物"
     const val WORK = "工作效率"
@@ -30,6 +31,56 @@ object TemplateCategories {
 object BuiltInTemplates {
     
     val all: List<TaskTemplate> = listOf(
+        // 游戏助手
+        TaskTemplate(
+            id = "xxl_checkin",
+            title = "开心消消乐签到",
+            description = "完成每日签到领取奖励",
+            icon = "🎮",
+            category = TemplateCategories.GAME,
+            prompt = "打开开心消消乐，完成每日签到，领取签到奖励"
+        ),
+        TaskTemplate(
+            id = "xxl_daily",
+            title = "开心消消乐日常",
+            description = "完成每日任务领取奖励",
+            icon = "⭐",
+            category = TemplateCategories.GAME,
+            prompt = "打开开心消消乐，查看每日任务，领取已完成的任务奖励"
+        ),
+        TaskTemplate(
+            id = "xxl_play",
+            title = "开心消消乐过关",
+            description = "自动进入关卡尝试过关",
+            icon = "🎯",
+            category = TemplateCategories.GAME,
+            prompt = "打开开心消消乐，进入当前关卡，自动进行消除操作尝试过关。观察屏幕上相同颜色的消除块，点击可以消除的位置"
+        ),
+        TaskTemplate(
+            id = "xxl_ads",
+            title = "消消乐看广告",
+            description = "看广告获取体力或金币",
+            icon = "📺",
+            category = TemplateCategories.GAME,
+            prompt = "打开开心消消乐，找到可以看广告获取奖励的入口，观看一个广告领取奖励"
+        ),
+        TaskTemplate(
+            id = "wzry_checkin",
+            title = "王者荣耀签到",
+            description = "完成每日签到领取奖励",
+            icon = "⚔️",
+            category = TemplateCategories.GAME,
+            prompt = "打开王者荣耀，进入活动中心，完成每日签到"
+        ),
+        TaskTemplate(
+            id = "genshin_checkin",
+            title = "原神签到",
+            description = "领取原神每日奖励",
+            icon = "🌟",
+            category = TemplateCategories.GAME,
+            prompt = "打开原神，进入邮箱领取奖励，然后到纪行领取每日奖励"
+        ),
+        
         // 社交娱乐
         TaskTemplate(
             id = "douyin_scroll",

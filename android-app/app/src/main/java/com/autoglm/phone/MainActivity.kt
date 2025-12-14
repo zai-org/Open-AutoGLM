@@ -175,6 +175,13 @@ fun MainScreen(
                             tint = if (uiState.showHistory) MaterialTheme.colorScheme.primary else LocalContentColor.current
                         )
                     }
+                    IconButton(onClick = { viewModel.toggleScheduled() }) {
+                        Icon(
+                            Icons.Default.Alarm, 
+                            contentDescription = "定时任务",
+                            tint = if (uiState.showScheduled) MaterialTheme.colorScheme.primary else LocalContentColor.current
+                        )
+                    }
                     IconButton(onClick = { showSettings = true }) {
                         Icon(Icons.Default.Settings, contentDescription = "设置")
                     }
@@ -247,9 +254,21 @@ fun MainScreen(
                 )
             }
             
+            // Scheduled Tasks Panel
+            AnimatedVisibility(
+                visible = uiState.showScheduled && !uiState.isRunning,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                ScheduledTasksPanel(
+                    onAddTask = { name, prompt, hour, minute -> },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            
             // Main content (task input + logs)
             AnimatedVisibility(
-                visible = !uiState.showHistory && !uiState.showTemplates || uiState.isRunning,
+                visible = !uiState.showHistory && !uiState.showTemplates && !uiState.showScheduled || uiState.isRunning,
                 enter = fadeIn(),
                 exit = fadeOut()
             ) {
@@ -511,11 +530,46 @@ fun TaskInputCard(
     onStartClick: () -> Unit,
     onStopClick: () -> Unit
 ) {
+    val context = LocalContext.current
+    var isListening by remember { mutableStateOf(false) }
+    
+    // Speech recognizer launcher
+    val speechLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        isListening = false
+        if (result.resultCode == Activity.RESULT_OK) {
+            val spokenText = result.data
+                ?.getStringArrayListExtra(android.speech.RecognizerIntent.EXTRA_RESULTS)
+                ?.firstOrNull() ?: ""
+            if (spokenText.isNotBlank()) {
+                onTaskChange(spokenText)
+            }
+        }
+    }
+    
+    fun startVoiceInput() {
+        val intent = android.content.Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL, 
+                android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE, "zh-CN")
+            putExtra(android.speech.RecognizerIntent.EXTRA_PROMPT, "请说出您的任务...")
+        }
+        try {
+            isListening = true
+            speechLauncher.launch(intent)
+        } catch (e: Exception) {
+            isListening = false
+            android.widget.Toast.makeText(context, "语音输入不可用", android.widget.Toast.LENGTH_SHORT).show()
+        }
+    }
+    
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+            // Text input with microphone button
             OutlinedTextField(
                 value = taskText,
                 onValueChange = onTaskChange,
@@ -528,7 +582,22 @@ fun TaskInputCard(
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(
                     onDone = { if (isServiceEnabled && !isRunning) onStartClick() }
-                )
+                ),
+                trailingIcon = {
+                    IconButton(
+                        onClick = { startVoiceInput() },
+                        enabled = !isRunning && !isListening
+                    ) {
+                        Icon(
+                            if (isListening) Icons.Default.Mic else Icons.Default.MicNone,
+                            contentDescription = "语音输入",
+                            tint = if (isListening) 
+                                MaterialTheme.colorScheme.primary 
+                            else 
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
             )
             
             Spacer(modifier = Modifier.height(12.dp))
@@ -831,3 +900,246 @@ fun TemplateCard(
     }
 }
 
+/**
+ * Scheduled tasks management panel.
+ */
+@Composable
+fun ScheduledTasksPanel(
+    onAddTask: (String, String, Int, Int) -> Unit,  // name, prompt, hour, minute
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    var showAddDialog by remember { mutableStateOf(false) }
+    val scheduledTaskRepository = remember { com.autoglm.phone.data.ScheduledTaskRepository(context) }
+    val scheduledTasks by scheduledTaskRepository.scheduledTasks.collectAsState(initial = emptyList())
+    val coroutineScope = rememberCoroutineScope()
+    
+    Column(modifier = modifier.fillMaxSize()) {
+        // Header with add button
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                "定时任务",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            IconButton(onClick = { showAddDialog = true }) {
+                Icon(
+                    Icons.Default.Add,
+                    contentDescription = "添加定时任务",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+        
+        if (scheduledTasks.isEmpty()) {
+            // Empty state
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        Icons.Default.Alarm,
+                        contentDescription = null,
+                        modifier = Modifier.size(48.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        "暂无定时任务",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        "点击 + 添加每日自动执行的任务",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    )
+                }
+            }
+        } else {
+            // Task list
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(scheduledTasks) { task ->
+                    ScheduledTaskCard(
+                        task = task,
+                        onToggle = { enabled ->
+                            coroutineScope.launch {
+                                scheduledTaskRepository.toggleTask(task.id, enabled)
+                                if (enabled) {
+                                    com.autoglm.phone.service.TaskScheduleWorker.scheduleTask(context, task.copy(isEnabled = true))
+                                } else {
+                                    com.autoglm.phone.service.TaskScheduleWorker.cancelTask(context, task.id)
+                                }
+                            }
+                        },
+                        onDelete = {
+                            coroutineScope.launch {
+                                scheduledTaskRepository.deleteTask(task.id)
+                                com.autoglm.phone.service.TaskScheduleWorker.cancelTask(context, task.id)
+                            }
+                        }
+                    )
+                }
+            }
+        }
+    }
+    
+    // Add task dialog
+    if (showAddDialog) {
+        AddScheduledTaskDialog(
+            onDismiss = { showAddDialog = false },
+            onConfirm = { name, prompt, hour, minute ->
+                coroutineScope.launch {
+                    val task = com.autoglm.phone.data.ScheduledTask(
+                        name = name,
+                        prompt = prompt,
+                        hour = hour,
+                        minute = minute,
+                        repeatDays = emptyList() // Daily
+                    )
+                    scheduledTaskRepository.addTask(task)
+                    com.autoglm.phone.service.TaskScheduleWorker.scheduleTask(context, task)
+                }
+                showAddDialog = false
+            }
+        )
+    }
+}
+
+@Composable
+fun ScheduledTaskCard(
+    task: com.autoglm.phone.data.ScheduledTask,
+    onToggle: (Boolean) -> Unit,
+    onDelete: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    task.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    String.format("每天 %02d:%02d", task.hour, task.minute),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    task.prompt,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            
+            Switch(
+                checked = task.isEnabled,
+                onCheckedChange = onToggle
+            )
+            
+            IconButton(onClick = onDelete) {
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = "删除",
+                    tint = MaterialTheme.colorScheme.error
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun AddScheduledTaskDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (String, String, Int, Int) -> Unit
+) {
+    var name by remember { mutableStateOf("") }
+    var prompt by remember { mutableStateOf("") }
+    var hour by remember { mutableStateOf(8) }
+    var minute by remember { mutableStateOf(0) }
+    
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("添加定时任务") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("任务名称") },
+                    placeholder = { Text("例如：每日签到") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                
+                OutlinedTextField(
+                    value = prompt,
+                    onValueChange = { prompt = it },
+                    label = { Text("任务描述") },
+                    placeholder = { Text("例如：打开淘宝完成每日签到") },
+                    minLines = 2,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("执行时间：", style = MaterialTheme.typography.bodyMedium)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    
+                    // Hour picker
+                    OutlinedTextField(
+                        value = hour.toString().padStart(2, '0'),
+                        onValueChange = { 
+                            val h = it.toIntOrNull() ?: 0
+                            hour = h.coerceIn(0, 23)
+                        },
+                        modifier = Modifier.width(60.dp),
+                        singleLine = true
+                    )
+                    Text(" : ", style = MaterialTheme.typography.titleLarge)
+                    // Minute picker
+                    OutlinedTextField(
+                        value = minute.toString().padStart(2, '0'),
+                        onValueChange = { 
+                            val m = it.toIntOrNull() ?: 0
+                            minute = m.coerceIn(0, 59)
+                        },
+                        modifier = Modifier.width(60.dp),
+                        singleLine = true
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onConfirm(name, prompt, hour, minute) },
+                enabled = name.isNotBlank() && prompt.isNotBlank()
+            ) { Text("添加") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("取消") }
+        }
+    )
+}

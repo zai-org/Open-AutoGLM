@@ -17,6 +17,9 @@
     <!-- Query all packages for app launching -->
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
         tools:ignore="QueryAllPackagesPermission" />
+    
+    <!-- Voice input -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <application
         android:name=".AutoGLMApplication"

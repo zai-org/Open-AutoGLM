@@ -22,7 +22,8 @@ data class UiState(
     val currentStep: Int = 0,
     val currentAction: String = "等待任务",
     val showHistory: Boolean = false,
-    val showTemplates: Boolean = false
+    val showTemplates: Boolean = false,
+    val showScheduled: Boolean = false
 )
 
 data class SettingsState(
@@ -129,11 +130,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
     
     fun toggleHistory() {
-        _uiState.update { it.copy(showHistory = !it.showHistory, showTemplates = false) }
+        _uiState.update { it.copy(showHistory = !it.showHistory, showTemplates = false, showScheduled = false) }
     }
     
     fun toggleTemplates() {
-        _uiState.update { it.copy(showTemplates = !it.showTemplates, showHistory = false) }
+        _uiState.update { it.copy(showTemplates = !it.showTemplates, showHistory = false, showScheduled = false) }
+    }
+    
+    fun toggleScheduled() {
+        _uiState.update { it.copy(showScheduled = !it.showScheduled, showHistory = false, showTemplates = false) }
     }
     
     fun selectTemplate(prompt: String) {
