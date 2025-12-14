@@ -157,7 +157,7 @@ fun MainScreen(
                             )
                         }
                         Spacer(modifier = Modifier.width(12.dp))
-                        Text("AutoGLM", fontWeight = FontWeight.Bold)
+                        Text("AutoPhone", fontWeight = FontWeight.Bold)
                     }
                 },
                 actions = {
@@ -658,6 +658,30 @@ fun SettingsDialog(viewModel: MainViewModel, onDismiss: () -> Unit) {
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
+                
+                Divider(modifier = Modifier.padding(vertical = 8.dp))
+                
+                // Return to app setting
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("任务完成后返回应用", style = MaterialTheme.typography.bodyMedium)
+                    var returnToApp by remember { mutableStateOf(true) }
+                    LaunchedEffect(Unit) {
+                        viewModel.settings.collect { 
+                            // Note: will need to extend settings state for this
+                        }
+                    }
+                    Switch(
+                        checked = returnToApp,
+                        onCheckedChange = { 
+                            returnToApp = it
+                            viewModel.setReturnToApp(it)
+                        }
+                    )
+                }
             }
         },
         confirmButton = {

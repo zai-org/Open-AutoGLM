@@ -305,6 +305,52 @@ class AutoGLMAccessibilityService : AccessibilityService() {
     // ==================== App Launching ====================
     
     /**
+     * Get all installed launchable apps.
+     * @return Map of app display name to package name
+     */
+    fun getInstalledApps(): Map<String, String> {
+        val apps = mutableMapOf<String, String>()
+        val intent = android.content.Intent(android.content.Intent.ACTION_MAIN, null)
+        intent.addCategory(android.content.Intent.CATEGORY_LAUNCHER)
+        
+        val resolveInfoList = packageManager.queryIntentActivities(intent, 0)
+        for (info in resolveInfoList) {
+            val appName = info.loadLabel(packageManager).toString()
+            val packageName = info.activityInfo.packageName
+            apps[appName] = packageName
+            // Also add lowercase version for easier matching
+            apps[appName.lowercase()] = packageName
+        }
+        return apps
+    }
+    
+    /**
+     * Launch an app by display name (searches installed apps).
+     * @return true if app was found and launched
+     */
+    fun launchAppByName(appName: String): Boolean {
+        val installedApps = getInstalledApps()
+        
+        // Try exact match first
+        val exactMatch = installedApps[appName] ?: installedApps[appName.lowercase()]
+        if (exactMatch != null) {
+            return launchApp(exactMatch)
+        }
+        
+        // Try partial match (app name contains search term)
+        for ((name, pkg) in installedApps) {
+            if (name.contains(appName, ignoreCase = true)) {
+                android.util.Log.d("AutoGLM", "Partial match: '$appName' -> '$name' ($pkg)")
+                return launchApp(pkg)
+            }
+        }
+        
+        // Assume it's a package name if no match found
+        android.util.Log.d("AutoGLM", "No app found for '$appName', trying as package name")
+        return launchApp(appName)
+    }
+    
+    /**
      * Launch an app by package name.
      */
     fun launchApp(packageName: String): Boolean {

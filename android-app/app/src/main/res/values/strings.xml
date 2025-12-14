@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">AutoGLM</string>
-    <string name="accessibility_service_description">AutoGLM 使用无障碍服务来自动化控制您的手机，执行点击、滑动、输入等操作以完成任务。</string>
+    <string name="app_name">AutoPhone</string>
+    <string name="accessibility_service_description">AutoPhone 使用无障碍服务来自动化控制您的手机，执行点击、滑动、输入等操作以完成任务。</string>
     
     <!-- Main Screen -->
     <string name="task_input_hint">输入您的任务，如：打开微信发消息给文件传输助手</string>

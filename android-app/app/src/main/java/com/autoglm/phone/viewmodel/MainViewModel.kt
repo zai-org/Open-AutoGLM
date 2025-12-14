@@ -162,6 +162,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
     
+    fun setReturnToApp(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setReturnToApp(enabled)
+        }
+    }
+    
     fun clearHistory() {
         viewModelScope.launch {
             historyRepository.clearHistory()

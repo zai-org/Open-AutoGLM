@@ -1,43 +1,56 @@
-<?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
     
-    <!-- Background circle -->
+    <!-- Background circle with gradient -->
     <path
-        android:fillColor="#2196F3"
+        android:fillColor="#1E88E5"
         android:pathData="M54,54m-40,0a40,40 0,1 1,80 0a40,40 0,1 1,-80 0"/>
     
-    <!-- Robot body -->
+    <!-- Inner glow circle -->
+    <path
+        android:fillColor="#42A5F5"
+        android:pathData="M54,54m-35,0a35,35 0,1 1,70 0a35,35 0,1 1,-70 0"/>
+    
+    <!-- Phone outline -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M34,44 h40 a6,6 0 0 1 6,6 v24 a6,6 0 0 1 -6,6 h-40 a6,6 0 0 1 -6,-6 v-24 a6,6 0 0 1 6,-6 z"/>
+        android:pathData="M42,28 L66,28 C68.2,28 70,29.8 70,32 L70,76 C70,78.2 68.2,80 66,80 L42,80 C39.8,80 38,78.2 38,76 L38,32 C38,29.8 39.8,28 42,28 Z"
+        android:strokeWidth="0"/>
     
-    <!-- Left eye -->
+    <!-- Phone screen -->
     <path
-        android:fillColor="#2196F3"
-        android:pathData="M42,58m-5,0a5,5 0,1 1,10 0a5,5 0,1 1,-10 0"/>
+        android:fillColor="#1E88E5"
+        android:pathData="M42,34 L66,34 L66,72 L42,72 Z"/>
     
-    <!-- Right eye -->
+    <!-- Auto/AI symbol - gear with brain circuit -->
     <path
-        android:fillColor="#2196F3"
-        android:pathData="M66,58m-5,0a5,5 0,1 1,10 0a5,5 0,1 1,-10 0"/>
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,44 L54,44 M49,48 L59,48 M49,53 L59,53 M49,58 L56,58 M54,63 L54,68"
+        android:strokeWidth="2"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"/>
     
-    <!-- Smile -->
+    <!-- Sparkle/AI indicator dots -->
     <path
-        android:fillColor="#2196F3"
-        android:pathData="M44,68 h20 a3,3 0 0 1 0,6 h-20 a3,3 0 0 1 0,-6 z"/>
+        android:fillColor="#FFD54F"
+        android:pathData="M62,40 m-2,0 a2,2 0,1 1,4 0 a2,2 0,1 1,-4 0"/>
+    <path
+        android:fillColor="#FFD54F"
+        android:pathData="M46,62 m-1.5,0 a1.5,1.5 0,1 1,3 0 a1.5,1.5 0,1 1,-3 0"/>
     
-    <!-- Antenna -->
+    <!-- Connection lines representing automation -->
     <path
-        android:fillColor="#7C4DFF"
-        android:pathData="M52,44 L52,34 L56,34 L56,44 Z"/>
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#BBDEFB"
+        android:strokeWidth="1.5"
+        android:pathData="M46,48 L48,48 M60,48 L62,48 M46,53 L48,53 M60,53 L62,53"/>
     
-    <!-- Antenna ball -->
+    <!-- Home button circle -->
     <path
-        android:fillColor="#7C4DFF"
-        android:pathData="M54,32m-4,0a4,4 0,1 1,8 0a4,4 0,1 1,-8 0"/>
-        
+        android:fillColor="#BBDEFB"
+        android:pathData="M54,76 m-2,0 a2,2 0,1 1,4 0 a2,2 0,1 1,-4 0"/>
+    
 </vector>

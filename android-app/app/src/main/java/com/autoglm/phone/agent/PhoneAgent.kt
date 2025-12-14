@@ -48,6 +48,9 @@ class PhoneAgent(
 - {think} 是对你为什么选择这个操作的简短推理说明。
 - {action} 是本次执行的具体操作指令，必须严格遵循下方定义的指令格式。
 
+**重要提示：**
+截图底部可能显示AutoPhone的悬浮状态栏（如"步骤X: ..."或日志信息），这是自动化工具的UI，不是目标应用的一部分，请忽略它们，专注于实际应用界面进行操作。
+
 **可用操作：**
 
 - do(action="Tap", element=[x,y])  
@@ -125,18 +128,13 @@ class PhoneAgent(
      */
     suspend fun step(task: String? = null): StepResult {
         stepCount++
+        onStep(stepCount, "截取屏幕中...")
         log("🔄 步骤 $stepCount")
         
         try {
-            // Hide floating overlay before taking screenshot
-            onHideOverlay(true)
-            delay(100) // Wait for overlay to hide
-            
             // Take screenshot using ScreenshotHelper (works on Android 9+)
             val screenshot = screenshotHelper.takeScreenshot()
             
-            // Show overlay after screenshot
-            onHideOverlay(false)
             onStep(stepCount, "分析屏幕中...")
             
             if (screenshot == null) {

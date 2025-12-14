@@ -175,6 +175,15 @@ class TaskExecutionService : Service() {
                 val duration = System.currentTimeMillis() - startTime
                 historyRepository.saveTask(task, result, duration, true)
                 
+                // Return to app if enabled in settings
+                val returnToApp = settingsRepository.returnToApp.first()
+                if (returnToApp) {
+                    val intent = Intent(this@TaskExecutionService, MainActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    }
+                    startActivity(intent)
+                }
+                
                 _executionState.value = _executionState.value.copy(
                     isRunning = false,
                     currentAction = "已完成: $result"
@@ -227,7 +236,7 @@ class TaskExecutionService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "AutoGLM 任务执行",
+                "AutoPhone 任务执行",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
                 description = "显示任务执行进度"
@@ -256,7 +265,7 @@ class TaskExecutionService : Service() {
         )
         
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("AutoGLM 执行中")
+            .setContentTitle("AutoPhone 执行中")
             .setContentText(text)
             .setSmallIcon(android.R.drawable.ic_menu_manage)
             .setContentIntent(pendingIntent)

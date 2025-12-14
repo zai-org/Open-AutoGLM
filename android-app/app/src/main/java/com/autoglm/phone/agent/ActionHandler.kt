@@ -228,40 +228,8 @@ class ActionHandler(
     }
     
     private fun launchAppByName(appName: String) {
-        // Map common app names to package names
-        val packageMap = mapOf(
-            "微信" to "com.tencent.mm",
-            "wechat" to "com.tencent.mm",
-            "淘宝" to "com.taobao.taobao",
-            "taobao" to "com.taobao.taobao",
-            "支付宝" to "com.eg.android.AlipayGphone",
-            "alipay" to "com.eg.android.AlipayGphone",
-            "抖音" to "com.ss.android.ugc.aweme",
-            "douyin" to "com.ss.android.ugc.aweme",
-            "京东" to "com.jingdong.app.mall",
-            "jd" to "com.jingdong.app.mall",
-            "美团" to "com.sankuai.meituan",
-            "meituan" to "com.sankuai.meituan",
-            "设置" to "com.android.settings",
-            "settings" to "com.android.settings",
-            "浏览器" to "com.android.browser",
-            "browser" to "com.android.browser",
-            "相机" to "com.android.camera",
-            "camera" to "com.android.camera",
-            "小红书" to "com.xingin.xhs",
-            "xiaohongshu" to "com.xingin.xhs",
-            "地图" to "com.autonavi.minimap",
-            "高德" to "com.autonavi.minimap",
-            "amap" to "com.autonavi.minimap",
-            "百度地图" to "com.baidu.BaiduMap",
-            "qq" to "com.tencent.mobileqq",
-            "QQ" to "com.tencent.mobileqq"
-        )
-        
-        val packageName = packageMap[appName.lowercase()] 
-            ?: packageMap[appName]
-            ?: appName  // Assume it's a package name if not in map
-        
-        accessibilityService.launchApp(packageName)
+        // Use AccessibilityService's dynamic app lookup
+        // It searches installed apps by display name (exact and partial match)
+        accessibilityService.launchAppByName(appName)
     }
 }
