@@ -182,6 +182,62 @@ python scripts/check_deployment_en.py --base-url https://api.parasail.io/v1 --mo
 Upon successful execution, the script will display the model's inference result and token statistics, helping you confirm whether the model deployment is working correctly.
 
 ## Using AutoGLM
+### Web UI Interface
+
+Phone Agent provides a visual web interface that can be easily used without the need for command lines.
+
+#### Starting WebUI
+
+```bash
+python web_ui.py
+
+```
+
+After starting, access [http://127.0.0.1:7860](http://127.0.0.1:7860) in your browser
+
+![WebUI Interface](resources/iShot_2025-12-14_14.04.42.png)
+
+#### 📖 User Guide
+
+**Quick Start**
+
+1. **Check Environment**: Go to the "System Check" tab and run a system check to ensure the environment is configured correctly.
+
+2. **Configuration Settings**: Set the model API address and API Key in the "Configuration" area.
+
+3. **Select Device**: Click the "Refresh Device" button and select the target device from the drop-down list.
+
+4. **Enter Task**: Describe your requirements in natural language in the task input box.
+
+5. **Execute Task**: Click the "Execute Task" button, and the system will automatically control the phone to complete the task.
+
+**Function Description**
+
+💬 **Dialogue Control**
+
+- Task Execution: Supports streaming output, displaying the AI's thought process and actions in real time.
+
+- Screenshot Display: Real-time display of the device's current screen status on the right.
+
+- New Dialogue: Clears the current context and starts a completely new task session.
+
+🔍 **System Checks**
+
+- Check ADB tool installation status
+
+- Check device connection status
+
+- Check ADB Keyboard installation status
+
+- Check model API connection status
+
+📱 **Device Management**
+
+- View all connected devices
+
+- Supports USB and WiFi connections
+
+- Remote device connection function
 
 ### Command Line
 
