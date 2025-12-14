@@ -19,6 +19,10 @@ MESSAGES_ZH = {
     "step": "步骤",
     "task": "任务",
     "result": "结果",
+    "performance_metrics": "性能指标",
+    "time_to_first_token": "首 Token 延迟 (TTFT)",
+    "time_to_thinking_end": "思考完成延迟",
+    "total_inference_time": "总推理时间",
 }
 
 # English messages
@@ -40,6 +44,10 @@ MESSAGES_EN = {
     "step": "Step",
     "task": "Task",
     "result": "Result",
+    "performance_metrics": "Performance Metrics",
+    "time_to_first_token": "Time to First Token (TTFT)",
+    "time_to_thinking_end": "Time to Thinking End",
+    "total_inference_time": "Total Inference Time",
 }
 
 

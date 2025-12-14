@@ -285,7 +285,7 @@ def parse_action(response: str) -> dict[str, Any]:
         if response.startswith("do"):
             # Use AST parsing instead of eval for safety
             try:
-                tree = ast.parse(response, mode='eval')
+                tree = ast.parse(response, mode="eval")
                 if not isinstance(tree.body, ast.Call):
                     raise ValueError("Expected a function call")
 
