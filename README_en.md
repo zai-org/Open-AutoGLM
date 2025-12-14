@@ -195,7 +195,7 @@ python web_ui.py
 
 After starting, access [http://127.0.0.1:7860](http://127.0.0.1:7860) in your browser
 
-![WebUI Interface](resources/iShot_2025-12-14_14.04.42.png)
+![WebUI Interface](resources/iShot_2025-12-14_16.27.01.png)
 
 #### 📖 User Guide
 
