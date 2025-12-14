@@ -161,6 +161,13 @@ fun MainScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = { viewModel.toggleTemplates() }) {
+                        Icon(
+                            Icons.Default.Lightbulb, 
+                            contentDescription = "模板",
+                            tint = if (uiState.showTemplates) MaterialTheme.colorScheme.primary else LocalContentColor.current
+                        )
+                    }
                     IconButton(onClick = { viewModel.toggleHistory() }) {
                         Icon(
                             Icons.Default.History, 
@@ -228,9 +235,21 @@ fun MainScreen(
                 )
             }
             
+            // Templates Panel
+            AnimatedVisibility(
+                visible = uiState.showTemplates && !uiState.isRunning,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                TemplatesPanel(
+                    onSelectTemplate = { viewModel.selectTemplate(it) },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            
             // Main content (task input + logs)
             AnimatedVisibility(
-                visible = !uiState.showHistory || uiState.isRunning,
+                visible = !uiState.showHistory && !uiState.showTemplates || uiState.isRunning,
                 enter = fadeIn(),
                 exit = fadeOut()
             ) {
@@ -695,3 +714,120 @@ fun SettingsDialog(viewModel: MainViewModel, onDismiss: () -> Unit) {
         }
     )
 }
+
+/**
+ * Templates panel showing built-in task templates.
+ */
+@Composable
+fun TemplatesPanel(
+    onSelectTemplate: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val categories = com.autoglm.phone.data.BuiltInTemplates.getCategories()
+    var selectedCategory by remember { mutableStateOf(categories.firstOrNull() ?: "") }
+    val templates = com.autoglm.phone.data.BuiltInTemplates.all
+    
+    Column(modifier = modifier) {
+        // Category tabs
+        ScrollableTabRow(
+            selectedTabIndex = categories.indexOf(selectedCategory).coerceAtLeast(0),
+            modifier = Modifier.fillMaxWidth(),
+            edgePadding = 8.dp,
+            containerColor = Color.Transparent,
+            divider = {}
+        ) {
+            categories.forEach { category ->
+                Tab(
+                    selected = category == selectedCategory,
+                    onClick = { selectedCategory = category },
+                    text = { 
+                        Text(
+                            category, 
+                            style = MaterialTheme.typography.bodyMedium
+                        ) 
+                    }
+                )
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        // Template cards
+        LazyColumn(
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            val filteredTemplates = templates.filter { it.category == selectedCategory }
+            items(filteredTemplates) { template ->
+                TemplateCard(
+                    template = template,
+                    onClick = { onSelectTemplate(template.prompt) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun TemplateCard(
+    template: com.autoglm.phone.data.TaskTemplate,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        ),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Icon
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = template.icon,
+                    fontSize = 24.sp
+                )
+            }
+            
+            Spacer(modifier = Modifier.width(12.dp))
+            
+            // Title and description
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = template.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = template.description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            
+            // Play button
+            IconButton(onClick = onClick) {
+                Icon(
+                    Icons.Default.PlayArrow,
+                    contentDescription = "执行",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+    }
+}
+
