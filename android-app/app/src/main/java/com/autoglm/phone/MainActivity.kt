@@ -62,15 +62,26 @@ class MainActivity : ComponentActivity() {
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK && result.data != null) {
             ScreenshotHelper.setMediaProjectionResult(result.resultCode, result.data)
+            android.util.Log.d("MainActivity", "MediaProjection permission granted")
+        } else {
+            android.util.Log.e("MainActivity", "MediaProjection permission denied")
         }
     }
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // Request MediaProjection on Android 9-10
+        // Request overlay permission for floating status
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
+            val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)
+            startActivity(intent)
+        }
+        
+        // Request MediaProjection on Android 9-10 (required for screenshot)
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
-            requestMediaProjectionPermission()
+            if (!ScreenshotHelper.hasMediaProjectionPermission()) {
+                requestMediaProjectionPermission()
+            }
         }
         
         setContent {
@@ -204,7 +215,14 @@ fun MainScreen(
             ) {
                 HistoryPanel(
                     history = history,
-                    onRunTask = { viewModel.startTaskFromHistory(it) },
+                    onRunTask = { 
+                        // Check MediaProjection permission on Android 9-10
+                        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R && 
+                            !ScreenshotHelper.hasMediaProjectionPermission()) {
+                            onRequestMediaProjection()
+                        }
+                        viewModel.startTaskFromHistory(it) 
+                    },
                     onClear = { viewModel.clearHistory() },
                     modifier = Modifier.weight(1f)
                 )
@@ -225,7 +243,14 @@ fun MainScreen(
                         onTaskChange = { viewModel.updateTaskInput(it) },
                         isRunning = uiState.isRunning,
                         isServiceEnabled = isServiceEnabled,
-                        onStartClick = { viewModel.startTask() },
+                        onStartClick = { 
+                            // Check MediaProjection permission on Android 9-10
+                            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R && 
+                                !ScreenshotHelper.hasMediaProjectionPermission()) {
+                                onRequestMediaProjection()
+                            }
+                            viewModel.startTask() 
+                        },
                         onStopClick = { viewModel.stopTask() }
                     )
                     
@@ -574,6 +599,7 @@ fun SettingsDialog(viewModel: MainViewModel, onDismiss: () -> Unit) {
     var apiKey by remember { mutableStateOf(settings.apiKey) }
     var modelName by remember { mutableStateOf(settings.modelName) }
     var showApiKey by remember { mutableStateOf(false) }
+    val context = LocalContext.current
     
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -585,7 +611,7 @@ fun SettingsDialog(viewModel: MainViewModel, onDismiss: () -> Unit) {
             }
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
                     value = baseUrl,
                     onValueChange = { baseUrl = it },
@@ -593,6 +619,7 @@ fun SettingsDialog(viewModel: MainViewModel, onDismiss: () -> Unit) {
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
+                
                 OutlinedTextField(
                     value = apiKey,
                     onValueChange = { apiKey = it },
@@ -609,6 +636,21 @@ fun SettingsDialog(viewModel: MainViewModel, onDismiss: () -> Unit) {
                         }
                     }
                 )
+                
+                // Link to get API key
+                TextButton(
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_VIEW, 
+                            android.net.Uri.parse("https://bigmodel.cn/usercenter/proj-mgmt/apikeys"))
+                        context.startActivity(intent)
+                    },
+                    modifier = Modifier.align(Alignment.End)
+                ) {
+                    Icon(Icons.Default.OpenInNew, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("获取 API Key", style = MaterialTheme.typography.bodySmall)
+                }
+                
                 OutlinedTextField(
                     value = modelName,
                     onValueChange = { modelName = it },

@@ -20,7 +20,8 @@ class PhoneAgent(
     private val accessibilityService: AutoGLMAccessibilityService,
     private val screenshotHelper: ScreenshotHelper,
     private val onLog: (String) -> Unit = {},
-    private val onStep: (Int, String) -> Unit = { _, _ -> }
+    private val onStep: (Int, String) -> Unit = { _, _ -> },
+    private val onHideOverlay: (Boolean) -> Unit = {} // true=hide, false=show
 ) {
     private val apiClient = AutoGLMApiClient(config)
     private val actionHandler = ActionHandler(accessibilityService)
@@ -124,12 +125,20 @@ class PhoneAgent(
      */
     suspend fun step(task: String? = null): StepResult {
         stepCount++
-        onStep(stepCount, "执行中...")
         log("🔄 步骤 $stepCount")
         
         try {
+            // Hide floating overlay before taking screenshot
+            onHideOverlay(true)
+            delay(100) // Wait for overlay to hide
+            
             // Take screenshot using ScreenshotHelper (works on Android 9+)
             val screenshot = screenshotHelper.takeScreenshot()
+            
+            // Show overlay after screenshot
+            onHideOverlay(false)
+            onStep(stepCount, "分析屏幕中...")
+            
             if (screenshot == null) {
                 return StepResult(
                     success = false,
@@ -157,6 +166,7 @@ class PhoneAgent(
             context.add(ChatMessage("user", userContent))
             
             // Call API
+            onStep(stepCount, "AI思考中...")
             log("💭 思考中...")
             val response = apiClient.chat(context, screenshot)
             
@@ -182,6 +192,10 @@ class PhoneAgent(
             
             // Parse and execute action
             val action = actionHandler.parseAction(modelResponse.action)
+            
+            // Generate user-friendly action description
+            val actionDesc = getActionDescription(action)
+            onStep(stepCount, actionDesc)
             log("⚡ 动作: $action")
             
             val (finished, message) = actionHandler.executeAction(action)
@@ -240,6 +254,45 @@ class PhoneAgent(
                     .filter { it["type"] == "text" }
                 context[lastUserIndex] = ChatMessage("user", textOnly)
             }
+        }
+    }
+    
+    /**
+     * Generate user-friendly action description for floating status.
+     */
+    private fun getActionDescription(action: ParsedAction): String {
+        return when (action) {
+            is ParsedAction.Do -> {
+                when (action.action.lowercase()) {
+                    "tap" -> {
+                        if (action.element != null) 
+                            "点击屏幕 (${action.element[0]}, ${action.element[1]})"
+                        else "点击屏幕"
+                    }
+                    "type" -> {
+                        if (action.text != null) 
+                            "输入: ${action.text.take(15)}..."
+                        else "输入文字"
+                    }
+                    "swipe" -> {
+                        val direction = when (action.direction) {
+                            "up" -> "上"
+                            "down" -> "下"
+                            "left" -> "左"
+                            "right" -> "右"
+                            else -> ""
+                        }
+                        "向${direction}滑动"
+                    }
+                    "launch" -> "打开应用: ${action.app ?: "未知"}"
+                    "back" -> "返回"
+                    "home" -> "回到桌面"
+                    "wait" -> "等待页面加载"
+                    else -> action.action
+                }
+            }
+            is ParsedAction.Finish -> "任务完成"
+            is ParsedAction.Error -> "错误: ${action.message}"
         }
     }
 }

@@ -11,15 +11,15 @@ import android.media.ImageReader
 import android.media.projection.MediaProjection
 import android.media.projection.MediaProjectionManager
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.util.Base64
 import android.util.DisplayMetrics
 import android.view.WindowManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
-import kotlin.coroutines.resume
 
 /**
  * Screenshot helper that works on Android 9+.
@@ -41,50 +41,71 @@ class ScreenshotHelper(private val context: Context) {
         
         /**
          * Store MediaProjection permission result.
-         * Call this from Activity.onActivityResult()
          */
-        fun setMediaProjectionResult(resultCode: Int, data: Intent?) {
-            this.resultCode = resultCode
-            this.resultData = data
+        fun setMediaProjectionResult(code: Int, data: Intent?) {
+            resultCode = code
+            resultData = data?.clone() as? Intent
+            android.util.Log.d("ScreenshotHelper", "MediaProjection result set: code=$code, data=$data")
         }
         
         fun hasMediaProjectionPermission(): Boolean {
-            return resultCode == Activity.RESULT_OK && resultData != null
+            val has = resultCode == Activity.RESULT_OK && resultData != null
+            android.util.Log.d("ScreenshotHelper", "hasMediaProjectionPermission: $has (code=$resultCode)")
+            return has
         }
         
         fun clearMediaProjection() {
-            mediaProjection?.stop()
+            try {
+                mediaProjection?.stop()
+            } catch (e: Exception) {
+                // Ignore
+            }
             mediaProjection = null
         }
     }
     
     private var virtualDisplay: VirtualDisplay? = null
     private var imageReader: ImageReader? = null
+    private val handler = Handler(Looper.getMainLooper())
     
     /**
      * Take screenshot using the best available method.
-     * @return Base64 encoded PNG, or null if failed
      */
     suspend fun takeScreenshot(): String? {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             // Android 11+ - use Accessibility Service
             takeScreenshotViaAccessibility()
         } else {
-            // Android 9-10 - use MediaProjection
-            takeScreenshotViaMediaProjection()
+            // Android 9-10 - use MediaProjection with retry
+            takeScreenshotViaMediaProjectionWithRetry()
         }
     }
     
-    /**
-     * Take screenshot via AccessibilityService (Android 11+)
-     */
     private suspend fun takeScreenshotViaAccessibility(): String? {
         val service = AutoGLMAccessibilityService.getInstance()
         return service?.takeScreenshot()
     }
     
     /**
-     * Take screenshot via MediaProjection (Android 9+)
+     * Take screenshot with retry logic for Android 9-10.
+     */
+    private suspend fun takeScreenshotViaMediaProjectionWithRetry(): String? {
+        // First attempt
+        var result = takeScreenshotViaMediaProjection()
+        
+        // If failed, try recreating MediaProjection
+        if (result == null) {
+            android.util.Log.w("ScreenshotHelper", "First attempt failed, recreating MediaProjection...")
+            clearMediaProjection()
+            delay(100)
+            result = takeScreenshotViaMediaProjection()
+        }
+        
+        return result
+    }
+    
+    /**
+     * Take screenshot via MediaProjection (Android 9-10).
      */
     private suspend fun takeScreenshotViaMediaProjection(): String? = withContext(Dispatchers.Main) {
         if (!hasMediaProjectionPermission()) {
@@ -93,51 +114,95 @@ class ScreenshotHelper(private val context: Context) {
         }
         
         try {
+            // Always cleanup previous resources first
+            cleanupResources()
+            
             val projectionManager = context.getSystemService(Context.MEDIA_PROJECTION_SERVICE) 
                 as MediaProjectionManager
             
-            // Create MediaProjection if not exists
+            // Create fresh MediaProjection if needed
             if (mediaProjection == null) {
+                android.util.Log.d("ScreenshotHelper", "Creating new MediaProjection...")
                 mediaProjection = projectionManager.getMediaProjection(resultCode, resultData!!)
+                
+                mediaProjection?.registerCallback(object : MediaProjection.Callback() {
+                    override fun onStop() {
+                        android.util.Log.d("ScreenshotHelper", "MediaProjection stopped")
+                        mediaProjection = null
+                    }
+                }, handler)
             }
             
-            val projection = mediaProjection ?: return@withContext null
+            val projection = mediaProjection
+            if (projection == null) {
+                android.util.Log.e("ScreenshotHelper", "Failed to create MediaProjection")
+                return@withContext null
+            }
             
             // Get screen metrics
             val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
             val metrics = DisplayMetrics()
             @Suppress("DEPRECATION")
-            windowManager.defaultDisplay.getMetrics(metrics)
+            windowManager.defaultDisplay.getRealMetrics(metrics)
             
             val width = metrics.widthPixels
             val height = metrics.heightPixels
             val density = metrics.densityDpi
             
+            android.util.Log.d("ScreenshotHelper", "Screen: ${width}x${height} @ $density dpi")
+            
             // Create ImageReader
-            imageReader?.close()
             imageReader = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 2)
             val reader = imageReader!!
             
             // Create VirtualDisplay
-            virtualDisplay?.release()
             virtualDisplay = projection.createVirtualDisplay(
-                "ScreenCapture",
+                "AutoGLM_ScreenCapture_${System.currentTimeMillis()}",
                 width, height, density,
                 DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
-                reader.surface, null, null
+                reader.surface, 
+                null, 
+                handler
             )
             
+            if (virtualDisplay == null) {
+                android.util.Log.e("ScreenshotHelper", "Failed to create VirtualDisplay")
+                return@withContext null
+            }
+            
             // Wait for image to be available
-            delay(200)
+            delay(300)
             
             // Get image
             val image = reader.acquireLatestImage()
             if (image == null) {
-                android.util.Log.e("ScreenshotHelper", "Failed to acquire image")
-                return@withContext null
+                android.util.Log.e("ScreenshotHelper", "Failed to acquire image, trying again...")
+                delay(200)
+                val retryImage = reader.acquireLatestImage()
+                if (retryImage == null) {
+                    android.util.Log.e("ScreenshotHelper", "Second attempt also failed")
+                    cleanupResources()
+                    return@withContext null
+                }
+                return@withContext processImage(retryImage, width, height)
             }
             
-            // Convert to Bitmap
+            val result = processImage(image, width, height)
+            
+            // Cleanup after successful capture
+            cleanupResources()
+            
+            result
+            
+        } catch (e: Exception) {
+            android.util.Log.e("ScreenshotHelper", "Screenshot failed: ${e.message}", e)
+            cleanupResources()
+            null
+        }
+    }
+    
+    private fun processImage(image: android.media.Image, width: Int, height: Int): String? {
+        return try {
             val planes = image.planes
             val buffer = planes[0].buffer
             val pixelStride = planes[0].pixelStride
@@ -154,37 +219,47 @@ class ScreenshotHelper(private val context: Context) {
             
             // Crop to actual screen size if needed
             val croppedBitmap = if (rowPadding > 0) {
-                Bitmap.createBitmap(bitmap, 0, 0, width, height)
+                Bitmap.createBitmap(bitmap, 0, 0, width, height).also {
+                    bitmap.recycle()
+                }
             } else {
                 bitmap
             }
             
             // Convert to Base64
             val outputStream = ByteArrayOutputStream()
-            croppedBitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
+            croppedBitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
             val base64 = Base64.encodeToString(outputStream.toByteArray(), Base64.NO_WRAP)
             
-            // Cleanup
-            if (croppedBitmap !== bitmap) {
-                bitmap.recycle()
-            }
             croppedBitmap.recycle()
             
+            android.util.Log.d("ScreenshotHelper", "Screenshot successful, size: ${base64.length}")
             base64
             
         } catch (e: Exception) {
-            android.util.Log.e("ScreenshotHelper", "Screenshot failed: ${e.message}")
+            android.util.Log.e("ScreenshotHelper", "processImage failed: ${e.message}")
+            image.close()
             null
         }
     }
     
-    /**
-     * Release resources
-     */
+    private fun cleanupResources() {
+        try {
+            virtualDisplay?.release()
+            virtualDisplay = null
+        } catch (e: Exception) {
+            android.util.Log.w("ScreenshotHelper", "Error releasing VirtualDisplay: ${e.message}")
+        }
+        
+        try {
+            imageReader?.close()
+            imageReader = null
+        } catch (e: Exception) {
+            android.util.Log.w("ScreenshotHelper", "Error closing ImageReader: ${e.message}")
+        }
+    }
+    
     fun release() {
-        virtualDisplay?.release()
-        virtualDisplay = null
-        imageReader?.close()
-        imageReader = null
+        cleanupResources()
     }
 }

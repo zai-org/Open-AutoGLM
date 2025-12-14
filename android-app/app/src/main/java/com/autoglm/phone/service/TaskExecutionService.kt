@@ -152,6 +152,14 @@ class TaskExecutionService : Service() {
                             currentAction = status
                         )
                         updateNotification("步骤 $step: $status", step)
+                        // Show floating status at bottom of screen
+                        FloatingStatusService.updateStatus(this@TaskExecutionService, "步骤$step: $status")
+                    },
+                    onHideOverlay = { hide ->
+                        if (hide) {
+                            FloatingStatusService.hide(this@TaskExecutionService)
+                        }
+                        // If not hiding, onStep will show it with updated status
                     }
                 )
                 currentAgent = agent
@@ -159,6 +167,9 @@ class TaskExecutionService : Service() {
                 val result = agent.run(task)
                 
                 addLog("✅ 任务完成: $result", LogLevel.SUCCESS)
+                
+                // Hide floating status
+                FloatingStatusService.hide(this@TaskExecutionService)
                 
                 // Save to history
                 val duration = System.currentTimeMillis() - startTime
@@ -171,6 +182,9 @@ class TaskExecutionService : Service() {
                 
             } catch (e: Exception) {
                 addLog("❌ 执行错误: ${e.message}", LogLevel.ERROR)
+                
+                // Hide floating status
+                FloatingStatusService.hide(this@TaskExecutionService)
                 
                 // Save failed task to history
                 val duration = System.currentTimeMillis() - startTime
@@ -194,6 +208,7 @@ class TaskExecutionService : Service() {
         currentAgent?.stop()
         currentJob?.cancel()
         addLog("🛑 任务已停止", LogLevel.WARNING)
+        FloatingStatusService.hide(this)
         _executionState.value = _executionState.value.copy(
             isRunning = false,
             currentAction = "已停止"

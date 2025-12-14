@@ -11,6 +11,9 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     
+    <!-- Overlay permission for floating status -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    
     <!-- Query all packages for app launching -->
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
         tools:ignore="QueryAllPackagesPermission" />
@@ -54,6 +57,11 @@
             android:name=".service.TaskExecutionService"
             android:exported="false"
             android:foregroundServiceType="specialUse" />
+        
+        <!-- Floating Status Overlay Service -->
+        <service
+            android:name=".service.FloatingStatusService"
+            android:exported="false" />
 
     </application>
 
