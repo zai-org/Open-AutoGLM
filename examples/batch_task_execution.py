@@ -13,7 +13,6 @@ Demonstrates how to use Phone Agent to execute multiple tasks in batch, includin
 - 顺序执行
 - 结果跟踪和报告
 - 错误处理和重试机制
-- 批量任务的历史管理
 """
 
 import os
@@ -88,7 +87,7 @@ def example_batch_task_execution(
     # Configure model endpoint
     model_config = ModelConfig(
         base_url="https://open.bigmodel.cn/api/paas/v4",
-        api_key="590af9e737b04858bc891cea879913b1.jGxAfNjDG8Tsl8PB",
+        api_key="",
         model_name="autoglm-phone",
         temperature=0.1,
     )
