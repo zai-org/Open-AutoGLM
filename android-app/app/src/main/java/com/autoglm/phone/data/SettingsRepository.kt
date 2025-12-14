@@ -22,11 +22,13 @@ class SettingsRepository(private val context: Context) {
         private val API_KEY = stringPreferencesKey("api_key")
         private val MODEL_NAME = stringPreferencesKey("model_name")
         private val RETURN_TO_APP = booleanPreferencesKey("return_to_app")
+        private val SHOW_LOGS = booleanPreferencesKey("show_logs")
         
         const val DEFAULT_BASE_URL = "https://open.bigmodel.cn/api/paas/v4"
         const val DEFAULT_API_KEY = "7af8f9b40693467fb7b454ff79bfa428.4rq2cgqTk6CB95w8"
         const val DEFAULT_MODEL_NAME = "autoglm-phone"
         const val DEFAULT_RETURN_TO_APP = true
+        const val DEFAULT_SHOW_LOGS = true
     }
     
     val apiBaseUrl: Flow<String> = context.dataStore.data.map { preferences ->
@@ -45,6 +47,10 @@ class SettingsRepository(private val context: Context) {
         preferences[RETURN_TO_APP] ?: DEFAULT_RETURN_TO_APP
     }
     
+    val showLogs: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[SHOW_LOGS] ?: DEFAULT_SHOW_LOGS
+    }
+    
     suspend fun saveSettings(baseUrl: String, apiKey: String, modelName: String) {
         context.dataStore.edit { preferences ->
             preferences[API_BASE_URL] = baseUrl
@@ -56,6 +62,12 @@ class SettingsRepository(private val context: Context) {
     suspend fun setReturnToApp(enabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[RETURN_TO_APP] = enabled
+        }
+    }
+    
+    suspend fun setShowLogs(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[SHOW_LOGS] = enabled
         }
     }
 }

@@ -757,16 +757,30 @@ fun SettingsDialog(viewModel: MainViewModel, onDismiss: () -> Unit) {
                 ) {
                     Text("任务完成后返回应用", style = MaterialTheme.typography.bodyMedium)
                     var returnToApp by remember { mutableStateOf(true) }
-                    LaunchedEffect(Unit) {
-                        viewModel.settings.collect { 
-                            // Note: will need to extend settings state for this
-                        }
-                    }
                     Switch(
                         checked = returnToApp,
                         onCheckedChange = { 
                             returnToApp = it
                             viewModel.setReturnToApp(it)
+                        }
+                    )
+                }
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                // Show logs setting
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("显示执行日志", style = MaterialTheme.typography.bodyMedium)
+                    var showLogs by remember { mutableStateOf(true) }
+                    Switch(
+                        checked = showLogs,
+                        onCheckedChange = { 
+                            showLogs = it
+                            viewModel.setShowLogs(it)
                         }
                     )
                 }

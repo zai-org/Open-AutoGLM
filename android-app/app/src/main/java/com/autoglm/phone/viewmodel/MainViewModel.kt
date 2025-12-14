@@ -182,6 +182,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
     
+    fun setShowLogs(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setShowLogs(enabled)
+        }
+    }
+    
     fun clearHistory() {
         viewModelScope.launch {
             historyRepository.clearHistory()
