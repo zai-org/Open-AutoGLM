@@ -54,7 +54,7 @@ ADB 调试能力，可通过 WiFi 或网络连接设备，实现灵活的远程�
 - MacOS 配置方法：在 `Terminal` 或者任何命令行工具里
 
   ```bash
-  # 假设解压后的目录为 ~/Downlaods/platform-tools。如果不是请自行调整命令。
+  # 假设解压后的目录为 ~/Downloads/platform-tools。如果不是请自行调整命令。
   export PATH=${PATH}:~/Downloads/platform-tools
   ```
 

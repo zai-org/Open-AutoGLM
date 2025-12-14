@@ -476,6 +476,7 @@ def main():
         base_url=args.base_url,
         model_name=args.model,
         api_key=args.apikey,
+        lang=args.lang,
     )
 
     agent_config = AgentConfig(
