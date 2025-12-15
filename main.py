@@ -18,11 +18,15 @@ import os
 import shutil
 import subprocess
 import sys
-from urllib.parse import urlparse
 
 from openai import OpenAI
 
 from phone_agent import PhoneAgent
+from phone_agent.adb import ADBConnection, list_devices
+from phone_agent.adb.keyboard_installer import (
+    ADBKeyboardInstaller,
+    auto_setup_adb_keyboard,
+)
 from phone_agent.agent import AgentConfig
 from phone_agent.config.apps import list_supported_apps
 from phone_agent.config.apps_harmonyos import list_supported_apps as list_harmonyos_apps
@@ -150,45 +154,40 @@ def check_system_requirements(device_type: DeviceType = DeviceType.ADB) -> bool:
         print("❌ System check failed. Please fix the issues above.")
         return False
 
-    # Check 3: ADB Keyboard installed (only for ADB)
-    if device_type == DeviceType.ADB:
-        print("3. Checking ADB Keyboard...", end=" ")
-        try:
-            result = subprocess.run(
-                ["adb", "shell", "ime", "list", "-s"],
-                capture_output=True,
-                text=True,
-                timeout=10,
-            )
-            ime_list = result.stdout.strip()
+    # Check 3: ADB Keyboard installed
+    print("3. Checking ADB Keyboard...", end=" ")
+    try:
+        result = subprocess.run(
+            ["adb", "shell", "ime", "list", "-s"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        ime_list = result.stdout.strip()
 
-            if "com.android.adbkeyboard/.AdbIME" in ime_list:
-                print("✅ OK")
-            else:
-                print("❌ FAILED")
-                print("   Error: ADB Keyboard is not installed on the device.")
-                print("   Solution:")
-                print("     1. Download ADB Keyboard APK from:")
-                print(
-                    "        https://github.com/senzhk/ADBKeyBoard/blob/master/ADBKeyboard.apk"
-                )
-                print("     2. Install it on your device: adb install ADBKeyboard.apk")
-                print(
-                    "     3. Enable it in Settings > System > Languages & Input > Virtual Keyboard"
-                )
-                all_passed = False
-        except subprocess.TimeoutExpired:
+        if "com.android.adbkeyboard/.AdbIME" in ime_list:
+            print("✅ OK")
+        else:
             print("❌ FAILED")
-            print("   Error: ADB command timed out.")
+            print("   Error: ADB Keyboard is not installed on the device.")
+            print("   Solution:")
+            print("     1. Download ADB Keyboard APK from:")
+            print(
+                "        https://github.com/senzhk/ADBKeyBoard/blob/master/ADBKeyboard.apk"
+            )
+            print("     2. Install it on your device: adb install ADBKeyboard.apk")
+            print(
+                "     3. Enable it in Settings > System > Languages & Input > Virtual Keyboard"
+            )
             all_passed = False
-        except Exception as e:
-            print("❌ FAILED")
-            print(f"   Error: {e}")
-            all_passed = False
-    else:
-        # For HDC, skip keyboard check as it uses different input method
-        print("3. Skipping keyboard check for HarmonyOS...", end=" ")
-        print("✅ OK (using native input)")
+    except subprocess.TimeoutExpired:
+        print("❌ FAILED")
+        print("   Error: ADB command timed out.")
+        all_passed = False
+    except Exception as e:
+        print("❌ FAILED")
+        print(f"   Error: {e}")
+        all_passed = False
 
     print("-" * 50)
 
@@ -264,7 +263,7 @@ def check_model_api(base_url: str, model_name: str, api_key: str = "EMPTY") -> b
             "Name or service not known" in error_msg
             or "nodename nor servname" in error_msg
         ):
-            print(f"   Error: Cannot resolve hostname")
+            print("   Error: Cannot resolve hostname")
             print("   Solution:")
             print("     1. Check the URL is correct")
             print("     2. Verify DNS settings")
@@ -480,9 +479,9 @@ def handle_device_commands(args) -> bool:
             # Try to get device IP
             ip = conn.get_device_ip(args.device_id)
             if ip:
-                print(f"\nYou can now connect remotely using:")
+                print("\nYou can now connect remotely using:")
                 print(f"  python main.py --connect {ip}:{port}")
-                print(f"\nOr via ADB directly:")
+                print("\nOr via ADB directly:")
                 print(f"  adb connect {ip}:{port}")
             else:
                 print("\nCould not determine device IP. Check device WiFi settings.")
