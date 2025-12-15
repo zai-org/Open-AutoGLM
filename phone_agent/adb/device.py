@@ -1,5 +1,6 @@
 """Device control utilities for Android automation."""
 
+import logging
 import os
 import subprocess
 import time
@@ -7,8 +8,10 @@ from typing import List, Optional, Tuple
 
 from phone_agent.config.apps import APP_PACKAGES
 
+logger = logging.getLogger(__name__)
 
-def get_current_app(device_id: str | None = None) -> str:
+
+def get_current_app(device_id: Optional[str] = None) -> str:
     """
     Get the currently focused app name.
 
@@ -30,12 +33,13 @@ def get_current_app(device_id: str | None = None) -> str:
         if "mCurrentFocus" in line or "mFocusedApp" in line:
             for app_name, package in APP_PACKAGES.items():
                 if package in line:
+                    logger.debug(f"Current app: {app_name}")
                     return app_name
 
     return "System Home"
 
 
-def tap(x: int, y: int, device_id: str | None = None, delay: float = 1.0) -> None:
+def tap(x: int, y: int, device_id: Optional[str] = None, delay: float = 1.0) -> None:
     """
     Tap at the specified coordinates.
 
@@ -54,7 +58,7 @@ def tap(x: int, y: int, device_id: str | None = None, delay: float = 1.0) -> Non
 
 
 def double_tap(
-    x: int, y: int, device_id: str | None = None, delay: float = 1.0
+    x: int, y: int, device_id: Optional[str] = None, delay: float = 1.0
 ) -> None:
     """
     Double tap at the specified coordinates.
@@ -81,7 +85,7 @@ def long_press(
     x: int,
     y: int,
     duration_ms: int = 3000,
-    device_id: str | None = None,
+    device_id: Optional[str] = None,
     delay: float = 1.0,
 ) -> None:
     """

@@ -1,8 +1,9 @@
 """Model client for AI inference using OpenAI-compatible API."""
 
 import json
+import logging
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Optional
 
 from openai import OpenAI
 
@@ -19,6 +20,15 @@ class ModelConfig:
     top_p: float = 0.85
     frequency_penalty: float = 0.2
     extra_body: dict[str, Any] = field(default_factory=dict)
+    
+    def __post_init__(self) -> None:
+        """Validate configuration after initialization."""
+        if self.max_tokens <= 0:
+            raise ValueError("max_tokens must be positive")
+        if not 0.0 <= self.temperature <= 2.0:
+            raise ValueError("temperature must be between 0.0 and 2.0")
+        if not 0.0 <= self.top_p <= 1.0:
+            raise ValueError("top_p must be between 0.0 and 1.0")
 
 
 @dataclass
@@ -38,9 +48,15 @@ class ModelClient:
         config: Model configuration.
     """
 
-    def __init__(self, config: ModelConfig | None = None):
+    def __init__(self, config: Optional[ModelConfig] = None) -> None:
+        self.logger = logging.getLogger(__name__)
         self.config = config or ModelConfig()
-        self.client = OpenAI(base_url=self.config.base_url, api_key=self.config.api_key)
+        try:
+            self.client = OpenAI(base_url=self.config.base_url, api_key=self.config.api_key)
+            self.logger.debug(f"ModelClient initialized with base_url={self.config.base_url}")
+        except Exception as e:
+            self.logger.error(f"Failed to initialize OpenAI client: {e}")
+            raise
 
     def request(self, messages: list[dict[str, Any]]) -> ModelResponse:
         """

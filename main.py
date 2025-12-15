@@ -11,13 +11,18 @@ Environment Variables:
     PHONE_AGENT_API_KEY: API key for model authentication (default: EMPTY)
     PHONE_AGENT_MAX_STEPS: Maximum steps per task (default: 100)
     PHONE_AGENT_DEVICE_ID: ADB device ID for multi-device setups
+    PHONE_AGENT_LANG: Language for prompts (default: cn)
+    PHONE_AGENT_LOG_FILE: Path to log file (optional)
+    PHONE_AGENT_LOG_LEVEL: Logging level (default: INFO)
 """
 
 import argparse
+import logging
 import os
 import shutil
 import subprocess
 import sys
+from pathlib import Path
 from urllib.parse import urlparse
 
 from openai import OpenAI
@@ -27,6 +32,14 @@ from phone_agent.adb import ADBConnection, list_devices
 from phone_agent.agent import AgentConfig
 from phone_agent.config.apps import list_supported_apps
 from phone_agent.model import ModelConfig
+from phone_agent.utils import ConfigLoader, ConfigValidator, LoggerSetup
+
+# Setup logging
+logger = LoggerSetup.setup_logging(
+    "phone_agent",
+    level=logging.INFO,
+    verbose=os.getenv("PHONE_AGENT_VERBOSE", "false").lower() == "true",
+)
 
 
 def check_system_requirements() -> bool:

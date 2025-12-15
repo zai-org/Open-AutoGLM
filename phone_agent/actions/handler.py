@@ -1,11 +1,12 @@
 """Action handler for processing AI model outputs."""
 
-import time
 import ast
-import re
 import json
+import logging
+import re
+import time
 from dataclasses import dataclass
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 
 from phone_agent.adb import (
     back,
@@ -28,7 +29,7 @@ class ActionResult:
 
     success: bool
     should_finish: bool
-    message: str | None = None
+    message: Optional[str] = None
     requires_confirmation: bool = False
 
 
@@ -45,10 +46,11 @@ class ActionHandler:
 
     def __init__(
         self,
-        device_id: str | None = None,
-        confirmation_callback: Callable[[str], bool] | None = None,
-        takeover_callback: Callable[[str], None] | None = None,
-    ):
+        device_id: Optional[str] = None,
+        confirmation_callback: Optional[Callable[[str], bool]] = None,
+        takeover_callback: Optional[Callable[[str], None]] = None,
+    ) -> None:
+        self.logger = logging.getLogger(__name__)
         self.device_id = device_id
         self.confirmation_callback = confirmation_callback or self._default_confirmation
         self.takeover_callback = takeover_callback or self._default_takeover
@@ -98,7 +100,7 @@ class ActionHandler:
                 success=False, should_finish=False, message=f"Action failed: {e}"
             )
 
-    def _get_handler(self, action_name: str) -> Callable | None:
+    def _get_handler(self, action_name: str) -> Optional[Callable]:
         """Get the handler method for an action."""
         handlers = {
             "Launch": self._handle_launch,
@@ -116,7 +118,10 @@ class ActionHandler:
             "Call_API": self._handle_call_api,
             "Interact": self._handle_interact,
         }
-        return handlers.get(action_name)
+        handler = handlers.get(action_name)
+        if handler is None:
+            self.logger.warning(f"Unknown action handler: {action_name}")
+        return handler
 
     def _convert_relative_to_absolute(
         self, element: list[int], screen_width: int, screen_height: int
@@ -281,8 +286,11 @@ def parse_action(response: str) -> dict[str, Any]:
     Raises:
         ValueError: If the response cannot be parsed.
     """
+    logger = logging.getLogger(__name__)
     try:
         response = response.strip()
+        if not response:
+            raise ValueError("Empty response")
 
         # Preferred: JSON encoded action
         try:
@@ -292,6 +300,7 @@ def parse_action(response: str) -> dict[str, Any]:
             metadata = obj.get("_metadata")
             if metadata not in ("do", "finish"):
                 raise ValueError("Invalid or missing '_metadata' field")
+            logger.debug(f"Successfully parsed JSON action: {metadata}")
             return obj
         except json.JSONDecodeError:
             pass
@@ -308,6 +317,7 @@ def parse_action(response: str) -> dict[str, Any]:
                     key = keyword.arg
                     value = ast.literal_eval(keyword.value)
                     action[key] = value
+                logger.debug("Successfully parsed do() action via AST")
                 return action
             except (SyntaxError, ValueError) as e:
                 raise ValueError(f"Failed to parse do() action: {e}")
@@ -321,6 +331,7 @@ def parse_action(response: str) -> dict[str, Any]:
                     action = {"_metadata": "finish"}
                     for kw in call.keywords:
                         action[kw.arg] = ast.literal_eval(kw.value)
+                    logger.debug("Successfully parsed finish() action via AST")
                     return action
             except Exception:
                 # Fallback regex + literal eval for simple legacy formats
@@ -328,12 +339,14 @@ def parse_action(response: str) -> dict[str, Any]:
                 if m:
                     try:
                         msg = ast.literal_eval(m.group(1))
+                        logger.debug("Successfully parsed finish() action via regex")
                         return {"_metadata": "finish", "message": msg}
                     except Exception as e:
                         raise ValueError(f"Failed to parse finish() message: {e}")
 
         raise ValueError(f"Failed to parse action: {response}")
     except Exception as e:
+        logger.error(f"Action parsing error: {e}")
         raise ValueError(f"Failed to parse action: {e}")
 
 

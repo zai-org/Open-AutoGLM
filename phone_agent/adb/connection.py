@@ -1,10 +1,13 @@
 """ADB connection management for local and remote devices."""
 
+import logging
 import subprocess
 import time
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
+from typing import Optional, Tuple
+
+logger = logging.getLogger(__name__)
 
 
 class ConnectionType(Enum):
@@ -22,8 +25,8 @@ class DeviceInfo:
     device_id: str
     status: str
     connection_type: ConnectionType
-    model: str | None = None
-    android_version: str | None = None
+    model: Optional[str] = None
+    android_version: Optional[str] = None
 
 
 class ADBConnection:
@@ -71,6 +74,7 @@ class ADBConnection:
             address = f"{address}:5555"  # Default ADB port
 
         try:
+            logger.debug(f"Connecting to device at {address}")
             result = subprocess.run(
                 [self.adb_path, "connect", address],
                 capture_output=True,
@@ -81,18 +85,23 @@ class ADBConnection:
             output = result.stdout + result.stderr
 
             if "connected" in output.lower():
+                logger.info(f"Connected to {address}")
                 return True, f"Connected to {address}"
             elif "already connected" in output.lower():
+                logger.info(f"Already connected to {address}")
                 return True, f"Already connected to {address}"
             else:
+                logger.warning(f"Failed to connect to {address}: {output.strip()}")
                 return False, output.strip()
 
         except subprocess.TimeoutExpired:
+            logger.error(f"Connection timeout after {timeout}s")
             return False, f"Connection timeout after {timeout}s"
         except Exception as e:
+            logger.error(f"Connection error: {e}")
             return False, f"Connection error: {e}"
 
-    def disconnect(self, address: str | None = None) -> tuple[bool, str]:
+    def disconnect(self, address: Optional[str] = None) -> tuple[bool, str]:
         """
         Disconnect from a remote device.
 
