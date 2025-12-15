@@ -1,0 +1,53 @@
+From fdafb3c9dbcdd6ce59a87c585b9b12b8ef6a197a Mon Sep 17 00:00:00 2001
+From: jibo <tigerjibo@163.com>
+Date: Sat, 13 Dec 2025 22:59:04 +0800
+Subject: [PATCH] security: replace eval-based parse_action with JSON parsing
+ and validation
+
+---
+ phone_agent/actions/handler.py | 21 ++++++++++-----------
+ 1 file changed, 10 insertions(+), 11 deletions(-)
+
+diff --git a/phone_agent/actions/handler.py b/phone_agent/actions/handler.py
+index 13cc1a0..ddaf851 100644
+--- a/phone_agent/actions/handler.py
++++ b/phone_agent/actions/handler.py
+@@ -3,6 +3,7 @@
+ import time
+ from dataclasses import dataclass
+ from typing import Any, Callable
++import json
+ 
+ from phone_agent.adb import (
+     back,
+@@ -279,18 +280,16 @@ def parse_action(response: str) -> dict[str, Any]:
+         ValueError: If the response cannot be parsed.
+     """
+     try:
+-        # Try to evaluate as Python dict/function call
+         response = response.strip()
+-        if response.startswith("do"):
+-            action = eval(response)
+-        elif response.startswith("finish"):
+-            action = {
+-                "_metadata": "finish",
+-                "message": response.replace("finish(message=", "")[1:-2],
+-            }
+-        else:
+-            raise ValueError(f"Failed to parse action: {response}")
+-        return action
++        obj = json.loads(response)
++        if not isinstance(obj, dict):
++            raise ValueError("Action must be a JSON object")
++        metadata = obj.get("_metadata")
++        if metadata not in ("do", "finish"):
++            raise ValueError("Invalid or missing '_metadata' field")
++        return obj
++    except json.JSONDecodeError as e:
++        raise ValueError(f"Failed to parse action: invalid JSON: {e}")
+     except Exception as e:
+         raise ValueError(f"Failed to parse action: {e}")
+ 
+-- 
+2.52.0.windows.1
+
