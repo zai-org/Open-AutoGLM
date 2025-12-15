@@ -62,6 +62,18 @@ def get_screenshot(device_id: str | None = None, timeout: int = 10) -> Screensho
             timeout=5,
         )
 
+        # Cleanup remote temp file to avoid filling device storage
+        try:
+            subprocess.run(
+                adb_prefix + ["shell", "rm", "/sdcard/tmp.png"],
+                capture_output=True,
+                text=True,
+                timeout=3,
+            )
+        except Exception:
+            # Best-effort cleanup; do not fail screenshot on cleanup error
+            pass
+
         if not os.path.exists(temp_path):
             return _create_fallback_screenshot(is_sensitive=False)
 
