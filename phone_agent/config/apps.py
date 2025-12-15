@@ -11,6 +11,8 @@ APP_PACKAGES: dict[str, str] = {
     "拼多多": "com.xunmeng.pinduoduo",
     "淘宝闪购": "com.taobao.taobao",
     "京东秒送": "com.jingdong.app.mall",
+    "唯品会":"com.achievo.vipshop",
+    "菜鸟":"com.cainiao.wireless",
     # Lifestyle & Social
     "小红书": "com.xingin.xhs",
     "豆瓣": "com.douban.frodo",
@@ -51,6 +53,12 @@ APP_PACKAGES: dict[str, str] = {
     # Productivity
     "飞书": "com.ss.android.lark",
     "QQ邮箱": "com.tencent.androidqqmail",
+    "钉钉": "com.alibaba.android.rimet",
+    "学习通":"com.chaoxing.mobile",
+    # HumanResources
+    "智联招聘": "com.zhaopin.social",
+    "BOSS直聘": "com.hpbr.bosszhipin",
+    "国聘":"com.iguopin.app",
     # AI & Tools
     "豆包": "com.larus.nova",
     # Health & Fitness
