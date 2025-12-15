@@ -7,8 +7,8 @@ from typing import Any, Callable
 
 from phone_agent.actions import ActionHandler
 from phone_agent.actions.handler import do, finish, parse_action
-from phone_agent.adb import get_current_app, get_screenshot
 from phone_agent.config import get_messages, get_system_prompt
+from phone_agent.device import AdbDeviceController, HarmonyDeviceController
 from phone_agent.model import ModelClient, ModelConfig
 from phone_agent.model.client import MessageBuilder
 
@@ -22,6 +22,8 @@ class AgentConfig:
     lang: str = "cn"
     system_prompt: str | None = None
     verbose: bool = True
+    backend: str = "adb"
+    hdc_path: str | None = None
 
     def __post_init__(self):
         if self.system_prompt is None:
@@ -72,8 +74,20 @@ class PhoneAgent:
         self.agent_config = agent_config or AgentConfig()
 
         self.model_client = ModelClient(self.model_config)
+
+        if self.agent_config.backend == "adb":
+            self.controller = AdbDeviceController(
+                device_id=self.agent_config.device_id
+            )
+        elif self.agent_config.backend == "harmony":
+            if not self.agent_config.hdc_path:
+                raise ValueError("hdc_path must be provided for harmony backend")
+            self.controller = HarmonyDeviceController(self.agent_config.hdc_path)
+        else:
+            raise ValueError(f"Unknown backend: {self.agent_config.backend}")
+
         self.action_handler = ActionHandler(
-            device_id=self.agent_config.device_id,
+            controller=self.controller,
             confirmation_callback=confirmation_callback,
             takeover_callback=takeover_callback,
         )
@@ -139,9 +153,8 @@ class PhoneAgent:
         """Execute a single step of the agent loop."""
         self._step_count += 1
 
-        # Capture current screen state
-        screenshot = get_screenshot(self.agent_config.device_id)
-        current_app = get_current_app(self.agent_config.device_id)
+        screenshot = self.controller.get_screenshot()
+        current_app = self.controller.get_current_app()
 
         # Build messages
         if is_first:
