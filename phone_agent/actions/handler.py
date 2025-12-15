@@ -18,6 +18,7 @@ from phone_agent.adb import (
     swipe,
     tap,
     type_text,
+    wake_screen_if_needed,
 )
 from phone_agent.config.timing import TIMING_CONFIG
 
@@ -79,6 +80,13 @@ class ActionHandler:
                 success=False,
                 should_finish=True,
                 message=f"Unknown action type: {action_type}",
+            )
+
+        if not wake_screen_if_needed(self.device_id):
+            return ActionResult(
+                success=False,
+                should_finish=True,
+                message="Failed to wake screen",
             )
 
         action_name = action.get("action")
