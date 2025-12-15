@@ -1,7 +1,7 @@
 """Action handler for processing AI model outputs."""
 
 import ast
-import re
+import json
 import time
 from dataclasses import dataclass
 from typing import Any, Callable
@@ -19,7 +19,6 @@ from phone_agent.adb import (
     tap,
     type_text,
 )
-from phone_agent.config.timing import TIMING_CONFIG
 
 
 @dataclass
@@ -163,18 +162,18 @@ class ActionHandler:
 
         # Switch to ADB keyboard
         original_ime = detect_and_set_adb_keyboard(self.device_id)
-        time.sleep(TIMING_CONFIG.action.keyboard_switch_delay)
+        time.sleep(1.0)
 
         # Clear existing text and type new text
         clear_text(self.device_id)
-        time.sleep(TIMING_CONFIG.action.text_clear_delay)
+        time.sleep(1.0)
 
         type_text(text, self.device_id)
-        time.sleep(TIMING_CONFIG.action.text_input_delay)
+        time.sleep(1.0)
 
         # Restore original keyboard
         restore_keyboard(original_ime, self.device_id)
-        time.sleep(TIMING_CONFIG.action.keyboard_restore_delay)
+        time.sleep(1.0)
 
         return ActionResult(True, False)
 
@@ -283,33 +282,89 @@ def parse_action(response: str) -> dict[str, Any]:
     """
     try:
         response = response.strip()
-        if response.startswith("do"):
-            # Use AST parsing instead of eval for safety
+        
+        # Parse JSON format (new secure method)
+        if response.startswith("{") and response.endswith("}"):
+            action = json.loads(response)
+            # Validate JSON structure to ensure it's safe
+            if not isinstance(action, dict):
+                raise ValueError("Response must be a JSON object")
+            return action
+        
+        # Parse legacy do() format for backward compatibility (secure method)
+        elif response.startswith("do(") and response.endswith(")"):
+            # Extract the content inside do(...)
+            content = response[3:-1]  # Remove "do(" and ")"
+            
+            # Parse using ast.literal_eval for safety
             try:
-                tree = ast.parse(response, mode="eval")
-                if not isinstance(tree.body, ast.Call):
-                    raise ValueError("Expected a function call")
-
-                call = tree.body
-                # Extract keyword arguments safely
-                action = {"_metadata": "do"}
-                for keyword in call.keywords:
-                    key = keyword.arg
-                    value = ast.literal_eval(keyword.value)
-                    action[key] = value
-
-                return action
-            except (SyntaxError, ValueError) as e:
-                raise ValueError(f"Failed to parse do() action: {e}")
-
-        elif response.startswith("finish"):
-            action = {
+                # Parse as keyword arguments
+                parsed = ast.literal_eval(f"dict({content})")
+                if not isinstance(parsed, dict):
+                    raise ValueError("do() arguments must be key-value pairs")
+                parsed["_metadata"] = "do"
+                return parsed
+            except (SyntaxError, ValueError):
+                # Fallback: try to parse as a simple dict-like structure
+                # This is more restrictive than eval but handles some edge cases
+                parts = content.split(",")
+                result = {}
+                for part in parts:
+                    if "=" in part:
+                        key, value = part.split("=", 1)
+                        key = key.strip()
+                        value = value.strip()
+                        
+                        # Only allow safe string, number, and list literals
+                        if value.startswith("[") and value.endswith("]"):
+                            # Parse coordinate lists safely
+                            try:
+                                result[key] = ast.literal_eval(value)
+                            except (SyntaxError, ValueError):
+                                raise ValueError(f"Invalid coordinate format: {value}")
+                        elif value.startswith('"') and value.endswith('"'):
+                            # String literals
+                            result[key] = value[1:-1]
+                        elif value.startswith("'") and value.endswith("'"):
+                            # String literals with single quotes
+                            result[key] = value[1:-1]
+                        elif value.replace(".", "").isdigit():
+                            # Numbers
+                            try:
+                                result[key] = ast.literal_eval(value)
+                            except (SyntaxError, ValueError):
+                                raise ValueError(f"Invalid number format: {value}")
+                        else:
+                            raise ValueError(f"Unsupported value format: {value}")
+                
+                result["_metadata"] = "do"
+                return result
+        
+        # Parse finish() format (secure method)
+        elif response.startswith("finish(") and response.endswith(")"):
+            # Extract message content
+            content = response[7:-1]  # Remove "finish(" and ")"
+            
+            # Handle quoted messages
+            if (content.startswith('"') and content.endswith('"')) or \
+               (content.startswith("'") and content.endswith("'")):
+                message = content[1:-1]
+            else:
+                # Unquoted message - strip any extra whitespace
+                message = content.strip()
+            
+            return {
                 "_metadata": "finish",
-                "message": response.replace("finish(message=", "")[1:-2],
+                "message": message
             }
+        
         else:
             raise ValueError(f"Failed to parse action: {response}")
-        return action
+            
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Invalid JSON format: {e}")
+    except (SyntaxError, ValueError) as e:
+        raise ValueError(f"Failed to parse action: {e}")
     except Exception as e:
         raise ValueError(f"Failed to parse action: {e}")
 
