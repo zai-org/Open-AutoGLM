@@ -169,6 +169,10 @@ class PhoneAgent:
 
         # Get model response
         try:
+            msgs = get_messages(self.agent_config.lang)
+            print("\n" + "=" * 50)
+            print(f"💭 {msgs['thinking']}:")
+            print("-" * 50)
             response = self.model_client.request(self._context)
         except Exception as e:
             if self.agent_config.verbose:
@@ -191,11 +195,6 @@ class PhoneAgent:
 
         if self.agent_config.verbose:
             # Print thinking process
-            msgs = get_messages(self.agent_config.lang)
-            print("\n" + "=" * 50)
-            print(f"💭 {msgs['thinking']}:")
-            print("-" * 50)
-            print(response.thinking)
             print("-" * 50)
             print(f"🎯 {msgs['action']}:")
             print(json.dumps(action, ensure_ascii=False, indent=2))

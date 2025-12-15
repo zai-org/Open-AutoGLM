@@ -1,5 +1,7 @@
 """Action handler for processing AI model outputs."""
 
+import ast
+import re
 import time
 from dataclasses import dataclass
 from typing import Any, Callable
@@ -17,6 +19,7 @@ from phone_agent.adb import (
     tap,
     type_text,
 )
+from phone_agent.config.timing import TIMING_CONFIG
 
 
 @dataclass
@@ -160,18 +163,18 @@ class ActionHandler:
 
         # Switch to ADB keyboard
         original_ime = detect_and_set_adb_keyboard(self.device_id)
-        time.sleep(1.0)
+        time.sleep(TIMING_CONFIG.action.keyboard_switch_delay)
 
         # Clear existing text and type new text
         clear_text(self.device_id)
-        time.sleep(1.0)
+        time.sleep(TIMING_CONFIG.action.text_clear_delay)
 
         type_text(text, self.device_id)
-        time.sleep(1.0)
+        time.sleep(TIMING_CONFIG.action.text_input_delay)
 
         # Restore original keyboard
         restore_keyboard(original_ime, self.device_id)
-        time.sleep(1.0)
+        time.sleep(TIMING_CONFIG.action.keyboard_restore_delay)
 
         return ActionResult(True, False)
 
@@ -279,10 +282,26 @@ def parse_action(response: str) -> dict[str, Any]:
         ValueError: If the response cannot be parsed.
     """
     try:
-        # Try to evaluate as Python dict/function call
         response = response.strip()
         if response.startswith("do"):
-            action = eval(response)
+            # Use AST parsing instead of eval for safety
+            try:
+                tree = ast.parse(response, mode="eval")
+                if not isinstance(tree.body, ast.Call):
+                    raise ValueError("Expected a function call")
+
+                call = tree.body
+                # Extract keyword arguments safely
+                action = {"_metadata": "do"}
+                for keyword in call.keywords:
+                    key = keyword.arg
+                    value = ast.literal_eval(keyword.value)
+                    action[key] = value
+
+                return action
+            except (SyntaxError, ValueError) as e:
+                raise ValueError(f"Failed to parse do() action: {e}")
+
         elif response.startswith("finish"):
             action = {
                 "_metadata": "finish",
