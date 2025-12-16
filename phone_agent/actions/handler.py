@@ -1,12 +1,10 @@
 """Action handler for processing AI model outputs."""
 
 import ast
-import json
-import logging
 import re
 import time
 from dataclasses import dataclass
-from typing import Any, Callable, Optional
+from typing import Any, Callable
 
 from phone_agent.adb import (
     back,
@@ -21,6 +19,7 @@ from phone_agent.adb import (
     tap,
     type_text,
 )
+from phone_agent.config.timing import TIMING_CONFIG
 
 
 @dataclass
@@ -29,7 +28,7 @@ class ActionResult:
 
     success: bool
     should_finish: bool
-    message: Optional[str] = None
+    message: str | None = None
     requires_confirmation: bool = False
 
 
@@ -46,11 +45,10 @@ class ActionHandler:
 
     def __init__(
         self,
-        device_id: Optional[str] = None,
-        confirmation_callback: Optional[Callable[[str], bool]] = None,
-        takeover_callback: Optional[Callable[[str], None]] = None,
-    ) -> None:
-        self.logger = logging.getLogger(__name__)
+        device_id: str | None = None,
+        confirmation_callback: Callable[[str], bool] | None = None,
+        takeover_callback: Callable[[str], None] | None = None,
+    ):
         self.device_id = device_id
         self.confirmation_callback = confirmation_callback or self._default_confirmation
         self.takeover_callback = takeover_callback or self._default_takeover
@@ -100,7 +98,7 @@ class ActionHandler:
                 success=False, should_finish=False, message=f"Action failed: {e}"
             )
 
-    def _get_handler(self, action_name: str) -> Optional[Callable]:
+    def _get_handler(self, action_name: str) -> Callable | None:
         """Get the handler method for an action."""
         handlers = {
             "Launch": self._handle_launch,
@@ -118,10 +116,7 @@ class ActionHandler:
             "Call_API": self._handle_call_api,
             "Interact": self._handle_interact,
         }
-        handler = handlers.get(action_name)
-        if handler is None:
-            self.logger.warning(f"Unknown action handler: {action_name}")
-        return handler
+        return handlers.get(action_name)
 
     def _convert_relative_to_absolute(
         self, element: list[int], screen_width: int, screen_height: int
@@ -168,18 +163,18 @@ class ActionHandler:
 
         # Switch to ADB keyboard
         original_ime = detect_and_set_adb_keyboard(self.device_id)
-        time.sleep(1.0)
+        time.sleep(TIMING_CONFIG.action.keyboard_switch_delay)
 
         # Clear existing text and type new text
         clear_text(self.device_id)
-        time.sleep(1.0)
+        time.sleep(TIMING_CONFIG.action.text_clear_delay)
 
         type_text(text, self.device_id)
-        time.sleep(1.0)
+        time.sleep(TIMING_CONFIG.action.text_input_delay)
 
         # Restore original keyboard
         restore_keyboard(original_ime, self.device_id)
-        time.sleep(1.0)
+        time.sleep(TIMING_CONFIG.action.keyboard_restore_delay)
 
         return ActionResult(True, False)
 
@@ -286,80 +281,42 @@ def parse_action(response: str) -> dict[str, Any]:
     Raises:
         ValueError: If the response cannot be parsed.
     """
-    logger = logging.getLogger(__name__)
     try:
         response = response.strip()
-        if not response:
-            raise ValueError("Empty response")
-
-        # Preferred: JSON encoded action
-        try:
-            obj = json.loads(response)
-            if not isinstance(obj, dict):
-                raise ValueError("Action must be a JSON object")
-            metadata = obj.get("_metadata")
-            if metadata not in ("do", "finish"):
-                raise ValueError("Invalid or missing '_metadata' field")
-            logger.debug(f"Successfully parsed JSON action: {metadata}")
-            return obj
-        except json.JSONDecodeError:
-            pass
-
-        # Fallback: legacy function-call-like syntax, parsed safely with AST
-        # Fast path for Type/Type_Name actions (common case from main branch)
         if response.startswith('do(action="Type"') or response.startswith(
             'do(action="Type_Name"'
         ):
-            try:
-                text = response.split("text=", 1)[1][1:-2]
-                action = {"_metadata": "do", "action": "Type", "text": text}
-                logger.debug("Successfully parsed Type action via fast path")
-                return action
-            except (IndexError, ValueError):
-                # Fall through to AST parsing if fast path fails
-                pass
-
-        if response.startswith("do"):
+            text = response.split("text=", 1)[1][1:-2]
+            action = {"_metadata": "do", "action": "Type", "text": text}
+            return action
+        elif response.startswith("do"):
+            # Use AST parsing instead of eval for safety
             try:
                 tree = ast.parse(response, mode="eval")
                 if not isinstance(tree.body, ast.Call):
                     raise ValueError("Expected a function call")
+
                 call = tree.body
+                # Extract keyword arguments safely
                 action = {"_metadata": "do"}
                 for keyword in call.keywords:
                     key = keyword.arg
                     value = ast.literal_eval(keyword.value)
                     action[key] = value
-                logger.debug("Successfully parsed do() action via AST")
+
                 return action
             except (SyntaxError, ValueError) as e:
                 raise ValueError(f"Failed to parse do() action: {e}")
 
-        if response.startswith("finish"):
-            # Try AST-based parsing for finish(...)
-            try:
-                tree = ast.parse(response, mode="eval")
-                if isinstance(tree.body, ast.Call):
-                    call = tree.body
-                    action = {"_metadata": "finish"}
-                    for kw in call.keywords:
-                        action[kw.arg] = ast.literal_eval(kw.value)
-                    logger.debug("Successfully parsed finish() action via AST")
-                    return action
-            except Exception:
-                # Fallback regex + literal eval for simple legacy formats
-                m = re.search(r"finish\(\s*message\s*=\s*(.+)\s*\)", response)
-                if m:
-                    try:
-                        msg = ast.literal_eval(m.group(1))
-                        logger.debug("Successfully parsed finish() action via regex")
-                        return {"_metadata": "finish", "message": msg}
-                    except Exception as e:
-                        raise ValueError(f"Failed to parse finish() message: {e}")
-
-        raise ValueError(f"Failed to parse action: {response}")
+        elif response.startswith("finish"):
+            action = {
+                "_metadata": "finish",
+                "message": response.replace("finish(message=", "")[1:-2],
+            }
+        else:
+            raise ValueError(f"Failed to parse action: {response}")
+        return action
     except Exception as e:
-        logger.error(f"Action parsing error: {e}")
         raise ValueError(f"Failed to parse action: {e}")
 
 

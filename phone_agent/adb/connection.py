@@ -9,6 +9,8 @@ from typing import Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
+from phone_agent.config.timing import TIMING_CONFIG
+
 
 class ConnectionType(Enum):
     """Type of ADB connection."""
@@ -253,7 +255,7 @@ class ADBConnection:
             output = result.stdout + result.stderr
 
             if "restarting" in output.lower() or result.returncode == 0:
-                time.sleep(2)  # Wait for ADB to restart
+                time.sleep(TIMING_CONFIG.connection.adb_restart_delay)
                 return True, f"TCP/IP mode enabled on port {port}"
             else:
                 return False, output.strip()
@@ -321,7 +323,7 @@ class ADBConnection:
                 [self.adb_path, "kill-server"], capture_output=True, timeout=5
             )
 
-            time.sleep(1)
+            time.sleep(TIMING_CONFIG.connection.server_restart_delay)
 
             # Start server
             subprocess.run(

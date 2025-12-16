@@ -1,6 +1,5 @@
 """Device control utilities for Android automation."""
 
-import logging
 import os
 import subprocess
 import time
@@ -8,8 +7,6 @@ from typing import List, Optional, Tuple
 
 from phone_agent.config.apps import APP_PACKAGES
 from phone_agent.config.timing import TIMING_CONFIG
-
-logger = logging.getLogger(__name__)
 
 
 def get_current_app(device_id: str | None = None) -> str:
@@ -34,13 +31,14 @@ def get_current_app(device_id: str | None = None) -> str:
         if "mCurrentFocus" in line or "mFocusedApp" in line:
             for app_name, package in APP_PACKAGES.items():
                 if package in line:
-                    logger.debug(f"Current app: {app_name}")
                     return app_name
 
     return "System Home"
 
 
-def tap(x: int, y: int, device_id: str | None = None, delay: float | None = None) -> None:
+def tap(
+    x: int, y: int, device_id: str | None = None, delay: float | None = None
+) -> None:
     """
     Tap at the specified coordinates.
 
