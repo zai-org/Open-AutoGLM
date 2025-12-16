@@ -6,20 +6,7 @@ import time
 from dataclasses import dataclass
 from typing import Any, Callable
 
-from phone_agent.adb import (
-    back,
-    clear_text,
-    detect_and_set_adb_keyboard,
-    double_tap,
-    home,
-    launch_app,
-    long_press,
-    restore_keyboard,
-    swipe,
-    tap,
-    type_text,
-)
-from phone_agent.config.timing import TIMING_CONFIG
+from phone_agent.device.base import DeviceController
 
 
 @dataclass
@@ -45,11 +32,11 @@ class ActionHandler:
 
     def __init__(
         self,
-        device_id: str | None = None,
+        controller: DeviceController,
         confirmation_callback: Callable[[str], bool] | None = None,
         takeover_callback: Callable[[str], None] | None = None,
     ):
-        self.device_id = device_id
+        self.controller = controller
         self.confirmation_callback = confirmation_callback or self._default_confirmation
         self.takeover_callback = takeover_callback or self._default_takeover
 
@@ -132,7 +119,7 @@ class ActionHandler:
         if not app_name:
             return ActionResult(False, False, "No app name specified")
 
-        success = launch_app(app_name, self.device_id)
+        success = self.controller.launch_app(app_name)
         if success:
             return ActionResult(True, False)
         return ActionResult(False, False, f"App not found: {app_name}")
@@ -145,7 +132,6 @@ class ActionHandler:
 
         x, y = self._convert_relative_to_absolute(element, width, height)
 
-        # Check for sensitive operation
         if "message" in action:
             if not self.confirmation_callback(action["message"]):
                 return ActionResult(
@@ -154,28 +140,13 @@ class ActionHandler:
                     message="User cancelled sensitive operation",
                 )
 
-        tap(x, y, self.device_id)
+        self.controller.tap(x, y)
         return ActionResult(True, False)
 
     def _handle_type(self, action: dict, width: int, height: int) -> ActionResult:
         """Handle text input action."""
         text = action.get("text", "")
-
-        # Switch to ADB keyboard
-        original_ime = detect_and_set_adb_keyboard(self.device_id)
-        time.sleep(TIMING_CONFIG.action.keyboard_switch_delay)
-
-        # Clear existing text and type new text
-        clear_text(self.device_id)
-        time.sleep(TIMING_CONFIG.action.text_clear_delay)
-
-        type_text(text, self.device_id)
-        time.sleep(TIMING_CONFIG.action.text_input_delay)
-
-        # Restore original keyboard
-        restore_keyboard(original_ime, self.device_id)
-        time.sleep(TIMING_CONFIG.action.keyboard_restore_delay)
-
+        self.controller.type_text(text)
         return ActionResult(True, False)
 
     def _handle_swipe(self, action: dict, width: int, height: int) -> ActionResult:
@@ -189,17 +160,17 @@ class ActionHandler:
         start_x, start_y = self._convert_relative_to_absolute(start, width, height)
         end_x, end_y = self._convert_relative_to_absolute(end, width, height)
 
-        swipe(start_x, start_y, end_x, end_y, device_id=self.device_id)
+        self.controller.swipe(start_x, start_y, end_x, end_y)
         return ActionResult(True, False)
 
     def _handle_back(self, action: dict, width: int, height: int) -> ActionResult:
         """Handle back button action."""
-        back(self.device_id)
+        self.controller.back()
         return ActionResult(True, False)
 
     def _handle_home(self, action: dict, width: int, height: int) -> ActionResult:
         """Handle home button action."""
-        home(self.device_id)
+        self.controller.home()
         return ActionResult(True, False)
 
     def _handle_double_tap(self, action: dict, width: int, height: int) -> ActionResult:
@@ -209,7 +180,9 @@ class ActionHandler:
             return ActionResult(False, False, "No element coordinates")
 
         x, y = self._convert_relative_to_absolute(element, width, height)
-        double_tap(x, y, self.device_id)
+        self.controller.tap(x, y)
+        time.sleep(0.1)
+        self.controller.tap(x, y)
         return ActionResult(True, False)
 
     def _handle_long_press(self, action: dict, width: int, height: int) -> ActionResult:
@@ -219,7 +192,7 @@ class ActionHandler:
             return ActionResult(False, False, "No element coordinates")
 
         x, y = self._convert_relative_to_absolute(element, width, height)
-        long_press(x, y, device_id=self.device_id)
+        self.controller.swipe(x, y, x, y)
         return ActionResult(True, False)
 
     def _handle_wait(self, action: dict, width: int, height: int) -> ActionResult:

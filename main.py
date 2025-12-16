@@ -29,7 +29,7 @@ from phone_agent.config.apps import list_supported_apps
 from phone_agent.model import ModelConfig
 
 
-def check_system_requirements() -> bool:
+def check_system_requirements(backend: str) -> bool:
     """
     Check system requirements before running the agent.
 
@@ -41,6 +41,10 @@ def check_system_requirements() -> bool:
     Returns:
         True if all checks pass, False otherwise.
     """
+    if backend == "harmony":
+        print("🔍 Skipping ADB checks for Harmony backend...")
+        return True
+
     print("🔍 Checking system requirements...")
     print("-" * 50)
 
@@ -322,6 +326,21 @@ Examples:
     )
 
     parser.add_argument(
+        "--backend",
+        type=str,
+        choices=["adb", "harmony"],
+        default=os.getenv("PHONE_AGENT_BACKEND", "adb"),
+        help="Device control backend: 'adb' for Android, 'harmony' for HarmonyOS (default: adb)",
+    )
+
+    parser.add_argument(
+        "--hdc-path",
+        type=str,
+        default=os.getenv("PHONE_AGENT_HDC_PATH"),
+        help="Path to hdc executable when using HarmonyOS backend",
+    )
+
+    parser.add_argument(
         "--connect",
         "-c",
         type=str,
@@ -464,7 +483,7 @@ def main():
         return
 
     # Run system requirements check before proceeding
-    if not check_system_requirements():
+    if not check_system_requirements(args.backend):
         sys.exit(1)
 
     # Check model API connectivity and model availability
@@ -482,6 +501,8 @@ def main():
     agent_config = AgentConfig(
         max_steps=args.max_steps,
         device_id=args.device_id,
+        backend=args.backend,
+        hdc_path=args.hdc_path,
         verbose=not args.quiet,
         lang=args.lang,
     )
