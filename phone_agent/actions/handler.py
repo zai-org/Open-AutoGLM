@@ -306,6 +306,19 @@ def parse_action(response: str) -> dict[str, Any]:
             pass
 
         # Fallback: legacy function-call-like syntax, parsed safely with AST
+        # Fast path for Type/Type_Name actions (common case from main branch)
+        if response.startswith('do(action="Type"') or response.startswith(
+            'do(action="Type_Name"'
+        ):
+            try:
+                text = response.split("text=", 1)[1][1:-2]
+                action = {"_metadata": "do", "action": "Type", "text": text}
+                logger.debug("Successfully parsed Type action via fast path")
+                return action
+            except (IndexError, ValueError):
+                # Fall through to AST parsing if fast path fails
+                pass
+
         if response.startswith("do"):
             try:
                 tree = ast.parse(response, mode="eval")
