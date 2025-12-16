@@ -74,9 +74,30 @@ def detect_and_set_adb_keyboard(device_id: str | None = None) -> str:
     current_ime = (result.stdout + result.stderr).strip()
 
     # Switch to ADB Keyboard if not already set
-    if "com.android.adbkeyboard/.AdbIME" not in current_ime:
+    ADB_IME = "com.android.adbkeyboard/.AdbIME"
+
+    if ADB_IME not in current_ime:
+        # Get enabled IME list
+        ime_list_proc = subprocess.run(
+            adb_prefix + ["shell", "ime", "list", "-s"],
+            capture_output=True,
+            text=True,
+        )
+        ime_list = [
+            line.strip() for line in ime_list_proc.stdout.splitlines() if line.strip()
+        ]
+
+        # Enable ADB Keyboard if missing
+        if ADB_IME not in ime_list:
+            subprocess.run(
+                adb_prefix + ["shell", "ime", "enable", ADB_IME],
+                capture_output=True,
+                text=True,
+            )
+
+        # Set ADB Keyboard
         subprocess.run(
-            adb_prefix + ["shell", "ime", "set", "com.android.adbkeyboard/.AdbIME"],
+            adb_prefix + ["shell", "ime", "set", ADB_IME],
             capture_output=True,
             text=True,
         )
