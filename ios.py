@@ -11,6 +11,7 @@ Environment Variables:
     PHONE_AGENT_MAX_STEPS: Maximum steps per task (default: 100)
     PHONE_AGENT_WDA_URL: WebDriverAgent URL (default: http://localhost:8100)
     PHONE_AGENT_DEVICE_ID: iOS device UDID for multi-device setups
+    PHONE_AGENT_IOS_SCALE_FACTOR: Override iOS coordinate scale factor (optional)
 """
 
 import argparse
@@ -325,6 +326,14 @@ Examples:
         help="WebDriverAgent URL (default: http://localhost:8100)",
     )
 
+    scale_factor_env = os.getenv("PHONE_AGENT_IOS_SCALE_FACTOR")
+    parser.add_argument(
+        "--scale-factor",
+        type=float,
+        default=float(scale_factor_env) if scale_factor_env else None,
+        help="Override iOS coordinate scale factor (auto-detected if omitted)",
+    )
+
     parser.add_argument(
         "--list-devices", action="store_true", help="List connected iOS devices and exit"
     )
@@ -483,6 +492,7 @@ def main():
         max_steps=args.max_steps,
         wda_url=args.wda_url,
         device_id=args.device_id,
+        scale_factor=args.scale_factor,
         verbose=not args.quiet,
         lang=args.lang,
     )

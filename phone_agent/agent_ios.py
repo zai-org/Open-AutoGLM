@@ -16,6 +16,7 @@ class IOSAgentConfig(BaseAgentConfig):
     wda_url: str = "http://localhost:8100"
     session_id: str | None = None
     device_id: str | None = None  # iOS device UDID
+    scale_factor: float | None = None
 
 
 class IOSPhoneAgent(BasePhoneAgent):
@@ -67,6 +68,7 @@ class IOSPhoneAgent(BasePhoneAgent):
         action_handler = IOSActionHandler(
             wda_url=resolved_agent_config.wda_url,
             session_id=resolved_agent_config.session_id,
+            scale_factor=resolved_agent_config.scale_factor,
             confirmation_callback=confirmation_callback,
             takeover_callback=takeover_callback,
         )

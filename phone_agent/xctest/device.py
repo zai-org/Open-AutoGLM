@@ -1,12 +1,8 @@
 """Device control utilities for iOS automation via WebDriverAgent."""
 
-import subprocess
 import time
-from typing import Optional
 
 from phone_agent.config.apps_ios import APP_PACKAGES_IOS as APP_PACKAGES
-
-SCALE_FACTOR = 3 # 3 for most modern iPhone 
 
 def _get_wda_session_url(wda_url: str, session_id: str | None, endpoint: str) -> str:
     """
@@ -83,8 +79,8 @@ def tap(
     Tap at the specified coordinates using WebDriver W3C Actions API.
 
     Args:
-        x: X coordinate.
-        y: Y coordinate.
+        x: X coordinate (points).
+        y: Y coordinate (points).
         wda_url: WebDriverAgent URL.
         session_id: Optional WDA session ID.
         delay: Delay in seconds after tap.
@@ -102,9 +98,9 @@ def tap(
                     "id": "finger1",
                     "parameters": {"pointerType": "touch"},
                     "actions": [
-                        {"type": "pointerMove", "duration": 0, "x": x / SCALE_FACTOR, "y": y / SCALE_FACTOR},
+                        {"type": "pointerMove", "duration": 0, "x": x, "y": y},
                         {"type": "pointerDown", "button": 0},
-                        {"type": "pause", "duration": 0.1},
+                        {"type": "pause", "duration": 100},
                         {"type": "pointerUp", "button": 0},
                     ],
                 }
@@ -132,8 +128,8 @@ def double_tap(
     Double tap at the specified coordinates using WebDriver W3C Actions API.
 
     Args:
-        x: X coordinate.
-        y: Y coordinate.
+        x: X coordinate (points).
+        y: Y coordinate (points).
         wda_url: WebDriverAgent URL.
         session_id: Optional WDA session ID.
         delay: Delay in seconds after double tap.
@@ -151,7 +147,7 @@ def double_tap(
                     "id": "finger1",
                     "parameters": {"pointerType": "touch"},
                     "actions": [
-                        {"type": "pointerMove", "duration": 0, "x": x / SCALE_FACTOR, "y": y / SCALE_FACTOR},
+                        {"type": "pointerMove", "duration": 0, "x": x, "y": y},
                         {"type": "pointerDown", "button": 0},
                         {"type": "pause", "duration": 100},
                         {"type": "pointerUp", "button": 0},
@@ -186,8 +182,8 @@ def long_press(
     Long press at the specified coordinates using WebDriver W3C Actions API.
 
     Args:
-        x: X coordinate.
-        y: Y coordinate.
+        x: X coordinate (points).
+        y: Y coordinate (points).
         duration: Duration of press in seconds.
         wda_url: WebDriverAgent URL.
         session_id: Optional WDA session ID.
@@ -209,7 +205,7 @@ def long_press(
                     "id": "finger1",
                     "parameters": {"pointerType": "touch"},
                     "actions": [
-                        {"type": "pointerMove", "duration": 0, "x": x / SCALE_FACTOR, "y": y / SCALE_FACTOR},
+                        {"type": "pointerMove", "duration": 0, "x": x, "y": y},
                         {"type": "pointerDown", "button": 0},
                         {"type": "pause", "duration": duration_ms},
                         {"type": "pointerUp", "button": 0},
@@ -242,10 +238,10 @@ def swipe(
     Swipe from start to end coordinates using WDA dragfromtoforduration endpoint.
 
     Args:
-        start_x: Starting X coordinate.
-        start_y: Starting Y coordinate.
-        end_x: Ending X coordinate.
-        end_y: Ending Y coordinate.
+        start_x: Starting X coordinate (points).
+        start_y: Starting Y coordinate (points).
+        end_x: Ending X coordinate (points).
+        end_y: Ending Y coordinate (points).
         duration: Duration of swipe in seconds (auto-calculated if None).
         wda_url: WebDriverAgent URL.
         session_id: Optional WDA session ID.
@@ -264,10 +260,10 @@ def swipe(
 
         # WDA dragfromtoforduration API payload
         payload = {
-            "fromX": start_x / SCALE_FACTOR,
-            "fromY": start_y / SCALE_FACTOR,
-            "toX": end_x / SCALE_FACTOR,
-            "toY": end_y / SCALE_FACTOR,
+            "fromX": start_x,
+            "fromY": start_y,
+            "toX": end_x,
+            "toY": end_y,
             "duration": duration,
         }
 
@@ -303,12 +299,16 @@ def back(
 
         url = _get_wda_session_url(wda_url, session_id, "wda/dragfromtoforduration")
 
-        # Swipe from left edge to simulate back gesture
+        screen_w, screen_h = get_screen_size(wda_url=wda_url, session_id=session_id)
+        y = int(screen_h * 0.5)
+        to_x = int(screen_w * 0.4)
+
+        # Swipe from left edge to simulate back gesture (in points)
         payload = {
             "fromX": 0,
-            "fromY": 640,
-            "toX": 400,
-            "toY": 640,
+            "fromY": y,
+            "toX": to_x,
+            "toY": y,
             "duration": 0.3,
         }
 
