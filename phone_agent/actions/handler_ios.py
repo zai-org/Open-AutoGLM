@@ -16,6 +16,7 @@ from phone_agent.xctest import (
 )
 from phone_agent.xctest.device import get_screen_size
 from phone_agent.xctest.input import clear_text, hide_keyboard, type_text
+from phone_agent.xctest.wda_client import WDAClient
 
 
 class IOSActionHandler(BaseActionHandler):
@@ -40,6 +41,7 @@ class IOSActionHandler(BaseActionHandler):
     ):
         self.wda_url = wda_url
         self.session_id = session_id
+        self._wda_client = WDAClient(self.wda_url, session_id=self.session_id)
         self._scale_factor = scale_factor if (scale_factor and scale_factor > 0) else None
         super().__init__(
             confirmation_callback=confirmation_callback, takeover_callback=takeover_callback
@@ -55,7 +57,9 @@ class IOSActionHandler(BaseActionHandler):
         if self._scale_factor is not None:
             return
 
-        wda_w, wda_h = get_screen_size(wda_url=self.wda_url, session_id=self.session_id)
+        wda_w, wda_h = get_screen_size(
+            wda_url=self.wda_url, session_id=self.session_id, client=self._wda_client
+        )
         if wda_w <= 0 or wda_h <= 0:
             self._scale_factor = 1.0
             return
@@ -85,20 +89,31 @@ class IOSActionHandler(BaseActionHandler):
         return int(round(x_px / scale)), int(round(y_px / scale))
 
     def _launch_app(self, app_name: str) -> bool:
-        return launch_app(app_name, wda_url=self.wda_url, session_id=self.session_id)
+        return launch_app(
+            app_name,
+            wda_url=self.wda_url,
+            session_id=self.session_id,
+            client=self._wda_client,
+        )
 
     def _tap(self, x: int, y: int) -> None:
         x_pt, y_pt = self._to_points(x, y)
-        tap(x_pt, y_pt, wda_url=self.wda_url, session_id=self.session_id)
+        tap(
+            x_pt,
+            y_pt,
+            wda_url=self.wda_url,
+            session_id=self.session_id,
+            client=self._wda_client,
+        )
 
     def _type_text(self, text: str) -> None:
-        clear_text(wda_url=self.wda_url, session_id=self.session_id)
+        clear_text(wda_url=self.wda_url, session_id=self.session_id, client=self._wda_client)
         time.sleep(0.5)
 
-        type_text(text, wda_url=self.wda_url, session_id=self.session_id)
+        type_text(text, wda_url=self.wda_url, session_id=self.session_id, client=self._wda_client)
         time.sleep(0.5)
 
-        hide_keyboard(wda_url=self.wda_url, session_id=self.session_id)
+        hide_keyboard(wda_url=self.wda_url, session_id=self.session_id, client=self._wda_client)
         time.sleep(0.5)
 
     def _swipe(self, start_x: int, start_y: int, end_x: int, end_y: int) -> None:
@@ -111,20 +126,32 @@ class IOSActionHandler(BaseActionHandler):
             end_y_pt,
             wda_url=self.wda_url,
             session_id=self.session_id,
+            client=self._wda_client,
         )
 
     def _back(self) -> None:
-        back(wda_url=self.wda_url, session_id=self.session_id)
+        back(wda_url=self.wda_url, session_id=self.session_id, client=self._wda_client)
 
     def _home(self) -> None:
-        home(wda_url=self.wda_url, session_id=self.session_id)
+        home(wda_url=self.wda_url, session_id=self.session_id, client=self._wda_client)
 
     def _double_tap(self, x: int, y: int) -> None:
         x_pt, y_pt = self._to_points(x, y)
-        double_tap(x_pt, y_pt, wda_url=self.wda_url, session_id=self.session_id)
+        double_tap(
+            x_pt,
+            y_pt,
+            wda_url=self.wda_url,
+            session_id=self.session_id,
+            client=self._wda_client,
+        )
 
     def _long_press(self, x: int, y: int) -> None:
         x_pt, y_pt = self._to_points(x, y)
         long_press(
-            x_pt, y_pt, duration=3.0, wda_url=self.wda_url, session_id=self.session_id
+            x_pt,
+            y_pt,
+            duration=3.0,
+            wda_url=self.wda_url,
+            session_id=self.session_id,
+            client=self._wda_client,
         )

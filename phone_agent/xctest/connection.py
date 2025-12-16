@@ -1,9 +1,10 @@
 """iOS device connection management via idevice tools and WebDriverAgent."""
 
 import subprocess
-import time
 from dataclasses import dataclass
 from enum import Enum
+
+from phone_agent.xctest.wda_client import WDAClient, WDAError
 
 
 class ConnectionType(Enum):
@@ -44,7 +45,7 @@ class XCTestConnection:
         >>> is_ready = conn.is_wda_ready()
     """
 
-    def __init__(self, wda_url: str = "http://localhost:8100"):
+    def __init__(self, wda_url: str = "http://localhost:8100", *, verify_tls: bool = True):
         """
         Initialize iOS connection manager.
 
@@ -53,6 +54,7 @@ class XCTestConnection:
                      For network devices, use http://<device-ip>:8100
         """
         self.wda_url = wda_url.rstrip("/")
+        self._client = WDAClient(self.wda_url, verify_tls=verify_tls)
 
     def list_devices(self) -> list[DeviceInfo]:
         """
@@ -204,18 +206,9 @@ class XCTestConnection:
             True if WDA is ready, False otherwise.
         """
         try:
-            import requests
-
-            response = requests.get(
-                f"{self.wda_url}/status", timeout=timeout, verify=False
-            )
-            return response.status_code == 200
-        except ImportError:
-            print(
-                "Error: requests library not found. Install it: pip install requests"
-            )
-            return False
-        except Exception:
+            self._client.get("status", use_session=False, timeout=float(timeout))
+            return True
+        except WDAError:
             return False
 
     def start_wda_session(self) -> tuple[bool, str]:
@@ -226,31 +219,20 @@ class XCTestConnection:
             Tuple of (success, session_id or error_message).
         """
         try:
-            import requests
-
-            response = requests.post(
-                f"{self.wda_url}/session",
+            data = self._client.post(
+                "session",
+                use_session=False,
                 json={"capabilities": {}},
-                timeout=30,
-                verify=False,
+                timeout=30.0,
+                allow_status=(200, 201),
             )
 
-            if response.status_code in (200, 201):
-                data = response.json()
-                session_id = data.get("sessionId") or data.get("value", {}).get(
-                    "sessionId"
-                )
-                return True, session_id or "session_started"
-            else:
-                return False, f"Failed to start session: {response.text}"
-
-        except ImportError:
-            return (
-                False,
-                "requests library not found. Install it: pip install requests",
-            )
-        except Exception as e:
-            return False, f"Error starting WDA session: {e}"
+            session_id = None
+            if isinstance(data, dict):
+                session_id = data.get("sessionId") or data.get("value", {}).get("sessionId")
+            return True, session_id or "session_started"
+        except WDAError as e:
+            return False, str(e)
 
     def get_wda_status(self) -> dict | None:
         """
@@ -260,15 +242,9 @@ class XCTestConnection:
             Status dictionary or None if not available.
         """
         try:
-            import requests
-
-            response = requests.get(f"{self.wda_url}/status", timeout=5, verify=False)
-
-            if response.status_code == 200:
-                return response.json()
-            return None
-
-        except Exception:
+            data = self._client.get("status", use_session=False, timeout=5.0)
+            return data if isinstance(data, dict) else None
+        except WDAError:
             return None
 
     def pair_device(self, device_id: str | None = None) -> tuple[bool, str]:

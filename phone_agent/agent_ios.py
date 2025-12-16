@@ -7,6 +7,7 @@ from phone_agent.actions.handler_ios import IOSActionHandler
 from phone_agent.agent_base import BaseAgentConfig, BasePhoneAgent, StepResult
 from phone_agent.model import ModelConfig
 from phone_agent.xctest import XCTestConnection, get_current_app, get_screenshot
+from phone_agent.xctest.wda_client import WDAClient
 
 
 @dataclass
@@ -73,6 +74,10 @@ class IOSPhoneAgent(BasePhoneAgent):
             takeover_callback=takeover_callback,
         )
 
+        wda_client = WDAClient(
+            resolved_agent_config.wda_url, session_id=resolved_agent_config.session_id
+        )
+
         super().__init__(
             model_config=resolved_model_config,
             agent_config=resolved_agent_config,
@@ -81,9 +86,11 @@ class IOSPhoneAgent(BasePhoneAgent):
                 wda_url=resolved_agent_config.wda_url,
                 session_id=resolved_agent_config.session_id,
                 device_id=resolved_agent_config.device_id,
+                client=wda_client,
             ),
             get_current_app=lambda: get_current_app(
                 wda_url=resolved_agent_config.wda_url,
                 session_id=resolved_agent_config.session_id,
+                client=wda_client,
             ),
         )

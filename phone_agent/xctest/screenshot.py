@@ -10,6 +10,8 @@ from io import BytesIO
 
 from PIL import Image
 
+from phone_agent.xctest.wda_client import WDAClient, WDAError
+
 
 @dataclass
 class Screenshot:
@@ -26,6 +28,7 @@ def get_screenshot(
     session_id: str | None = None,
     device_id: str | None = None,
     timeout: int = 10,
+    client: WDAClient | None = None,
 ) -> Screenshot:
     """
     Capture a screenshot from the connected iOS device.
@@ -44,7 +47,7 @@ def get_screenshot(
         If both fail, returns a black fallback image.
     """
     # Try WebDriverAgent first (preferred method)
-    screenshot = _get_screenshot_wda(wda_url, session_id, timeout)
+    screenshot = _get_screenshot_wda(wda_url, session_id, timeout, client=client)
     if screenshot:
         return screenshot
 
@@ -58,7 +61,11 @@ def get_screenshot(
 
 
 def _get_screenshot_wda(
-    wda_url: str, session_id: str | None, timeout: int
+    wda_url: str,
+    session_id: str | None,
+    timeout: int,
+    *,
+    client: WDAClient | None = None,
 ) -> Screenshot | None:
     """
     Capture screenshot using WebDriverAgent.
@@ -72,22 +79,27 @@ def _get_screenshot_wda(
         Screenshot object or None if failed.
     """
     try:
-        import requests
+        wda = client or WDAClient(wda_url, session_id=session_id)
 
-        url = f"{wda_url.rstrip('/')}/screenshot"
+        for use_session in (None, False):
+            try:
+                data = wda.get(
+                    "screenshot",
+                    use_session=use_session,
+                    timeout=float(timeout),
+                )
+            except WDAError:
+                continue
 
-        response = requests.get(url, timeout=timeout, verify=False)
-
-        if response.status_code == 200:
-            data = response.json()
-            base64_data = data.get("value", "")
+            if isinstance(data, dict):
+                base64_data = data.get("value", "")
+            else:
+                base64_data = ""
 
             if base64_data:
-                # Decode to get dimensions
                 img_data = base64.b64decode(base64_data)
                 img = Image.open(BytesIO(img_data))
                 width, height = img.size
-
                 return Screenshot(
                     base64_data=base64_data,
                     width=width,
@@ -95,8 +107,8 @@ def _get_screenshot_wda(
                     is_sensitive=False,
                 )
 
-    except ImportError:
-        print("Note: requests library not installed. Install: pip install requests")
+    except WDAError as e:
+        print(f"WDA screenshot failed: {e}")
     except Exception as e:
         print(f"WDA screenshot failed: {e}")
 
@@ -210,6 +222,7 @@ def get_screenshot_png(
     wda_url: str = "http://localhost:8100",
     session_id: str | None = None,
     device_id: str | None = None,
+    client: WDAClient | None = None,
 ) -> bytes | None:
     """
     Get screenshot as PNG bytes.
@@ -222,7 +235,7 @@ def get_screenshot_png(
     Returns:
         PNG bytes or None if failed.
     """
-    screenshot = get_screenshot(wda_url, session_id, device_id)
+    screenshot = get_screenshot(wda_url, session_id, device_id, client=client)
 
     try:
         return base64.b64decode(screenshot.base64_data)
