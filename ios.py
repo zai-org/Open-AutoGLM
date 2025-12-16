@@ -8,6 +8,7 @@ Usage:
 Environment Variables:
     PHONE_AGENT_BASE_URL: Model API base URL (default: http://localhost:8000/v1)
     PHONE_AGENT_MODEL: Model name (default: autoglm-phone-9b)
+    PHONE_AGENT_API_KEY: API key for model authentication (default: EMPTY)
     PHONE_AGENT_MAX_STEPS: Maximum steps per task (default: 100)
     PHONE_AGENT_WDA_URL: WebDriverAgent URL (default: http://localhost:8100)
     PHONE_AGENT_DEVICE_ID: iOS device UDID for multi-device setups
@@ -19,11 +20,9 @@ import os
 import shutil
 import subprocess
 import sys
-from urllib.parse import urlparse
-
-from openai import OpenAI
 
 from phone_agent.agent_ios import IOSAgentConfig, IOSPhoneAgent
+from phone_agent.cli_checks import check_model_api
 from phone_agent.config.apps_ios import list_supported_apps
 from phone_agent.model import ModelConfig
 from phone_agent.xctest import XCTestConnection, list_devices
@@ -160,94 +159,6 @@ def check_system_requirements(wda_url: str = "http://localhost:8100") -> bool:
     return all_passed
 
 
-def check_model_api(base_url: str, api_key: str, model_name: str) -> bool:
-    """
-    Check if the model API is accessible and the specified model exists.
-
-    Checks:
-    1. Network connectivity to the API endpoint
-    2. Model exists in the available models list
-
-    Args:
-        base_url: The API base URL
-        model_name: The model name to check
-
-    Returns:
-        True if all checks pass, False otherwise.
-    """
-    print("🔍 Checking model API...")
-    print("-" * 50)
-
-    all_passed = True
-
-    # Check 1: Network connectivity
-    print(f"1. Checking API connectivity ({base_url})...", end=" ")
-    try:
-        # Parse the URL to get host and port
-        parsed = urlparse(base_url)
-
-        # Create OpenAI client
-        client = OpenAI(base_url=base_url, api_key=api_key, timeout=10.0)
-
-        # Try to list models (this tests connectivity)
-        models_response = client.models.list()
-        available_models = [model.id for model in models_response.data]
-
-        print("✅ OK")
-
-        # Check 2: Model exists
-        print(f"2. Checking model '{model_name}'...", end=" ")
-        if model_name in available_models:
-            print("✅ OK")
-        else:
-            print("❌ FAILED")
-            print(f"   Error: Model '{model_name}' not found.")
-            print(f"   Available models:")
-            for m in available_models[:10]:  # Show first 10 models
-                print(f"     - {m}")
-            if len(available_models) > 10:
-                print(f"     ... and {len(available_models) - 10} more")
-            all_passed = False
-
-    except Exception as e:
-        print("❌ FAILED")
-        error_msg = str(e)
-
-        # Provide more specific error messages
-        if "Connection refused" in error_msg or "Connection error" in error_msg:
-            print(f"   Error: Cannot connect to {base_url}")
-            print("   Solution:")
-            print("     1. Check if the model server is running")
-            print("     2. Verify the base URL is correct")
-            print(f"     3. Try: curl {base_url}/models")
-        elif "timed out" in error_msg.lower() or "timeout" in error_msg.lower():
-            print(f"   Error: Connection to {base_url} timed out")
-            print("   Solution:")
-            print("     1. Check your network connection")
-            print("     2. Verify the server is responding")
-        elif (
-            "Name or service not known" in error_msg
-            or "nodename nor servname" in error_msg
-        ):
-            print(f"   Error: Cannot resolve hostname")
-            print("   Solution:")
-            print("     1. Check the URL is correct")
-            print("     2. Verify DNS settings")
-        else:
-            print(f"   Error: {error_msg}")
-
-        all_passed = False
-
-    print("-" * 50)
-
-    if all_passed:
-        print("✅ Model API checks passed!\n")
-    else:
-        print("❌ Model API check failed. Please fix the issues above.")
-
-    return all_passed
-
-
 def parse_args() -> argparse.Namespace:
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(
@@ -290,10 +201,12 @@ Examples:
     )
 
     parser.add_argument(
+        "--apikey",
         "--api-key",
+        dest="api_key",
         type=str,
-        default="EMPTY",
-        help="Model API KEY",
+        default=os.getenv("PHONE_AGENT_API_KEY", "EMPTY"),
+        help="API key for model authentication",
     )
 
     parser.add_argument(
@@ -478,8 +391,8 @@ def main():
         sys.exit(1)
 
     # Check model API connectivity and model availability
-    # if not check_model_api(args.base_url, args.api_key, args.model):
-    #     sys.exit(1)
+    if not check_model_api(args.base_url, args.model, args.api_key):
+        sys.exit(1)
 
     # Create configurations
     model_config = ModelConfig(

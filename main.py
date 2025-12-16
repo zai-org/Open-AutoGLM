@@ -18,13 +18,11 @@ import os
 import shutil
 import subprocess
 import sys
-from urllib.parse import urlparse
-
-from openai import OpenAI
 
 from phone_agent import PhoneAgent
 from phone_agent.adb import ADBConnection, list_devices
 from phone_agent.agent import AgentConfig
+from phone_agent.cli_checks import check_model_api
 from phone_agent.config.apps import list_supported_apps
 from phone_agent.model import ModelConfig
 
@@ -163,89 +161,6 @@ def check_system_requirements() -> bool:
         print("✅ All system checks passed!\n")
     else:
         print("❌ System check failed. Please fix the issues above.")
-
-    return all_passed
-
-
-def check_model_api(base_url: str, model_name: str, api_key: str = "EMPTY") -> bool:
-    """
-    Check if the model API is accessible and the specified model exists.
-
-    Checks:
-    1. Network connectivity to the API endpoint
-    2. Model exists in the available models list
-
-    Args:
-        base_url: The API base URL
-        model_name: The model name to check
-        api_key: The API key for authentication
-
-    Returns:
-        True if all checks pass, False otherwise.
-    """
-    print("🔍 Checking model API...")
-    print("-" * 50)
-
-    all_passed = True
-
-    # Check 1: Network connectivity using chat API
-    print(f"1. Checking API connectivity ({base_url})...", end=" ")
-    try:
-        # Create OpenAI client
-        client = OpenAI(base_url=base_url, api_key=api_key, timeout=30.0)
-
-        # Use chat completion to test connectivity (more universally supported than /models)
-        response = client.chat.completions.create(
-            model=model_name,
-            messages=[{"role": "user", "content": "Hi"}],
-            max_tokens=5,
-            temperature=0.0,
-            stream=False,
-        )
-
-        # Check if we got a valid response
-        if response.choices and len(response.choices) > 0:
-            print("✅ OK")
-        else:
-            print("❌ FAILED")
-            print("   Error: Received empty response from API")
-            all_passed = False
-
-    except Exception as e:
-        print("❌ FAILED")
-        error_msg = str(e)
-
-        # Provide more specific error messages
-        if "Connection refused" in error_msg or "Connection error" in error_msg:
-            print(f"   Error: Cannot connect to {base_url}")
-            print("   Solution:")
-            print("     1. Check if the model server is running")
-            print("     2. Verify the base URL is correct")
-            print(f"     3. Try: curl {base_url}/chat/completions")
-        elif "timed out" in error_msg.lower() or "timeout" in error_msg.lower():
-            print(f"   Error: Connection to {base_url} timed out")
-            print("   Solution:")
-            print("     1. Check your network connection")
-            print("     2. Verify the server is responding")
-        elif (
-            "Name or service not known" in error_msg
-            or "nodename nor servname" in error_msg
-        ):
-            print(f"   Error: Cannot resolve hostname")
-            print("   Solution:")
-            print("     1. Check the URL is correct")
-            print("     2. Verify DNS settings")
-        else:
-            print(f"   Error: {error_msg}")
-
-        all_passed = False
-
-    print("-" * 50)
-
-    if all_passed:
-        print("✅ Model API checks passed!\n")
-    else:
-        print("❌ Model API check failed. Please fix the issues above.")
 
     return all_passed
 
