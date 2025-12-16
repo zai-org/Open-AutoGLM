@@ -19,6 +19,7 @@ from phone_agent.adb import (
     tap,
     type_text,
 )
+from phone_agent.config.timing import TIMING_CONFIG
 
 
 @dataclass
@@ -162,18 +163,18 @@ class ActionHandler:
 
         # Switch to ADB keyboard
         original_ime = detect_and_set_adb_keyboard(self.device_id)
-        time.sleep(1.0)
+        time.sleep(TIMING_CONFIG.action.keyboard_switch_delay)
 
         # Clear existing text and type new text
         clear_text(self.device_id)
-        time.sleep(1.0)
+        time.sleep(TIMING_CONFIG.action.text_clear_delay)
 
         type_text(text, self.device_id)
-        time.sleep(1.0)
+        time.sleep(TIMING_CONFIG.action.text_input_delay)
 
         # Restore original keyboard
         restore_keyboard(original_ime, self.device_id)
-        time.sleep(1.0)
+        time.sleep(TIMING_CONFIG.action.keyboard_restore_delay)
 
         return ActionResult(True, False)
 
