@@ -3,12 +3,18 @@
 import json
 import traceback
 from dataclasses import dataclass
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 
 from phone_agent.actions import ActionHandler
 from phone_agent.actions.handler import do, finish, parse_action
 from phone_agent.adb import get_current_app, get_screenshot
 from phone_agent.config import get_messages, get_system_prompt
+from phone_agent.history import (
+    ContextReuseStrategy,
+    HistoryConfig,
+    HistoryManager,
+    strategy_registry,
+)
 from phone_agent.model import ModelClient, ModelConfig
 from phone_agent.model.client import MessageBuilder
 
@@ -65,11 +71,13 @@ class PhoneAgent:
         self,
         model_config: ModelConfig | None = None,
         agent_config: AgentConfig | None = None,
+        history_config: HistoryConfig | None = None,
         confirmation_callback: Callable[[str], bool] | None = None,
         takeover_callback: Callable[[str], None] | None = None,
     ):
         self.model_config = model_config or ModelConfig()
         self.agent_config = agent_config or AgentConfig()
+        self.history_config = history_config or HistoryConfig()
 
         self.model_client = ModelClient(self.model_config)
         self.action_handler = ActionHandler(
@@ -77,36 +85,101 @@ class PhoneAgent:
             confirmation_callback=confirmation_callback,
             takeover_callback=takeover_callback,
         )
+        self.history_manager = HistoryManager(self.history_config)
 
         self._context: list[dict[str, Any]] = []
         self._step_count = 0
 
-    def run(self, task: str) -> str:
+    def run(self, task: str, history_id: Optional[str] = None, reuse_strategy: Optional[ContextReuseStrategy] = None) -> str:
         """
         Run the agent to complete a task.
 
         Args:
             task: Natural language description of the task.
+            history_id: Optional history ID to reuse. If provided, ignores auto-reuse.
+            reuse_strategy: Optional custom reuse strategy.
 
         Returns:
             Final message from the agent.
         """
-        self._context = []
+        # 确定是否复用历史
+        reuse_history = False
+        target_history = None
+        
+        if history_id:
+            # 使用指定的历史记录
+            reuse_history = True
+            target_history = self.history_manager.get(history_id)
+        elif self.history_manager.should_reuse(task):
+            # 自动检测到需要复用历史
+            reuse_history = True
+            target_history = self.history_manager.get()  # 获取最近的历史
+        
+        # 构建上下文
+        if reuse_history and target_history:
+            # 使用默认的完整复用策略
+            strategy = reuse_strategy or strategy_registry.get("full")
+            if strategy:
+                self._context = strategy.build_context(task, target_history)
+            else:
+                self._context = []
+        else:
+            # 重置上下文
+            self._context = []
+        
         self._step_count = 0
 
         # First step with user prompt
         result = self._execute_step(task, is_first=True)
+        final_result = result.message or "Task completed"
 
         if result.finished:
-            return result.message or "Task completed"
+            # 任务完成后保存历史记录
+            if self.history_config.enable_auto_save:
+                self.history_manager.save(
+                    task=task,
+                    context=self._context,
+                    result=final_result,
+                    metadata={
+                        "step_count": self._step_count,
+                        "success": True,
+                        "timestamp": 0
+                    }
+                )
+            return final_result
 
         # Continue until finished or max steps reached
         while self._step_count < self.agent_config.max_steps:
             result = self._execute_step(is_first=False)
+            final_result = result.message or "Task completed"
 
             if result.finished:
-                return result.message or "Task completed"
+                # 任务完成后保存历史记录
+                if self.history_config.enable_auto_save:
+                    self.history_manager.save(
+                        task=task,
+                        context=self._context,
+                        result=final_result,
+                        metadata={
+                            "step_count": self._step_count,
+                            "success": True,
+                            "timestamp": 0
+                        }
+                    )
+                return final_result
 
+        # 任务未完成但达到最大步骤数，也保存历史记录
+        if self.history_config.enable_auto_save:
+            self.history_manager.save(
+                task=task,
+                context=self._context,
+                result="Max steps reached",
+                metadata={
+                    "step_count": self._step_count,
+                    "success": False,
+                    "timestamp": 0
+                }
+            )
         return "Max steps reached"
 
     def step(self, task: str | None = None) -> StepResult:
@@ -250,3 +323,34 @@ class PhoneAgent:
     def step_count(self) -> int:
         """Get the current step count."""
         return self._step_count
+    
+    def get_history(self, history_id: Optional[str] = None, index: int = 0):
+        """
+        Get a specific history record.
+        
+        Args:
+            history_id: Optional history ID to retrieve.
+            index: Optional index to retrieve (0 for most recent).
+            
+        Returns:
+            HistoryItem or None if not found.
+        """
+        return self.history_manager.get(history_id, index)
+    
+    def list_history(self, limit: Optional[int] = None):
+        """
+        List all saved history records.
+        
+        Args:
+            limit: Optional limit on the number of records to return.
+            
+        Returns:
+            List of HistoryItem objects.
+        """
+        return self.history_manager.list(limit)
+    
+    def clear_history(self):
+        """
+        Clear all saved history records.
+        """
+        self.history_manager.clear()

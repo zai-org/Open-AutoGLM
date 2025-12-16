@@ -287,21 +287,21 @@ Examples:
     parser.add_argument(
         "--base-url",
         type=str,
-        default=os.getenv("PHONE_AGENT_BASE_URL", "http://localhost:8000/v1"),
+        default=os.getenv("PHONE_AGENT_BASE_URL", "https://open.bigmodel.cn/api/paas/v4"),
         help="Model API base URL",
     )
 
     parser.add_argument(
         "--model",
         type=str,
-        default=os.getenv("PHONE_AGENT_MODEL", "autoglm-phone-9b"),
+        default=os.getenv("PHONE_AGENT_MODEL", "autoglm-phone"),
         help="Model name",
     )
 
     parser.add_argument(
         "--apikey",
         type=str,
-        default=os.getenv("PHONE_AGENT_API_KEY", "EMPTY"),
+        default=os.getenv("PHONE_AGENT_API_KEY", "590af9e737b04858bc891cea879913b1.jGxAfNjDG8Tsl8PB"),
         help="API key for model authentication",
     )
 
@@ -366,6 +366,25 @@ Examples:
         choices=["cn", "en"],
         default=os.getenv("PHONE_AGENT_LANG", "cn"),
         help="Language for system prompt (cn or en, default: cn)",
+    )
+
+    # History options
+    parser.add_argument(
+        "--history-id",
+        type=str,
+        help="History ID to reuse for this task",
+    )
+
+    parser.add_argument(
+        "--list-history",
+        action="store_true",
+        help="List all saved history records",
+    )
+
+    parser.add_argument(
+        "--clear-history",
+        action="store_true",
+        help="Clear all saved history records",
     )
 
     parser.add_argument(
@@ -492,6 +511,29 @@ def main():
         agent_config=agent_config,
     )
 
+    # Handle history commands (these need agent to be created)
+    if args.list_history:
+        print("Saved history records:")
+        print("-" * 80)
+        history_records = agent.list_history()
+        if not history_records:
+            print("  No history records found.")
+        else:
+            for i, record in enumerate(history_records):
+                print(f"  {i+1}. ID: {record.id}")
+                print(f"     Task: {record.task[:60]}{'...' if len(record.task) > 60 else ''}")
+                print(f"     Result: {record.result}")
+                print(f"     Steps: {record.metadata.get('step_count', 0)}")
+                print(f"     Success: {record.metadata.get('success', False)}")
+                print(f"     Timestamp: {record.metadata.get('timestamp', 0)}")
+                print()
+        return
+
+    if args.clear_history:
+        agent.clear_history()
+        print("All history records cleared.")
+        return
+
     # Print header
     print("=" * 50)
     print("Phone Agent - AI-powered phone automation")
@@ -513,7 +555,7 @@ def main():
     # Run with provided task or enter interactive mode
     if args.task:
         print(f"\nTask: {args.task}\n")
-        result = agent.run(args.task)
+        result = agent.run(args.task, history_id=args.history_id)
         print(f"\nResult: {result}")
     else:
         # Interactive mode
@@ -533,7 +575,7 @@ def main():
                 print()
                 result = agent.run(task)
                 print(f"\nResult: {result}\n")
-                agent.reset()
+                # Don't reset agent in interactive mode to preserve history
 
             except KeyboardInterrupt:
                 print("\n\nInterrupted. Goodbye!")
