@@ -137,13 +137,18 @@ class ActionHandler:
             return ActionResult(True, False)
         return ActionResult(False, False, f"App not found: {app_name}")
 
-    def _handle_tap(self, action: dict, width: int, height: int) -> ActionResult:
+    def _handle_tap(
+        self, action: dict, width: int, height: int, convert=True
+    ) -> ActionResult:
         """Handle tap action."""
         element = action.get("element")
         if not element:
             return ActionResult(False, False, "No element coordinates")
 
-        x, y = self._convert_relative_to_absolute(element, width, height)
+        if convert:
+            x, y = self._convert_relative_to_absolute(element, width, height)
+        else:
+            x, y = element
 
         # Check for sensitive operation
         if "message" in action:
@@ -178,7 +183,9 @@ class ActionHandler:
 
         return ActionResult(True, False)
 
-    def _handle_swipe(self, action: dict, width: int, height: int) -> ActionResult:
+    def _handle_swipe(
+        self, action: dict, width: int, height: int, convert=True
+    ) -> ActionResult:
         """Handle swipe action."""
         start = action.get("start")
         end = action.get("end")
@@ -186,8 +193,12 @@ class ActionHandler:
         if not start or not end:
             return ActionResult(False, False, "Missing swipe coordinates")
 
-        start_x, start_y = self._convert_relative_to_absolute(start, width, height)
-        end_x, end_y = self._convert_relative_to_absolute(end, width, height)
+        if convert:
+            start_x, start_y = self._convert_relative_to_absolute(start, width, height)
+            end_x, end_y = self._convert_relative_to_absolute(end, width, height)
+        else:
+            start_x, start_y = start
+            end_x, end_y = end
 
         swipe(start_x, start_y, end_x, end_y, device_id=self.device_id)
         return ActionResult(True, False)
@@ -202,23 +213,33 @@ class ActionHandler:
         home(self.device_id)
         return ActionResult(True, False)
 
-    def _handle_double_tap(self, action: dict, width: int, height: int) -> ActionResult:
+    def _handle_double_tap(
+        self, action: dict, width: int, height: int, convert=True
+    ) -> ActionResult:
         """Handle double tap action."""
         element = action.get("element")
         if not element:
             return ActionResult(False, False, "No element coordinates")
 
-        x, y = self._convert_relative_to_absolute(element, width, height)
+        if convert:
+            x, y = self._convert_relative_to_absolute(element, width, height)
+        else:
+            x, y = element
         double_tap(x, y, self.device_id)
         return ActionResult(True, False)
 
-    def _handle_long_press(self, action: dict, width: int, height: int) -> ActionResult:
+    def _handle_long_press(
+        self, action: dict, width: int, height: int, convert=True
+    ) -> ActionResult:
         """Handle long press action."""
         element = action.get("element")
         if not element:
             return ActionResult(False, False, "No element coordinates")
 
-        x, y = self._convert_relative_to_absolute(element, width, height)
+        if convert:
+            x, y = self._convert_relative_to_absolute(element, width, height)
+        else:
+            x, y = element
         long_press(x, y, device_id=self.device_id)
         return ActionResult(True, False)
 
