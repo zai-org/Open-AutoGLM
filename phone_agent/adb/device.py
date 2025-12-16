@@ -7,11 +7,12 @@ import time
 from typing import List, Optional, Tuple
 
 from phone_agent.config.apps import APP_PACKAGES
+from phone_agent.config.timing import TIMING_CONFIG
 
 logger = logging.getLogger(__name__)
 
 
-def get_current_app(device_id: Optional[str] = None) -> str:
+def get_current_app(device_id: str | None = None) -> str:
     """
     Get the currently focused app name.
 
@@ -39,7 +40,7 @@ def get_current_app(device_id: Optional[str] = None) -> str:
     return "System Home"
 
 
-def tap(x: int, y: int, device_id: Optional[str] = None, delay: float = 1.0) -> None:
+def tap(x: int, y: int, device_id: str | None = None, delay: float | None = None) -> None:
     """
     Tap at the specified coordinates.
 
@@ -47,8 +48,11 @@ def tap(x: int, y: int, device_id: Optional[str] = None, delay: float = 1.0) -> 
         x: X coordinate.
         y: Y coordinate.
         device_id: Optional ADB device ID.
-        delay: Delay in seconds after tap.
+        delay: Delay in seconds after tap. If None, uses configured default.
     """
+    if delay is None:
+        delay = TIMING_CONFIG.device.default_tap_delay
+
     adb_prefix = _get_adb_prefix(device_id)
 
     subprocess.run(
@@ -58,7 +62,7 @@ def tap(x: int, y: int, device_id: Optional[str] = None, delay: float = 1.0) -> 
 
 
 def double_tap(
-    x: int, y: int, device_id: Optional[str] = None, delay: float = 1.0
+    x: int, y: int, device_id: str | None = None, delay: float | None = None
 ) -> None:
     """
     Double tap at the specified coordinates.
@@ -67,14 +71,17 @@ def double_tap(
         x: X coordinate.
         y: Y coordinate.
         device_id: Optional ADB device ID.
-        delay: Delay in seconds after double tap.
+        delay: Delay in seconds after double tap. If None, uses configured default.
     """
+    if delay is None:
+        delay = TIMING_CONFIG.device.default_double_tap_delay
+
     adb_prefix = _get_adb_prefix(device_id)
 
     subprocess.run(
         adb_prefix + ["shell", "input", "tap", str(x), str(y)], capture_output=True
     )
-    time.sleep(0.1)
+    time.sleep(TIMING_CONFIG.device.double_tap_interval)
     subprocess.run(
         adb_prefix + ["shell", "input", "tap", str(x), str(y)], capture_output=True
     )
@@ -85,8 +92,8 @@ def long_press(
     x: int,
     y: int,
     duration_ms: int = 3000,
-    device_id: Optional[str] = None,
-    delay: float = 1.0,
+    device_id: str | None = None,
+    delay: float | None = None,
 ) -> None:
     """
     Long press at the specified coordinates.
@@ -96,8 +103,11 @@ def long_press(
         y: Y coordinate.
         duration_ms: Duration of press in milliseconds.
         device_id: Optional ADB device ID.
-        delay: Delay in seconds after long press.
+        delay: Delay in seconds after long press. If None, uses configured default.
     """
+    if delay is None:
+        delay = TIMING_CONFIG.device.default_long_press_delay
+
     adb_prefix = _get_adb_prefix(device_id)
 
     subprocess.run(
@@ -115,7 +125,7 @@ def swipe(
     end_y: int,
     duration_ms: int | None = None,
     device_id: str | None = None,
-    delay: float = 1.0,
+    delay: float | None = None,
 ) -> None:
     """
     Swipe from start to end coordinates.
@@ -127,8 +137,11 @@ def swipe(
         end_y: Ending Y coordinate.
         duration_ms: Duration of swipe in milliseconds (auto-calculated if None).
         device_id: Optional ADB device ID.
-        delay: Delay in seconds after swipe.
+        delay: Delay in seconds after swipe. If None, uses configured default.
     """
+    if delay is None:
+        delay = TIMING_CONFIG.device.default_swipe_delay
+
     adb_prefix = _get_adb_prefix(device_id)
 
     if duration_ms is None:
@@ -154,14 +167,17 @@ def swipe(
     time.sleep(delay)
 
 
-def back(device_id: str | None = None, delay: float = 1.0) -> None:
+def back(device_id: str | None = None, delay: float | None = None) -> None:
     """
     Press the back button.
 
     Args:
         device_id: Optional ADB device ID.
-        delay: Delay in seconds after pressing back.
+        delay: Delay in seconds after pressing back. If None, uses configured default.
     """
+    if delay is None:
+        delay = TIMING_CONFIG.device.default_back_delay
+
     adb_prefix = _get_adb_prefix(device_id)
 
     subprocess.run(
@@ -170,14 +186,17 @@ def back(device_id: str | None = None, delay: float = 1.0) -> None:
     time.sleep(delay)
 
 
-def home(device_id: str | None = None, delay: float = 1.0) -> None:
+def home(device_id: str | None = None, delay: float | None = None) -> None:
     """
     Press the home button.
 
     Args:
         device_id: Optional ADB device ID.
-        delay: Delay in seconds after pressing home.
+        delay: Delay in seconds after pressing home. If None, uses configured default.
     """
+    if delay is None:
+        delay = TIMING_CONFIG.device.default_home_delay
+
     adb_prefix = _get_adb_prefix(device_id)
 
     subprocess.run(
@@ -186,18 +205,23 @@ def home(device_id: str | None = None, delay: float = 1.0) -> None:
     time.sleep(delay)
 
 
-def launch_app(app_name: str, device_id: str | None = None, delay: float = 1.0) -> bool:
+def launch_app(
+    app_name: str, device_id: str | None = None, delay: float | None = None
+) -> bool:
     """
     Launch an app by name.
 
     Args:
         app_name: The app name (must be in APP_PACKAGES).
         device_id: Optional ADB device ID.
-        delay: Delay in seconds after launching.
+        delay: Delay in seconds after launching. If None, uses configured default.
 
     Returns:
         True if app was launched, False if app not found.
     """
+    if delay is None:
+        delay = TIMING_CONFIG.device.default_launch_delay
+
     if app_name not in APP_PACKAGES:
         return False
 
