@@ -45,6 +45,8 @@ ADB 调试能力，可通过 WiFi 或网络连接设备，实现灵活的远程�
 
 ## 环境准备
 
+> 🚀 **免电脑 USB 调试**：若身边没有电脑，可用 [AutoGLM-TERMUX](https://github.com/eraycc/AutoGLM-TERMUX) 在 Termux 里一键完成 Agent、ADB 等配置，全程无需数据线。
+
 ### 1. Python 环境
 
 建议使用 Python 3.10 及以上版本。
