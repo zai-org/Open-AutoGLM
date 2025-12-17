@@ -1,7 +1,7 @@
 default_install_hook_types:
   - pre-commit
   - commit-msg
-
+exclude: '^phone_agent/config/apps\.py$'
 default_stages:
   - pre-commit # Run locally
 repos:
