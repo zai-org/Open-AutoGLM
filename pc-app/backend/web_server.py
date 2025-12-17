@@ -29,9 +29,8 @@ app = Flask(__name__)
 import os
 from dotenv import load_dotenv
 
-# 加载上级目录的 .env 文件
-env_path = Path(__file__).resolve().parent.parent / '.env'
-load_dotenv(env_path)
+# 加载当前目录的 .env 文件
+load_dotenv()
 
 API_KEY = os.getenv("API_KEY")
 
