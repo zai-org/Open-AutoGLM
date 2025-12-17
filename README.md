@@ -100,8 +100,6 @@ cd WebDriverAgent
 
 #### 2. 设置 Signing & Capabilities
 
-![设置签名](resources/setup-xcode-wda.png)
-
 把Bundle ID改成 YOUR_NAME.WebDriverAgentRunner。
 
 #### 3. 开始UI测试
@@ -112,19 +110,9 @@ cd WebDriverAgent
 
 先从项目Target选择WebDriverAgentRunner，然后再选择你的设备。
 
-![选择设备](resources/select-your-iphone-device.png)
-
 选好后，长按"▶️"运行按钮选择“Test”后开始编译并部署到你的iPhone上。
 
-![信任设备](resources/start-wda-testing.png)
-
 这时需要你在iPhone上输入解锁密码，在设置 -> 通用 -> VPN与设备管理 中信任开发者App，还需要在 设置 -> 开发者  中，打开UI自动化设置。
-
-
-
-![信任设备](resources/trust-dev-app.jpg)
-
-![启用UI自动化](resources/enable-ui-automation.jpg)
 
 ### 3. 运行 iOS 版 Phone Agent
 
