@@ -35,6 +35,8 @@ Phone Agent is a mobile intelligent assistant framework built on AutoGLM. It und
 
 ## Environment Setup
 
+> 🚀 **No-PC USB Debugging**: If you don't have a computer at hand, you can use [AutoGLM-TERMUX](https://github.com/eraycc/AutoGLM-TERMUX/blob/main/README_en.md) to set up Agent, ADB, and other configurations with one click within Termux, all without the need for a USB cable.
+
 ### 1. Python Environment
 
 Python 3.10 or higher is recommended.
