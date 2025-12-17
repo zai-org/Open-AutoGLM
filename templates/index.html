@@ -580,42 +580,134 @@
             border-color: var(--error);
         }
 
-        .live-console {
-            background: #1e1e1e;
-            color: #d4d4d4;
-            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
-            font-size: 11px;
-            padding: 12px;
-            overflow-y: auto;
-            height: 200px;
-            white-space: pre-wrap;
-            border-bottom: 1px solid var(--border-color);
-        }
-
         .execution-log {
             flex: 1;
+            height: 0;
+            /* Critical for flex scrolling */
+            min-height: 0;
             overflow-y: auto;
-            padding: 24px;
-            background: var(--bg-primary);
+            padding: 16px;
+            background: #000000;
+            font-family: 'Menlo', 'Monaco', 'Consolas', 'Courier New', monospace;
+            font-size: 13px;
+            color: #d4d4d4;
+            display: flex;
+            flex-direction: column;
+            border-top: 1px solid var(--border-color);
+            scroll-behavior: smooth;
+        }
+
+        .live-console {
+            background: #0a0a0a;
+            color: #10b981;
+            /* Emerald green for terminal feel */
+            font-family: 'Menlo', 'Monaco', 'Consolas', 'Courier New', monospace;
+            font-size: 12px;
+            padding: 16px;
+            margin: 0;
+            overflow-y: auto;
+            max-height: 300px;
+            border-top: 1px solid var(--border-color);
+            white-space: pre-wrap;
+            word-break: break-word;
         }
 
         .log-item {
-            margin-bottom: 16px;
-            animation: slideIn 0.2s ease-out;
-            border-left: 2px solid var(--border-color);
-            padding-left: 16px;
+            margin-bottom: 4px;
+            padding-left: 0;
+            display: flex;
+            align-items: flex-start;
+            line-height: 1.6;
         }
 
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(5px);
-            }
+        .log-timestamp {
+            color: #52525b;
+            margin-right: 12px;
+            user-select: none;
+            flex-shrink: 0;
+            font-size: 11px;
+            padding-top: 2px;
+        }
 
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .log-content {
+            white-space: pre-wrap;
+            word-break: break-all;
+            flex: 1;
+        }
+
+        .log-type-start {
+            color: #3b82f6;
+            font-weight: bold;
+        }
+
+        .log-type-thinking {
+            color: #71717a;
+            font-style: italic;
+        }
+
+        .log-type-action {
+            color: #fbbf24;
+        }
+
+        .log-type-success {
+            color: #10b981;
+            font-weight: bold;
+        }
+
+        .log-type-error {
+            color: #ef4444;
+            font-weight: bold;
+        }
+
+        .log-type-api {
+            color: #8b5cf6;
+        }
+
+        .log-type-model_response {
+            color: #22d3ee;
+            /* Cyan 400 - brighter */
+            white-space: pre-wrap;
+            background: rgba(6, 182, 212, 0.1);
+            padding: 8px 12px;
+            border-radius: 6px;
+            border-left: 3px solid #06b6d4;
+            display: block;
+            margin: 4px 0;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .log-type-performance {
+            color: #fbbf24;
+            /* Amber 400 */
+            font-family: 'Menlo', monospace;
+            white-space: pre;
+            background: rgba(245, 158, 11, 0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        .log-type-thinking_start {
+            color: #a1a1aa;
+            /* Zinc 400 */
+            font-style: italic;
+        }
+
+        .log-type-raw_log {
+            color: #d4d4d8;
+            /* Zinc 300 - brighter */
+            font-family: 'Menlo', 'Monaco', 'Consolas', monospace;
+            white-space: pre-wrap;
+            font-size: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 2px 4px;
+            border-radius: 2px;
+        }
+
+        /* Collapsible details for objects */
+        .log-details {
+            color: #d4d4d4;
+            white-space: pre-wrap;
         }
 
         .log-card {
@@ -1087,7 +1179,43 @@
             <div class="sidebar-header">
                 <div class="sidebar-header-row">
                     <div class="logo">
-                        <div class="logo-icon">🤖</div>
+                        <div class="logo-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <!-- Robot Head Base -->
+                                <rect x="4" y="6" width="16" height="14" rx="3" fill="white" opacity="0.95" />
+                                <!-- Face Screen -->
+                                <rect x="6" y="8" width="12" height="8" rx="1.5" fill="#1d4ed8" />
+                                <!-- Left Eye -->
+                                <circle cx="9" cy="12" r="1.5" fill="white">
+                                    <animate attributeName="opacity" values="1;0.5;1" dur="2s"
+                                        repeatCount="indefinite" />
+                                </circle>
+                                <!-- Right Eye -->
+                                <circle cx="15" cy="12" r="1.5" fill="white">
+                                    <animate attributeName="opacity" values="1;0.5;1" dur="2s" repeatCount="indefinite"
+                                        begin="0.1s" />
+                                </circle>
+                                <!-- Neural Network Lines -->
+                                <path d="M9 12 L12 10 L15 12" stroke="rgba(255,255,255,0.4)" stroke-width="0.5"
+                                    stroke-linecap="round" />
+                                <path d="M9 12 L12 14 L15 12" stroke="rgba(255,255,255,0.4)" stroke-width="0.5"
+                                    stroke-linecap="round" />
+                                <!-- Antenna -->
+                                <line x1="12" y1="6" x2="12" y2="3" stroke="white" stroke-width="1.5"
+                                    stroke-linecap="round" />
+                                <circle cx="12" cy="2" r="1.5" fill="white">
+                                    <animate attributeName="fill" values="white;#60a5fa;white" dur="1.5s"
+                                        repeatCount="indefinite" />
+                                </circle>
+                                <!-- Left Ear/Sensor -->
+                                <rect x="2" y="10" width="2" height="4" rx="1" fill="white" opacity="0.8" />
+                                <!-- Right Ear/Sensor -->
+                                <rect x="20" y="10" width="2" height="4" rx="1" fill="white" opacity="0.8" />
+                                <!-- Mouth/Speaker Grid -->
+                                <rect x="10" y="17" width="4" height="1.5" rx="0.5" fill="#1d4ed8" />
+                            </svg>
+                        </div>
                         <div>
                             <div class="logo-text">AI_Phone</div>
                         </div>
@@ -1158,7 +1286,8 @@
                         ⌨️ 安装输入法
                     </button>
                     <span id="taskStatus" class="status-badge status-idle">空闲</span>
-                    <button class="stop-btn" onclick="stopTask()" disabled id="stopBtn">停止任务</button>
+                    <button class="stop-btn" onclick="stopTask()" disabled id="stopBtn"
+                        style="display: none;">停止任务</button>
                 </div>
             </div>
 
@@ -1183,6 +1312,8 @@
                     <div>在上方输入任务开始控制手机</div>
                 </div>
             </div>
+            <!-- Live Console for Streaming Output -->
+            <pre class="live-console" id="realtimeConsole" style="display:block; max-height: 200px;"></pre>
             <!-- Input Area (Chat Style) -->
 
         </div>
@@ -1271,9 +1402,11 @@
             overlay.classList.add('active');
         }
 
+        let isStarting = false;
+
         // 立即执行任务
         async function executeTask() {
-            if (isExecuting) return;
+            if (isExecuting || isStarting) return;
 
             const task = document.getElementById('taskInput').value.trim();
 
@@ -1283,6 +1416,7 @@
             }
 
             try {
+                isStarting = true; // Flag to prevent checkStatus from resetting state
                 isExecuting = true;
                 lastStepCount = 0;
                 updateExecuteButton(true);
@@ -1292,19 +1426,9 @@
                 updateTaskHeader(task, 'running');
                 clearExecutionLog();
 
-                addLogItem('start', '任务开始', task, new Date().toLocaleTimeString());
-
-                // Create Live Console inside execution log
+                // Create Live Console removed
                 const logContainer = document.getElementById('executionLog');
-                const liveConsole = document.createElement('div');
-                liveConsole.id = 'liveConsole';
-                liveConsole.className = 'live-console';
-                liveConsole.style.display = 'none';
-                // Remove border-bottom to blend in
-                liveConsole.style.borderBottom = 'none';
-                liveConsole.style.marginTop = '10px';
-                liveConsole.style.borderRadius = 'var(--radius-md)';
-                logContainer.appendChild(liveConsole);
+
 
                 const response = await fetch('/api/execute', {
 
@@ -1345,6 +1469,8 @@
                 isExecuting = false;
                 updateExecuteButton(false);
                 showToast('执行失败: ' + error.message, 'error');
+            } finally {
+                isStarting = false;
             }
         }
 
@@ -1413,61 +1539,74 @@
             });
         }
 
-        // 开始轮询
+        // 开始轮询 (Continuous)
         function startStatusPolling() {
-            statusCheckInterval = setInterval(checkStatus, 500);
-        }
-
-        // 停止轮询
-        function stopStatusPolling() {
-            if (statusCheckInterval) {
-                clearInterval(statusCheckInterval);
-                statusCheckInterval = null;
+            if (!statusCheckInterval) {
+                statusCheckInterval = setInterval(checkStatus, 1000);
             }
         }
 
-        // 检查状态
+        // 停止轮询 (Deprecated but kept for compatibility)
+        function stopStatusPolling() {
+            // We want continuous polling now for state sync
+            // clearInterval(statusCheckInterval); 
+            // statusCheckInterval = null;
+        }
+
+        // 检查状态 (Global State Reconciler)
         async function checkStatus() {
             try {
                 const response = await fetch('/api/status');
                 const data = await response.json();
 
-                // 更新停止按钮
-                document.getElementById('stopBtn').style.display = data.can_stop ? 'block' : 'none';
-
-                // Live Console Update
-                if (data.realtime_log) {
-                    const liveConsole = document.getElementById('liveConsole');
-                    liveConsole.style.display = 'block';
-                    if (liveConsole.textContent !== data.realtime_log) {
-                        liveConsole.textContent = data.realtime_log;
-                        liveConsole.scrollTop = liveConsole.scrollHeight;
-                    }
+                // 1. Sync State: Server Running vs Local Idle
+                if (data.running && !isExecuting) {
+                    console.log('Sync: Found running task, updating UI', data.task);
+                    isExecuting = true;
+                    updateExecuteButton(true);
+                    updateTaskHeader(data.task, data.status);
+                    loadQueue(); // Refresh queue to show running task
                 }
 
-                // 更新新增的步骤
-                if (data.steps && data.steps.length > lastStepCount) {
-                    for (let i = lastStepCount; i < data.steps.length; i++) {
-                        const step = data.steps[i];
-                        addLogItem(step.type, getStepTitle(step.type), step.content || step.message || step.error || step.task, step.timestamp);
-                    }
-
-                    lastStepCount = data.steps.length;
-                }
-
-                // 任务完成
-                if (!data.running && isExecuting) {
+                // 2. Sync State: Server Idle vs Local Running (Completion)
+                // IMPORTANT: Do NOT reset if we are currently starting a task (race condition fix)
+                if (!data.running && isExecuting && !isStarting) {
+                    console.log('Sync: Task completed');
                     isExecuting = false;
                     updateExecuteButton(false);
-                    stopStatusPolling();
                     updateTaskHeader(data.task, data.status);
                     loadHistory();
                     loadPopular();
                     loadQueue();
                 }
-            }
 
-            catch (error) {
+                // 3. Always update logs regardless of running state
+                if (data.steps && data.steps.length > lastStepCount) {
+                    for (let i = lastStepCount; i < data.steps.length; i++) {
+                        const step = data.steps[i];
+                        addLogItem(step.type, getStepTitle(step.type), step.content || step.message || step.error || step.task, step.timestamp);
+                    }
+                    lastStepCount = data.steps.length;
+                }
+
+                // 4. Update dynamic elements if running
+                if (data.running) {
+                    // Update Stop Button
+                    document.getElementById('stopBtn').style.display = data.can_stop ? 'block' : 'none';
+
+                    // Update Live Console with streaming output
+                    if (data.realtime_log) {
+                        const console_el = document.getElementById('realtimeConsole');
+                        console_el.style.display = 'block';
+                        console_el.textContent = data.realtime_log;
+                        // Auto-scroll to bottom
+                        console_el.scrollTop = console_el.scrollHeight;
+                    }
+                } else {
+                    document.getElementById('stopBtn').style.display = 'none';
+                }
+
+            } catch (error) {
                 console.error('状态检查失败:', error);
             }
         }
@@ -1488,15 +1627,28 @@
         // 渲染队列
         function renderQueue(queue) {
             const list = document.getElementById('queueList');
+            const totalCount = queue.length + (isExecuting ? 1 : 0);
             const badge = document.getElementById('queueBadge');
-            badge.textContent = queue.length;
+            badge.textContent = totalCount;
 
-            if (queue.length === 0) {
+            let html = '';
+
+            // Render Running Task
+            if (isExecuting) {
+                const runningTaskName = document.getElementById('currentTask').textContent;
+                html += `
+                    <div class="queue-item" style="border-left: 2px solid var(--accent-primary);">
+                        <div class="queue-text">
+                            <span style="color: var(--accent-primary); font-weight: bold; margin-right: 4px;">▶ Running:</span>
+                            ${escapeHtml(runningTaskName)}
+                        </div>
+                    </div>`;
+            }
+
+            if (queue.length === 0 && !isExecuting) {
                 list.innerHTML = '<div class="empty-state" style="padding:15px;font-size:11px;">队列为空</div>';
                 return;
             }
-
-            let html = '';
 
             queue.forEach(item => {
                 html += `<div class="queue-item"><div class="queue-text">${escapeHtml(item.task)}</div><button class="queue-remove" onclick="removeFromQueue('${item.id}')">✕</button></div>`;
@@ -1634,7 +1786,11 @@
                 'action': '执行动作',
                 'success': '任务完成',
                 'complete': '执行完成',
-                'error': '执行错误'
+                'error': '执行错误',
+                'model_response': '模型回复',
+                'performance': '性能指标',
+                'thinking_start': '开始思考',
+                'raw_log': '终端日志'
             }
 
                 ;
@@ -1669,66 +1825,76 @@
         // 添加日志项
         function addLogItem(type, title, content, time) {
             const log = document.getElementById('executionLog');
+
+            // Remove empty state if present
+            const emptyState = log.querySelector('.empty-state');
+            if (emptyState) {
+                log.removeChild(emptyState);
+            }
+
             const item = document.createElement('div');
             item.className = 'log-item';
 
-            const iconMap = {
-                'start': '🚀',
-                'thinking': '💭',
-                'action': '⚡',
-                'success': '✅',
-                'complete': '🎉',
-                'error': '❌',
-                'api_log': '🔌'
+            // Timestamp
+            const timestamp = document.createElement('span');
+            timestamp.className = 'log-timestamp';
+            timestamp.textContent = `[${time}]`;
+            item.appendChild(timestamp);
+
+            // Content Container
+            const contentSpan = document.createElement('span');
+            contentSpan.className = 'log-content';
+
+            // Color based on type
+            let colorClass = `log-type-${type}` || '';
+            if (type === 'api_log') colorClass = 'log-type-api';
+
+            // Format Content - Special handling for model_response (最重要的显示)
+            if (type === 'model_response') {
+                contentSpan.innerHTML = `<span class="log-type-model_response">🤖 模型回复:\n${escapeHtml(content)}</span>`;
+                item.appendChild(contentSpan);
+                log.appendChild(item);
+                requestAnimationFrame(() => { log.scrollTop = log.scrollHeight; });
+                return;
             }
 
-                ;
-
-            const iconClass = {
-                'start': 'log-icon-action',
-                'thinking': 'log-icon-thinking',
-                'action': 'log-icon-action',
-                'success': 'log-icon-success',
-                'complete': 'log-icon-success',
-                'error': 'log-icon-error',
-                'api_log': 'log-icon-api'
-            }
-
-                ;
-
-            // Handle API Logs specially
             if (type === 'api_log') {
                 const direction = content.direction; // request or response
                 const payload = content.content;
                 const isRequest = direction === 'request';
-                const directionClass = isRequest ? 'direction-request' : 'direction-response';
-                const directionIcon = isRequest ? '⬆️' : '⬇️';
+                const icon = isRequest ? '>>' : '<<';
 
-                title = `<span class="${directionClass}">API ${direction.toUpperCase()}</span>`;
+                contentSpan.innerHTML = `<span class="${colorClass}">${icon} API ${direction.toUpperCase()}</span>`;
 
-                contentHtml = `<div class="api-details"><details><summary class="api-summary">${directionIcon} View ${isRequest ? 'Payload' : 'Response'} JSON </summary><div class="api-content">${escapeHtml(JSON.stringify(payload, null, 2))}</div></details></div>`;
-            }
+                const details = document.createElement('div');
+                details.className = 'api-details';
+                details.innerHTML = `<details><summary class="api-summary">View Payload</summary><div class="api-content">${escapeHtml(JSON.stringify(payload, null, 2))}</div></details>`;
+                contentSpan.appendChild(details);
 
-            else if (typeof content === 'object') {
-                contentHtml = '<div class="action-details">';
+            } else if (typeof content === 'object') {
+                contentSpan.innerHTML = `<span class="${colorClass}">${title}</span>`;
+                const details = document.createElement('div');
+                details.className = 'log-details';
+                details.textContent = JSON.stringify(content); // Simple inline for now, can be improved
+                contentSpan.appendChild(details);
 
-                for (const [key, value] of Object.entries(content)) {
-                    if (key !== '_metadata') {
-                        contentHtml += ` <div class="action-row"><div class="action-key">${key}:</div><div class="action-value">${JSON.stringify(value)}</div></div>`;
-                    }
+            } else {
+                // Formatting specific prefixes if they exist in valid plain text
+                let text = escapeHtml(content);
+                if (title && title !== content) {
+                    contentSpan.innerHTML = `<span class="${colorClass}">${title}:</span> ${text}`;
+                } else {
+                    contentSpan.innerHTML = `<span class="${colorClass}">${text}</span>`;
                 }
-
-                contentHtml += '</div>';
             }
 
-            else {
-                contentHtml = `<div class="log-content">${escapeHtml(content)}</div>`;
-            }
-
-            item.innerHTML = ` <div class="log-card"><div class="log-header"><div class="log-icon ${iconClass[type] || 'log-icon-action'}">${iconMap[type] || '📋'}</div><div class="log-meta"><div class="log-type">${title}</div><div class="log-time">${time}</div></div></div>${contentHtml}</div>`;
-
+            item.appendChild(contentSpan);
             log.appendChild(item);
-            log.scrollTop = log.scrollHeight;
+
+            // Auto-scroll
+            requestAnimationFrame(() => {
+                log.scrollTop = log.scrollHeight;
+            });
         }
 
         // HTML转义
@@ -1738,11 +1904,40 @@
             return div.innerHTML;
         }
 
+        // 初始化应用
+        async function initApp() {
+            try {
+                // 1. Check Server Status first
+                const response = await fetch('/api/status');
+                const data = await response.json();
+
+                if (data.running) {
+                    isExecuting = true;
+                    updateExecuteButton(true);
+                    updateTaskHeader(data.task, data.status);
+                } else {
+                    document.getElementById('currentTask').textContent = '等待任务...';
+                }
+
+                // Always start continuous polling for robust sync
+                startStatusPolling();
+
+                // 2. Load Data (Queue will now see correct isExecuting state)
+                await Promise.all([
+                    loadQueue(),
+                    loadHistory(),
+                    loadPopular()
+                ]);
+
+            } catch (error) {
+                console.error('Initialization failed:', error);
+                showToast('无法连接到服务器', 'error');
+            }
+        }
+
         // 页面加载
         document.addEventListener('DOMContentLoaded', function () {
-            loadHistory();
-            loadPopular();
-            loadQueue();
+            initApp();
 
             // Ctrl+Enter 执行
             document.getElementById('taskInput').addEventListener('keydown', function (e) {

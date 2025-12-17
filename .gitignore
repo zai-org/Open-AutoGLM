@@ -63,3 +63,5 @@ app_package_name.py
 task_history.json
 task_stats.json
 task_queue.json
+
+.env

@@ -174,6 +174,13 @@ class CustomPhoneAgent(PhoneAgent):
                 "timestamp": datetime.now().strftime("%H:%M:%S")
             })
 
+            # NEW: Emit visible model response log
+            self.steps_callback({
+                "type": "model_response",
+                "content": response.raw_content,
+                "timestamp": datetime.now().strftime("%H:%M:%S")
+            })
+
         return response
 
     def set_steps_callback(self, callback):
@@ -253,6 +260,23 @@ class CustomPhoneAgent(PhoneAgent):
             "content": step_text,
             "timestamp": datetime.now().strftime("%H:%M:%S")
         })
+
+        # Parse Performance Metrics
+        if "⏱️" in step_text:
+             self.steps_callback({
+                "type": "performance",
+                "content": step_text,
+                "timestamp": datetime.now().strftime("%H:%M:%S")
+            })
+
+        # Parse Thinking Start (only if it's the start line, not the full block)
+        # The full block regex (below) handles the content, but we want to show the "Start" signal immediately
+        if "💭" in step_text and "思考过程:" in step_text and not re.search(r'💭 思考过程:.*?-{50}(.*?)-{50}', step_text, re.DOTALL):
+             self.steps_callback({
+                "type": "thinking_start",
+                "content": "开始思考...",
+                "timestamp": datetime.now().strftime("%H:%M:%S")
+            })
 
         think_match = re.search(r'💭 思考过程:.*?-{50}(.*?)-{50}', step_text, re.DOTALL)
         if think_match:
@@ -486,10 +510,21 @@ def api_execute():
     if current_task["running"]:
         return jsonify({"success": False, "message": "当前有任务正在执行，请添加到队列"})
 
-    task_id = str(int(time.time() * 1000))
-    thread = threading.Thread(target=execute_task, args=(task, task_id))
-    thread.daemon = True
-    thread.start()
+    # Synchronously set running to True to prevent race conditions
+    current_task["running"] = True
+    current_task["task"] = task
+    current_task["status"] = "starting"
+    
+    try:
+        task_id = str(int(time.time() * 1000))
+        thread = threading.Thread(target=execute_task, args=(task, task_id))
+        thread.daemon = True
+        thread.start()
+    except Exception as e:
+        # Revert state if thread fails to start
+        current_task["running"] = False
+        current_task["status"] = "error"
+        return jsonify({"success": False, "message": f"启动任务失败: {str(e)}"})
 
     return jsonify({"success": True, "message": "任务已开始执行", "task_id": task_id})
 
@@ -569,7 +604,8 @@ def api_status():
         "realtime_log": current_task.get("realtime_log", ""),
         "current_step": current_task["current_step"],
         "can_stop": current_task["can_stop"],
-        "queue_length": len(task_queue)
+        "queue_length": len(task_queue),
+        "task_id": current_task["task_id"]
     })
 
 
@@ -582,7 +618,61 @@ def api_history():
     if search:
         history = [h for h in history if search.lower() in h["task"].lower()]
 
+    # Always show current task session in history (including empty new sessions)
+    if current_task["task_id"]: 
+        display_task = current_task["task"] if current_task["task"] else "New Task"
+        
+        running_item = {
+            "id": current_task["task_id"],
+            "task": display_task,
+            "result": "",
+            "status": "running" if current_task["running"] else "idle",
+            "steps": current_task["steps"],
+            "timestamp": "Running Now" if current_task["running"] else "New Session"
+        }
+        # Only add if it matches search (or no search)
+        if not search or search.lower() in running_item["task"].lower():
+             history.insert(0, running_item)
+
     return jsonify({"success": True, "history": history})
+
+# ... (skip other routes) ...
+
+@app.route('/api/status/reset', methods=['POST'])
+def api_status_reset():
+    """重置当前运行状态（用于New Task）"""
+    global current_task
+    
+    # Only allow reset if not running
+    if current_task["running"]:
+       return jsonify({"success": False, "message": "Task is running, stop it first"})
+
+    # Check if we should skip saving (e.g., when user clears an empty session)
+    data = request.json or {}
+    skip_save = data.get('skip_save', False)
+    
+    # Auto-save current task to history (even empty ones with "New Task" name)
+    if not skip_save:
+        task_name = current_task["task"] if current_task["task"] else "New Task"
+        save_history(
+            task_name,
+            current_task["result"] or "Archived", 
+            current_task["status"] if current_task["status"] != "idle" else "stopped",
+            current_task["steps"]
+        )
+       
+    current_task = {
+        "running": False,
+        "task": "",
+        "result": "",
+        "status": "idle",
+        "steps": [],
+        "current_step": 0,
+        "can_stop": False,
+        "task_id": str(int(time.time() * 1000)), # Generate ID immediately
+        "logs": []
+    }
+    return jsonify({"success": True, "message": "Status reset"})
 
 
 @app.route('/api/history/clear', methods=['POST'])
@@ -593,11 +683,226 @@ def api_history_clear():
     return jsonify({"success": True, "message": "历史记录已清空"})
 
 
+@app.route('/api/history/delete', methods=['POST'])
+def api_history_delete():
+    """删除特定任务"""
+    data = request.json
+    task_id = data.get('id')
+    if not task_id:
+        return jsonify({"success": False, "message": "Missing task ID"})
+
+    history = load_history()
+    # Filter out the task with matching ID
+    new_history = [h for h in history if str(h.get('id')) != str(task_id)]
+    
+    if len(history) == len(new_history):
+        return jsonify({"success": False, "message": "Task not found"})
+
+    with open(HISTORY_FILE, 'w', encoding='utf-8') as f:
+        json.dump(new_history, f, ensure_ascii=False, indent=2)
+
+    return jsonify({"success": True, "message": "任务已删除"})
+
+
+# Trash bin file
+TRASH_FILE = Path("task_trash.json")
+TRASH_RETENTION_DAYS = 30
+
+
+def load_trash():
+    """Load trash bin items"""
+    if TRASH_FILE.exists():
+        with open(TRASH_FILE, 'r', encoding='utf-8') as f:
+            trash = json.load(f)
+            # Auto cleanup expired items
+            now = datetime.now()
+            valid_items = []
+            for item in trash:
+                deleted_at = datetime.fromisoformat(item.get('deletedAt', now.isoformat()))
+                days_elapsed = (now - deleted_at).days
+                if days_elapsed < TRASH_RETENTION_DAYS:
+                    valid_items.append(item)
+            if len(valid_items) != len(trash):
+                save_trash(valid_items)
+            return valid_items
+    return []
+
+
+def save_trash(trash):
+    """Save trash bin items"""
+    with open(TRASH_FILE, 'w', encoding='utf-8') as f:
+        json.dump(trash, f, ensure_ascii=False, indent=2)
+
+
+@app.route('/api/trash', methods=['GET'])
+def api_trash_list():
+    """获取垃圾箱列表"""
+    trash = load_trash()
+    return jsonify({"success": True, "trash": trash})
+
+
+@app.route('/api/trash/restore', methods=['POST'])
+def api_trash_restore():
+    """从垃圾箱恢复任务"""
+    data = request.json
+    trash_id = data.get('trashId')
+    if not trash_id:
+        return jsonify({"success": False, "message": "Missing trash ID"})
+    
+    trash = load_trash()
+    item_index = next((i for i, item in enumerate(trash) if item.get('trashId') == trash_id), None)
+    
+    if item_index is None:
+        return jsonify({"success": False, "message": "Item not found in trash"})
+    
+    restored_item = trash.pop(item_index)
+    save_trash(trash)
+    
+    # Restore to history
+    history = load_history()
+    # Remove trash metadata
+    restored_item.pop('deletedAt', None)
+    restored_item.pop('trashId', None)
+    restored_item.pop('itemType', None)
+    history.insert(0, restored_item)
+    with open(HISTORY_FILE, 'w', encoding='utf-8') as f:
+        json.dump(history, f, ensure_ascii=False, indent=2)
+    
+    return jsonify({"success": True, "message": "任务已恢复"})
+
+
+@app.route('/api/trash/delete', methods=['POST'])
+def api_trash_delete():
+    """永久删除垃圾箱中的任务"""
+    data = request.json
+    trash_id = data.get('trashId')
+    if not trash_id:
+        return jsonify({"success": False, "message": "Missing trash ID"})
+    
+    trash = load_trash()
+    new_trash = [item for item in trash if item.get('trashId') != trash_id]
+    
+    if len(trash) == len(new_trash):
+        return jsonify({"success": False, "message": "Item not found"})
+    
+    save_trash(new_trash)
+    return jsonify({"success": True, "message": "已永久删除"})
+
+
+@app.route('/api/trash/clear', methods=['POST'])
+def api_trash_clear():
+    """清空垃圾箱"""
+    save_trash([])
+    return jsonify({"success": True, "message": "垃圾箱已清空"})
+
+
+@app.route('/api/trash/add', methods=['POST'])
+def api_trash_add():
+    """将任务移入垃圾箱（从历史中删除并添加到垃圾箱）"""
+    data = request.json
+    task_id = data.get('id')
+    if not task_id:
+        return jsonify({"success": False, "message": "Missing task ID"})
+    
+    history = load_history()
+    task_to_trash = None
+    new_history = []
+    
+    for h in history:
+        if str(h.get('id')) == str(task_id):
+            task_to_trash = h
+        else:
+            new_history.append(h)
+    
+    if not task_to_trash:
+        return jsonify({"success": False, "message": "Task not found"})
+    
+    # Add to trash with metadata
+    trash = load_trash()
+    trash_item = {
+        **task_to_trash,
+        'itemType': 'task',
+        'deletedAt': datetime.now().isoformat(),
+        'trashId': f"trash_{int(datetime.now().timestamp())}_{task_id}"
+    }
+    trash.insert(0, trash_item)
+    save_trash(trash)
+    
+    # Remove from history
+    with open(HISTORY_FILE, 'w', encoding='utf-8') as f:
+        json.dump(new_history, f, ensure_ascii=False, indent=2)
+    
+    return jsonify({"success": True, "message": "任务已移入垃圾箱"})
+
+
+@app.route('/api/history/step/delete', methods=['POST'])
+def api_history_step_delete():
+    """删除任务中的特定消息(步骤)"""
+    data = request.json
+    task_id = data.get('task_id')
+    step_index = data.get('step_index') # 0-based index
+
+    if not task_id or step_index is None:
+        return jsonify({"success": False, "message": "Missing params"})
+
+    history = load_history()
+    target_task = None
+    for task in history:
+        if str(task.get('id')) == str(task_id):
+            target_task = task
+            break
+    
+    if not target_task:
+        return jsonify({"success": False, "message": "Task not found"})
+
+    steps = target_task.get('steps', [])
+    if 0 <= step_index < len(steps):
+        steps.pop(step_index)
+        target_task['steps'] = steps
+        
+        # Save back
+        with open(HISTORY_FILE, 'w', encoding='utf-8') as f:
+            json.dump(history, f, ensure_ascii=False, indent=2)
+            
+        return jsonify({"success": True, "message": "消息已删除"})
+    else:
+        return jsonify({"success": False, "message": "Invalid step index"})
+
+
 @app.route('/api/popular', methods=['GET'])
 def api_popular():
     """获取高频任务"""
     popular = get_popular_tasks(20)
     return jsonify({"success": True, "popular": popular})
+
+
+@app.route('/api/popular/delete', methods=['POST'])
+def api_popular_delete():
+    """删除特定常用任务"""
+    data = request.json
+    task_name = data.get('task')
+    if not task_name:
+        return jsonify({"success": False, "message": "Missing task name"})
+    
+    stats = load_stats()
+    task_count = stats.get("task_count", {})
+    
+    if task_name in task_count:
+        del task_count[task_name]
+        stats["task_count"] = task_count
+        save_stats(stats)
+        return jsonify({"success": True, "message": "任务已删除"})
+    else:
+        return jsonify({"success": False, "message": "Task not found"})
+
+
+@app.route('/api/popular/clear', methods=['POST'])
+def api_popular_clear():
+    """清空所有常用任务"""
+    stats = load_stats()
+    stats["task_count"] = {}
+    save_stats(stats)
+    return jsonify({"success": True, "message": "已清空所有常用任务"})
 
 
 @app.route('/api/stats', methods=['GET'])
@@ -629,6 +934,146 @@ def api_install_keyboard():
         return jsonify({"success": True, "message": "ADB Keyboard installed and set successfully"})
     else:
         return jsonify({"success": False, "message": "Failed to install ADB Keyboard"})
+
+
+
+
+
+@app.route('/api/config', methods=['GET'])
+def api_get_config():
+    """获取当前配置（不返回完整 API Key）"""
+    config = CONFIG.copy()
+    # Mask API key for security
+    if config.get('api_key'):
+        key = config['api_key']
+        config['api_key_masked'] = key[:4] + '*' * (len(key) - 8) + key[-4:] if len(key) > 8 else '***'
+    return jsonify({
+        "success": True,
+        "config": {
+            "baseUrl": config.get('base_url', ''),
+            "modelName": config.get('model_name', ''),
+            "apiKeyMasked": config.get('api_key_masked', '')
+        }
+    })
+
+
+@app.route('/api/config', methods=['POST'])
+def api_update_config():
+    """更新配置"""
+    global CONFIG
+    data = request.json
+    
+    if data.get('baseUrl'):
+        CONFIG['base_url'] = data['baseUrl']
+    if data.get('modelName'):
+        CONFIG['model_name'] = data['modelName']
+    if data.get('apiKey'):
+        CONFIG['api_key'] = data['apiKey']
+    
+    return jsonify({"success": True, "message": "配置已更新"})
+
+
+@app.route('/api/chat', methods=['POST'])
+def api_chat():
+    """Q&A模式 - 使用硅基流动 Qwen3-8B 免费模型进行多轮对话"""
+    data = request.json
+    message = data.get('message', '')
+    history = data.get('history', [])
+    
+    if not message:
+        return jsonify({"success": False, "message": "消息不能为空"})
+    
+    # Get SiliconFlow API Key from environment
+    siliconflow_key = os.getenv("SILICONFLOW_API_KEY")
+    if not siliconflow_key:
+        print("[Chat API] Error: SILICONFLOW_API_KEY not found in environment")
+        return jsonify({"success": False, "message": "请在 .env 文件中配置 SILICONFLOW_API_KEY"})
+    
+    try:
+        import requests
+        
+        # Build messages with history for multi-turn conversation
+        messages = []
+        for h in history[-10:]:  # Keep last 10 messages for context
+            messages.append({"role": h.get('role', 'user'), "content": h.get('content', '')})
+        messages.append({"role": "user", "content": message})
+        
+        print(f"[Chat API] Sending request to SiliconFlow with {len(messages)} messages")
+        
+        # Call SiliconFlow API with Qwen3-8B model
+        response = requests.post(
+            "https://api.siliconflow.cn/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {siliconflow_key}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": "Qwen/Qwen3-8B",
+                "messages": messages,
+                "max_tokens": 2000,
+                "temperature": 0.7
+            },
+            timeout=60
+        )
+        
+        print(f"[Chat API] Response status: {response.status_code}")
+        
+        if response.status_code == 200:
+            result = response.json()
+            assistant_response = result['choices'][0]['message']['content']
+            print(f"[Chat API] Success - Response length: {len(assistant_response)} chars")
+            
+            # Save chat messages to current task for persistence
+            global current_task
+            timestamp = datetime.now().strftime('%H:%M:%S')
+            
+            # Add user and assistant messages to current task steps
+            if not current_task.get('task'):
+                current_task['task'] = message[:50] + ('...' if len(message) > 50 else '')
+            
+            current_task['steps'].append({
+                'type': 'user_message',
+                'content': message,
+                'timestamp': timestamp
+            })
+            current_task['steps'].append({
+                'type': 'assistant_message',
+                'content': assistant_response,
+                'timestamp': timestamp
+            })
+            
+            return jsonify({
+                "success": True,
+                "response": assistant_response
+            })
+        elif response.status_code == 429:
+            print(f"[Chat API] Rate limit exceeded: {response.text}")
+            return jsonify({
+                "success": False, 
+                "message": "🔥 产品太火爆啦！请稍后再试～"
+            })
+        elif response.status_code == 401:
+            print(f"[Chat API] Auth error: {response.text}")
+            return jsonify({
+                "success": False,
+                "message": "API Key 无效，请检查 SILICONFLOW_API_KEY 配置"
+            })
+        else:
+            print(f"[Chat API] Error {response.status_code}: {response.text}")
+            return jsonify({
+                "success": False,
+                "message": "🔧 服务暂时不可用，请稍后再试"
+            })
+        
+    except requests.exceptions.Timeout:
+        print("[Chat API] Request timeout")
+        return jsonify({"success": False, "message": "⏱️ 请求超时，请稍后再试"})
+    except requests.exceptions.ConnectionError as e:
+        print(f"[Chat API] Connection error: {e}")
+        return jsonify({"success": False, "message": "🌐 网络连接失败，请检查网络"})
+    except Exception as e:
+        print(f"[Chat API] Unexpected error: {e}")
+        return jsonify({"success": False, "message": "🔥 产品太火爆啦！请稍后再试～"})
 
 
 if __name__ == '__main__':
