@@ -61,7 +61,7 @@ ADB 调试能力，可通过 WiFi 或网络连接设备，实现灵活的远程�
   export PATH=${PATH}:~/Downloads/platform-tools
   ```
 
-- Windows 配置方法：可参考 [第三方教程](https://blog.csdn.net/x2584179909/article/details/108319973) 进行配置。
+- Windows 配置方法：可参考 [第三方教程](https://blog.csdn.net/x2584179909/article/details/108319973) 或 [windows速通部署Open-AutoGLM](https://zhuanlan.zhihu.com/p/1984670334889268437) 进行配置。
 
 ### 3. Android 7.0+ 的设备或模拟器，并启用 `开发者模式` 和 `USB 调试`
 
