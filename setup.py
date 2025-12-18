@@ -36,9 +36,16 @@ setup(
     extras_require={
         "dev": [
             "pytest>=7.0.0",
+            "pytest-asyncio>=0.21.0",
+            "pytest-cov>=4.0.0",
             "black>=23.0.0",
-            "mypy>=1.0.0",
             "ruff>=0.1.0",
+            "mypy>=1.0.0",
+            "pre-commit>=4.5.0",
+        ],
+        "performance": [
+            "pyyaml>=6.0",  # for YAML config support
+            "orjson>=3.9.0",  # fast JSON processing
         ],
     },
     entry_points={

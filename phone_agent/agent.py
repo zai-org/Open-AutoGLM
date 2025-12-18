@@ -1,9 +1,10 @@
 """Main PhoneAgent class for orchestrating phone automation."""
 
 import json
+import logging
 import traceback
 from dataclasses import dataclass
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 
 from phone_agent.actions import ActionHandler
 from phone_agent.actions.handler import do, finish, parse_action
@@ -18,14 +19,16 @@ class AgentConfig:
     """Configuration for the PhoneAgent."""
 
     max_steps: int = 100
-    device_id: str | None = None
+    device_id: Optional[str] = None
     lang: str = "cn"
-    system_prompt: str | None = None
+    system_prompt: Optional[str] = None
     verbose: bool = True
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.system_prompt is None:
             self.system_prompt = get_system_prompt(self.lang)
+        if self.max_steps <= 0:
+            raise ValueError("max_steps must be positive")
 
 
 @dataclass
@@ -63,11 +66,12 @@ class PhoneAgent:
 
     def __init__(
         self,
-        model_config: ModelConfig | None = None,
-        agent_config: AgentConfig | None = None,
-        confirmation_callback: Callable[[str], bool] | None = None,
-        takeover_callback: Callable[[str], None] | None = None,
-    ):
+        model_config: Optional[ModelConfig] = None,
+        agent_config: Optional[AgentConfig] = None,
+        confirmation_callback: Optional[Callable[[str], bool]] = None,
+        takeover_callback: Optional[Callable[[str], None]] = None,
+    ) -> None:
+        self.logger = logging.getLogger(__name__)
         self.model_config = model_config or ModelConfig()
         self.agent_config = agent_config or AgentConfig()
 
@@ -80,6 +84,11 @@ class PhoneAgent:
 
         self._context: list[dict[str, Any]] = []
         self._step_count = 0
+        
+        if self.agent_config.verbose:
+            self.logger.setLevel(logging.DEBUG)
+        else:
+            self.logger.setLevel(logging.INFO)
 
     def run(self, task: str) -> str:
         """
@@ -132,9 +141,10 @@ class PhoneAgent:
         """Reset the agent state for a new task."""
         self._context = []
         self._step_count = 0
+        self.logger.debug("Agent state reset")
 
     def _execute_step(
-        self, user_prompt: str | None = None, is_first: bool = False
+        self, user_prompt: Optional[str] = None, is_first: bool = False
     ) -> StepResult:
         """Execute a single step of the agent loop."""
         self._step_count += 1

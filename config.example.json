@@ -1,0 +1,26 @@
+{
+  "model": {
+    "base_url": "http://localhost:8000/v1",
+    "api_key": "EMPTY",
+    "model_name": "autoglm-phone-9b",
+    "max_tokens": 3000,
+    "temperature": 0.0,
+    "top_p": 0.85,
+    "frequency_penalty": 0.2
+  },
+  "agent": {
+    "max_steps": 100,
+    "device_id": null,
+    "lang": "cn",
+    "verbose": true
+  },
+  "logging": {
+    "level": "INFO",
+    "file": "logs/agent.log",
+    "format": "[%(asctime)s] [%(name)s] [%(levelname)s] %(message)s"
+  },
+  "cache": {
+    "screenshot_cache_size": 5,
+    "cache_ttl": 300
+  }
+}

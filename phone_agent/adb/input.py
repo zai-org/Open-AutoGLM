@@ -73,16 +73,24 @@ def detect_and_set_adb_keyboard(device_id: str | None = None) -> str:
     )
     current_ime = (result.stdout + result.stderr).strip()
 
-    # Switch to ADB Keyboard if not already set
-    if "com.android.adbkeyboard/.AdbIME" not in current_ime:
-        subprocess.run(
-            adb_prefix + ["shell", "ime", "set", "com.android.adbkeyboard/.AdbIME"],
-            capture_output=True,
-            text=True,
-        )
+    # Normalize empty or invalid IME to None
+    if not current_ime or current_ime.lower() in ("null", "none"):
+        current_ime = None
 
-    # Warm up the keyboard
-    type_text("", device_id)
+    # Switch to ADB Keyboard if not already set
+    try:
+        if "com.android.adbkeyboard/.AdbIME" not in (current_ime or ""):
+            subprocess.run(
+                adb_prefix + ["shell", "ime", "set", "com.android.adbkeyboard/.AdbIME"],
+                capture_output=True,
+                text=True,
+            )
+
+        # Warm up the keyboard
+        type_text("", device_id)
+    except Exception:
+        # Best-effort; do not raise to caller
+        pass
 
     return current_ime
 
@@ -95,11 +103,19 @@ def restore_keyboard(ime: str, device_id: str | None = None) -> None:
         ime: The IME identifier to restore.
         device_id: Optional ADB device ID for multi-device setups.
     """
+    # Only attempt restore when a valid IME is provided
+    if not ime:
+        return
+
     adb_prefix = _get_adb_prefix(device_id)
 
-    subprocess.run(
-        adb_prefix + ["shell", "ime", "set", ime], capture_output=True, text=True
-    )
+    try:
+        subprocess.run(
+            adb_prefix + ["shell", "ime", "set", ime], capture_output=True, text=True
+        )
+    except Exception:
+        # Best-effort restore; ignore failures
+        pass
 
 
 def _get_adb_prefix(device_id: str | None) -> list:
