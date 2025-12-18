@@ -11,6 +11,7 @@ from phone_agent.adb import get_current_app, get_screenshot
 from phone_agent.config import get_messages, get_system_prompt
 from phone_agent.model import ModelClient, ModelConfig
 from phone_agent.model.client import MessageBuilder
+from phone_agent.model.llama_client import LlamaModelClient
 
 
 @dataclass
@@ -80,6 +81,34 @@ class PhoneAgent:
 
         self._context: list[dict[str, Any]] = []
         self._step_count = 0
+
+    def set_model_client(self, client_type: str = "auto") -> None:
+        """
+        Set model client type.
+        
+        Args:
+            client_type: Type of client ('openai', 'llama', 'auto').
+        """
+        from phone_agent.model.factory import ModelClientFactory
+        
+        try:
+            self.model_client = ModelClientFactory.create_client(client_type, self.model_config)
+            if hasattr(self, 'agent_config') and self.agent_config.verbose:
+                print(f"Model client set to: {type(self.model_client).__name__}")
+        except ValueError as e:
+            # Fallback to default ModelClient
+            self.model_client = ModelClient(self.model_config)
+            if hasattr(self, 'agent_config') and self.agent_config.verbose:
+                print(f"Warning: {e}. Using default ModelClient.")
+    
+    def switch_client(self, client_type: str) -> None:
+        """
+        Switch model client type at runtime.
+        
+        Args:
+            client_type: Type of client ('openai', 'llama', 'auto').
+        """
+        self.set_model_client(client_type)
 
     def run(self, task: str) -> str:
         """
