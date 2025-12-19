@@ -30,6 +30,25 @@ from phone_agent.device_factory import DeviceType, get_device_factory, set_devic
 from phone_agent.model import ModelConfig
 
 
+def check_device_ready(device_id: str) -> bool:
+    print("🔍 Checking device ready...")
+    print("-" * 50)
+    result = subprocess.run(
+        ["adb", "-s", device_id, "shell", "uname", "-a"],
+        capture_output=True,
+        text=True,
+        timeout=2,
+    )
+    if result.stderr:
+        print(
+            f"ERROR: fail to get uname, check your device id and connection {result.stderr}"
+        )
+    else:
+        print(f"device {device_id} connected successfully, get uname:\n{result.stdout}")
+    print("-" * 50)
+    return result.stderr == ""
+
+
 def check_system_requirements(device_type: DeviceType = DeviceType.ADB) -> bool:
     """
     Check system requirements before running the agent.
@@ -523,6 +542,9 @@ def main():
 
     # Run system requirements check before proceeding
     if not check_system_requirements(device_type):
+        sys.exit(1)
+
+    if args.device_id and not check_device_ready(args.device_id):
         sys.exit(1)
 
     # Check model API connectivity and model availability
