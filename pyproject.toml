@@ -1,0 +1,14 @@
+[project]
+name = "open-autoglm"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "beautifulsoup4>=4.14.3",
+    "loguru>=0.7.3",
+    "openai>=2.9.0",
+    "pillow>=12.0.0",
+    "python-dotenv>=1.2.1",
+    "pyyaml>=6.0.3",
+]
