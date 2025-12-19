@@ -1,5 +1,6 @@
-"""ADB connection management for local and remote devices."""
+"""HDC connection management for HarmonyOS devices."""
 
+import os
 import subprocess
 import time
 from dataclasses import dataclass
@@ -9,8 +10,42 @@ from typing import Optional
 from phone_agent.config.timing import TIMING_CONFIG
 
 
+# Global flag to control HDC command output
+_HDC_VERBOSE = os.getenv("HDC_VERBOSE", "false").lower() in ("true", "1", "yes")
+
+
+def _run_hdc_command(cmd: list, **kwargs) -> subprocess.CompletedProcess:
+    """
+    Run HDC command with optional verbose output.
+
+    Args:
+        cmd: Command list to execute.
+        **kwargs: Additional arguments for subprocess.run.
+
+    Returns:
+        CompletedProcess result.
+    """
+    if _HDC_VERBOSE:
+        print(f"[HDC] Running command: {' '.join(cmd)}")
+
+    result = subprocess.run(cmd, **kwargs)
+
+    if _HDC_VERBOSE and result.returncode != 0:
+        print(f"[HDC] Command failed with return code {result.returncode}")
+        if hasattr(result, 'stderr') and result.stderr:
+            print(f"[HDC] Error: {result.stderr}")
+
+    return result
+
+
+def set_hdc_verbose(verbose: bool):
+    """Set HDC verbose mode globally."""
+    global _HDC_VERBOSE
+    _HDC_VERBOSE = verbose
+
+
 class ConnectionType(Enum):
-    """Type of ADB connection."""
+    """Type of HDC connection."""
 
     USB = "usb"
     WIFI = "wifi"
@@ -25,17 +60,17 @@ class DeviceInfo:
     status: str
     connection_type: ConnectionType
     model: str | None = None
-    android_version: str | None = None
+    harmony_version: str | None = None
 
 
-class ADBConnection:
+class HDCConnection:
     """
-    Manages ADB connections to Android devices.
+    Manages HDC connections to HarmonyOS devices.
 
     Supports USB, WiFi, and remote TCP/IP connections.
 
     Example:
-        >>> conn = ADBConnection()
+        >>> conn = HDCConnection()
         >>> # Connect to remote device
         >>> conn.connect("192.168.1.100:5555")
         >>> # List devices
@@ -44,14 +79,14 @@ class ADBConnection:
         >>> conn.disconnect("192.168.1.100:5555")
     """
 
-    def __init__(self, adb_path: str = "adb"):
+    def __init__(self, hdc_path: str = "hdc"):
         """
-        Initialize ADB connection manager.
+        Initialize HDC connection manager.
 
         Args:
-            adb_path: Path to ADB executable.
+            hdc_path: Path to HDC executable.
         """
-        self.adb_path = adb_path
+        self.hdc_path = hdc_path
 
     def connect(self, address: str, timeout: int = 10) -> tuple[bool, str]:
         """
@@ -66,15 +101,14 @@ class ADBConnection:
 
         Note:
             The remote device must have TCP/IP debugging enabled.
-            On the device, run: adb tcpip 5555
         """
         # Validate address format
         if ":" not in address:
-            address = f"{address}:5555"  # Default ADB port
+            address = f"{address}:5555"  # Default HDC port
 
         try:
-            result = subprocess.run(
-                [self.adb_path, "connect", address],
+            result = _run_hdc_command(
+                [self.hdc_path, "tconn", address],
                 capture_output=True,
                 text=True,
                 timeout=timeout,
@@ -82,7 +116,7 @@ class ADBConnection:
 
             output = result.stdout + result.stderr
 
-            if "connected" in output.lower():
+            if "Connect OK" in output or "connected" in output.lower():
                 return True, f"Connected to {address}"
             elif "already connected" in output.lower():
                 return True, f"Already connected to {address}"
@@ -105,11 +139,22 @@ class ADBConnection:
             Tuple of (success, message).
         """
         try:
-            cmd = [self.adb_path, "disconnect"]
             if address:
-                cmd.append(address)
+                cmd = [self.hdc_path, "tdisconn", address]
+            else:
+                # HDC doesn't have a "disconnect all" command, so we need to list and disconnect each
+                devices = self.list_devices()
+                for device in devices:
+                    if ":" in device.device_id:  # Remote device
+                        _run_hdc_command(
+                            [self.hdc_path, "tdisconn", device.device_id],
+                            capture_output=True,
+                            text=True,
+                            timeout=5
+                        )
+                return True, "Disconnected all remote devices"
 
-            result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", timeout=5)
+            result = _run_hdc_command(cmd, capture_output=True, text=True, encoding="utf-8", timeout=5)
 
             output = result.stdout + result.stderr
             return True, output.strip() or "Disconnected"
@@ -125,46 +170,38 @@ class ADBConnection:
             List of DeviceInfo objects.
         """
         try:
-            result = subprocess.run(
-                [self.adb_path, "devices", "-l"],
+            result = _run_hdc_command(
+                [self.hdc_path, "list", "targets"],
                 capture_output=True,
                 text=True,
                 timeout=5,
             )
 
             devices = []
-            for line in result.stdout.strip().split("\n")[1:]:  # Skip header
+            for line in result.stdout.strip().split("\n"):
                 if not line.strip():
                     continue
 
-                parts = line.split()
-                if len(parts) >= 2:
-                    device_id = parts[0]
-                    status = parts[1]
+                # HDC output format: device_id (status)
+                # Example: "192.168.1.100:5555" or "FMR0223C13000649"
+                device_id = line.strip()
 
-                    # Determine connection type
-                    if ":" in device_id:
-                        conn_type = ConnectionType.REMOTE
-                    elif "emulator" in device_id:
-                        conn_type = ConnectionType.USB  # Emulator via USB
-                    else:
-                        conn_type = ConnectionType.USB
+                # Determine connection type
+                if ":" in device_id:
+                    conn_type = ConnectionType.REMOTE
+                else:
+                    conn_type = ConnectionType.USB
 
-                    # Parse additional info
-                    model = None
-                    for part in parts[2:]:
-                        if part.startswith("model:"):
-                            model = part.split(":", 1)[1]
-                            break
-
-                    devices.append(
-                        DeviceInfo(
-                            device_id=device_id,
-                            status=status,
-                            connection_type=conn_type,
-                            model=model,
-                        )
+                # HDC doesn't provide detailed status in list command
+                # We assume "Connected" status for devices that appear
+                devices.append(
+                    DeviceInfo(
+                        device_id=device_id,
+                        status="device",
+                        connection_type=conn_type,
+                        model=None,
                     )
+                )
 
             return devices
 
@@ -212,9 +249,9 @@ class ADBConnection:
             return False
 
         if device_id is None:
-            return any(d.status == "device" for d in devices)
+            return len(devices) > 0
 
-        return any(d.device_id == device_id and d.status == "device" for d in devices)
+        return any(d.device_id == device_id for d in devices)
 
     def enable_tcpip(
         self, port: int = 5555, device_id: str | None = None
@@ -225,7 +262,7 @@ class ADBConnection:
         This allows subsequent wireless connections to the device.
 
         Args:
-            port: TCP port for ADB (default: 5555).
+            port: TCP port for HDC (default: 5555).
             device_id: Device ID. If None, uses first available device.
 
         Returns:
@@ -236,16 +273,16 @@ class ADBConnection:
             After this, you can disconnect USB and connect via WiFi.
         """
         try:
-            cmd = [self.adb_path]
+            cmd = [self.hdc_path]
             if device_id:
-                cmd.extend(["-s", device_id])
-            cmd.extend(["tcpip", str(port)])
+                cmd.extend(["-t", device_id])
+            cmd.extend(["tmode", "port", str(port)])
 
-            result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", timeout=10)
+            result = _run_hdc_command(cmd, capture_output=True, text=True, encoding="utf-8", timeout=10)
 
             output = result.stdout + result.stderr
 
-            if "restarting" in output.lower() or result.returncode == 0:
+            if result.returncode == 0 or "success" in output.lower():
                 time.sleep(TIMING_CONFIG.connection.adb_restart_delay)
                 return True, f"TCP/IP mode enabled on port {port}"
             else:
@@ -265,36 +302,27 @@ class ADBConnection:
             IP address string or None if not found.
         """
         try:
-            cmd = [self.adb_path]
+            cmd = [self.hdc_path]
             if device_id:
-                cmd.extend(["-s", device_id])
-            cmd.extend(["shell", "ip", "route"])
+                cmd.extend(["-t", device_id])
+            cmd.extend(["shell", "ifconfig"])
 
-            result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", timeout=5)
+            result = _run_hdc_command(cmd, capture_output=True, text=True, encoding="utf-8", timeout=5)
 
-            # Parse IP from route output
+            # Parse IP from ifconfig output
             for line in result.stdout.split("\n"):
-                if "src" in line:
-                    parts = line.split()
-                    for i, part in enumerate(parts):
-                        if part == "src" and i + 1 < len(parts):
-                            return parts[i + 1]
-
-            # Alternative: try wlan0 interface
-            cmd[-1] = "ip addr show wlan0"
-            result = subprocess.run(
-                cmd[:-1] + ["shell", "ip", "addr", "show", "wlan0"],
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                timeout=5,
-            )
-
-            for line in result.stdout.split("\n"):
-                if "inet " in line:
+                if "inet addr:" in line or "inet " in line:
                     parts = line.strip().split()
-                    if len(parts) >= 2:
-                        return parts[1].split("/")[0]
+                    for i, part in enumerate(parts):
+                        if "addr:" in part:
+                            ip = part.split(":")[1]
+                            # Filter out localhost
+                            if not ip.startswith("127."):
+                                return ip
+                        elif part == "inet" and i + 1 < len(parts):
+                            ip = parts[i + 1].split("/")[0]
+                            if not ip.startswith("127."):
+                                return ip
 
             return None
 
@@ -304,25 +332,25 @@ class ADBConnection:
 
     def restart_server(self) -> tuple[bool, str]:
         """
-        Restart the ADB server.
+        Restart the HDC server.
 
         Returns:
             Tuple of (success, message).
         """
         try:
             # Kill server
-            subprocess.run(
-                [self.adb_path, "kill-server"], capture_output=True, timeout=5
+            _run_hdc_command(
+                [self.hdc_path, "kill"], capture_output=True, timeout=5
             )
 
             time.sleep(TIMING_CONFIG.connection.server_restart_delay)
 
-            # Start server
-            subprocess.run(
-                [self.adb_path, "start-server"], capture_output=True, timeout=5
+            # Start server (HDC auto-starts when running commands)
+            _run_hdc_command(
+                [self.hdc_path, "start", "-r"], capture_output=True, timeout=5
             )
 
-            return True, "ADB server restarted"
+            return True, "HDC server restarted"
 
         except Exception as e:
             return False, f"Error restarting server: {e}"
@@ -338,7 +366,7 @@ def quick_connect(address: str) -> tuple[bool, str]:
     Returns:
         Tuple of (success, message).
     """
-    conn = ADBConnection()
+    conn = HDCConnection()
     return conn.connect(address)
 
 
@@ -349,5 +377,5 @@ def list_devices() -> list[DeviceInfo]:
     Returns:
         List of DeviceInfo objects.
     """
-    conn = ADBConnection()
+    conn = HDCConnection()
     return conn.list_devices()

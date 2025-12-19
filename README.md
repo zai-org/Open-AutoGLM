@@ -10,6 +10,9 @@
 </p>
 <p align="center">
     🎤 进一步在我们的产品 <a href="https://autoglm.zhipuai.cn/autotyper/" target="_blank">智谱 AI 输入法</a> 体验“用嘴发指令”
+</p
+><p align="center">
+    <a href="https://mp.weixin.qq.com/s/wRp22dmRVF23ySEiATiWIQ" target="_blank">AutoGLM 实战派</a> 开发者激励活动火热进行中，跑通、二创即可瓜分数万元现金奖池！成果提交 👉 <a href="https://zhipu-ai.feishu.cn/share/base/form/shrcnE3ZuPD5tlOyVJ7d5Wtir8c?from=navigation" target="_blank">入口</a>
 </p>
 
 ## 懒人版快速安装
@@ -46,7 +49,11 @@ ADB 调试能力，可通过 WiFi 或网络连接设备，实现灵活的远程�
 
 建议使用 Python 3.10 及以上版本。
 
-### 2. ADB (Android Debug Bridge)
+### 2. 手机调试命令行工具
+
+根据你的设备类型选择相应的工具：
+
+#### 对于 Android 设备 - 使用 ADB
 
 1. 下载官方 ADB [安装包](https://developer.android.com/tools/releases/platform-tools?hl=zh-cn)，并解压到自定义路径
 2. 配置环境变量
@@ -60,7 +67,22 @@ ADB 调试能力，可通过 WiFi 或网络连接设备，实现灵活的远程�
 
 - Windows 配置方法：可参考 [第三方教程](https://blog.csdn.net/x2584179909/article/details/108319973) 进行配置。
 
-### 3. Android 7.0+ 的设备或模拟器，并启用 `开发者模式` 和 `USB 调试`
+#### 对于鸿蒙设备 (HarmonyOS NEXT版本以上) - 使用 HDC
+
+1. 下载 HDC 工具：
+   - 从 [HarmonyOS SDK](https://developer.huawei.com/consumer/cn/download/) 下载
+2. 配置环境变量
+
+- MacOS/Linux 配置方法：
+
+  ```bash
+  # 假设解压后的目录为 ~/Downloads/harmonyos-sdk/toolchains。请根据实际路径调整。
+  export PATH=${PATH}:~/Downloads/harmonyos-sdk/toolchains
+  ```
+
+- Windows 配置方法：将 HDC 工具所在目录添加到系统 PATH 环境变量
+
+### 3. Android 7.0+ 或 HarmonyOS 设备，并启用 `开发者模式` 和 `USB 调试`
 
 1. 开发者模式启用：通常启用方法是，找到 `设置-关于手机-版本号` 然后连续快速点击 10
    次左右，直到弹出弹窗显示“开发者模式已启用”。不同手机会有些许差别，如果找不到，可以上网搜索一下教程。
@@ -72,7 +94,11 @@ ADB 调试能力，可通过 WiFi 或网络连接设备，实现灵活的远程�
 
 ![权限](resources/screenshot-20251209-181423.png)
 
-### 4. 安装 ADB Keyboard(用于文本输入)
+### 4. 安装 ADB Keyboard(仅 Android 设备需要，用于文本输入)
+
+**注意：鸿蒙设备使用原生输入方法，无需安装 ADB Keyboard。**
+
+如果你使用的是 Android 设备：
 
 下载 [安装包](https://github.com/senzhk/ADBKeyBoard/blob/master/ADBKeyboard.apk) 并在对应的安卓设备中进行安装。
 注意，安装完成后还需要到 `设置-输入法` 或者 `设置-键盘列表` 中启用 `ADB Keyboard` 才能生效(或使用命令`adb shell ime enable com.android.adbkeyboard/.AdbIME`[How-to-use](https://github.com/senzhk/ADBKeyBoard/blob/master/README.md#how-to-use))
@@ -86,7 +112,9 @@ pip install -r requirements.txt
 pip install -e .
 ```
 
-### 2. 配置 ADB
+### 2. 配置 ADB 或 HDC
+
+#### 对于 Android 设备
 
 确认 **USB数据线具有数据传输功能**, 而不是仅有充电功能
 
@@ -99,6 +127,20 @@ adb devices
 # 输出结果应显示你的设备，如：
 # List of devices attached
 # emulator-5554   device
+```
+
+#### 对于鸿蒙设备
+
+确认 **USB数据线具有数据传输功能**, 而不是仅有充电功能
+
+确保已安装 HDC 并使用 **USB数据线** 连接设备：
+
+```bash
+# 检查已连接的设备
+hdc list targets
+
+# 输出结果应显示你的设备，如：
+# 7001005458323933328a01bce01c2500
 ```
 
 ### 3. 启动模型服务
@@ -234,14 +276,20 @@ python scripts/check_deployment_cn.py --base-url http://你的IP:你的端口/v1
 
 ### 命令行
 
-根据你部署的模型, 设置 `--base-url` 和 `--model` 参数. 例如:
+根据你部署的模型, 设置 `--base-url` 和 `--model` 参数, 设置 `--device-type` 指定是安卓设备或鸿蒙设备 (默认值 adb 表示安卓设备, hdc 表示鸿蒙设备). 例如:
 
 ```bash
-# 交互模式
+# Android 设备 - 交互模式
 python main.py --base-url http://localhost:8000/v1 --model "autoglm-phone-9b"
 
-# 指定模型端点
+# Android 设备 - 指定任务
 python main.py --base-url http://localhost:8000/v1 "打开美团搜索附近的火锅店"
+
+# 鸿蒙设备 - 交互模式
+python main.py --device-type hdc --base-url http://localhost:8000/v1 --model "autoglm-phone-9b"
+
+# 鸿蒙设备 - 指定任务
+python main.py --device-type hdc --base-url http://localhost:8000/v1 "打开美团搜索附近的火锅店"
 
 # 使用 API Key 进行认证
 python main.py --apikey sk-xxxxx
@@ -249,8 +297,11 @@ python main.py --apikey sk-xxxxx
 # 使用英文 system prompt
 python main.py --lang en --base-url http://localhost:8000/v1 "Open Chrome browser"
 
-# 列出支持的应用
+# 列出支持的应用（Android）
 python main.py --list-apps
+
+# 列出支持的应用（鸿蒙）
+python main.py --device-type hdc --list-apps
 ```
 
 ### Python API
@@ -275,29 +326,46 @@ print(result)
 
 ## 远程调试
 
-Phone Agent 支持通过 WiFi/网络进行远程 ADB 调试，无需 USB 连接即可控制设备。
+Phone Agent 支持通过 WiFi/网络进行远程 ADB/HDC 调试，无需 USB 连接即可控制设备。
 
 ### 配置远程调试
 
 #### 在手机端开启无线调试
 
+##### Android 设备
+
 确保手机和电脑在同一个WiFi中，如图所示
 
 ![开启无线调试](resources/setting.png)
 
-#### 在电脑端使用标准 ADB 命令
+##### 鸿蒙设备
+
+确保手机和电脑在同一个WiFi中：
+1. 进入 `设置 > 系统和更新 > 开发者选项`
+2. 开启 `USB 调试` 和 `无线调试`
+3. 记录显示的 IP 地址和端口号
+
+#### 在电脑端使用标准 ADB/HDC 命令
 
 ```bash
-
-# 通过 WiFi 连接, 改成手机显示的 IP 地址和端口
+# Android 设备 - 通过 WiFi 连接, 改成手机显示的 IP 地址和端口
 adb connect 192.168.1.100:5555
 
 # 验证连接
 adb devices
 # 应显示：192.168.1.100:5555    device
+
+# 鸿蒙设备 - 通过 WiFi 连接
+hdc tconn 192.168.1.100:5555
+
+# 验证连接
+hdc list targets
+# 应显示：192.168.1.100:5555
 ```
 
 ### 设备管理命令
+
+#### Android 设备（ADB）
 
 ```bash
 # 列出所有已连接设备
@@ -313,7 +381,25 @@ adb disconnect 192.168.1.100:5555
 python main.py --device-id 192.168.1.100:5555 --base-url http://localhost:8000/v1 --model "autoglm-phone-9b" "打开抖音刷视频"
 ```
 
+#### 鸿蒙设备（HDC）
+
+```bash
+# 列出所有已连接设备
+hdc list targets
+
+# 连接远程设备
+hdc tconn 192.168.1.100:5555
+
+# 断开指定设备
+hdc tdisconn 192.168.1.100:5555
+
+# 指定设备执行任务
+python main.py --device-type hdc --device-id 192.168.1.100:5555 --base-url http://localhost:8000/v1 --model "autoglm-phone-9b" "打开抖音刷视频"
+```
+
 ### Python API 远程连接
+
+#### Android 设备（ADB）
 
 ```python
 from phone_agent.adb import ADBConnection, list_devices
@@ -334,6 +420,27 @@ for device in devices:
 success, message = conn.enable_tcpip(5555)
 ip = conn.get_device_ip()
 print(f"设备 IP: {ip}")
+
+# 断开连接
+conn.disconnect("192.168.1.100:5555")
+```
+
+#### 鸿蒙设备（HDC）
+
+```python
+from phone_agent.hdc import HDCConnection, list_devices
+
+# 创建连接管理器
+conn = HDCConnection()
+
+# 连接远程设备
+success, message = conn.connect("192.168.1.100:5555")
+print(f"连接状态: {message}")
+
+# 列出已连接设备
+devices = list_devices()
+for device in devices:
+    print(f"{device.device_id} - {device.connection_type.value}")
 
 # 断开连接
 conn.disconnect("192.168.1.100:5555")
@@ -370,14 +477,15 @@ conn.disconnect("192.168.1.100:5555")
 
 ### 环境变量
 
-| 变量                      | 描述               | 默认值                        |
-|-------------------------|------------------|----------------------------|
-| `PHONE_AGENT_BASE_URL`  | 模型 API 地址        | `http://localhost:8000/v1` |
-| `PHONE_AGENT_MODEL`     | 模型名称             | `autoglm-phone-9b`         |
-| `PHONE_AGENT_API_KEY`   | 模型认证 API Key     | `EMPTY`                    |
-| `PHONE_AGENT_MAX_STEPS` | 每个任务最大步数         | `100`                      |
-| `PHONE_AGENT_DEVICE_ID` | ADB 设备 ID        | (自动检测)                     |
-| `PHONE_AGENT_LANG`      | 语言 (`cn` 或 `en`) | `cn`                       |
+| 变量                          | 描述                     | 默认值                        |
+|-----------------------------|------------------------|----------------------------|
+| `PHONE_AGENT_BASE_URL`      | 模型 API 地址              | `http://localhost:8000/v1` |
+| `PHONE_AGENT_MODEL`         | 模型名称                   | `autoglm-phone-9b`         |
+| `PHONE_AGENT_API_KEY`       | 模型认证 API Key           | `EMPTY`                    |
+| `PHONE_AGENT_MAX_STEPS`     | 每个任务最大步数               | `100`                      |
+| `PHONE_AGENT_DEVICE_ID`     | ADB/HDC 设备 ID          | (自动检测)                     |
+| `PHONE_AGENT_DEVICE_TYPE`   | 设备类型 (`adb` 或 `hdc`)   | `adb`                      |
+| `PHONE_AGENT_LANG`          | 语言 (`cn` 或 `en`)       | `cn`                       |
 
 ### 模型配置
 
@@ -449,6 +557,8 @@ config = AgentConfig(
 
 ## 支持的应用
 
+### Android 应用
+
 Phone Agent 支持 50+ 款主流中文应用：
 
 | 分类   | 应用              |
@@ -463,6 +573,25 @@ Phone Agent 支持 50+ 款主流中文应用：
 | 内容社区 | 小红书、知乎、豆瓣       |
 
 运行 `python main.py --list-apps` 查看完整列表。
+
+### 鸿蒙应用
+
+Phone Agent 支持 60+ 款鸿蒙原生应用和系统应用：
+
+| 分类      | 应用                                       |
+|---------|------------------------------------------|
+| 社交通讯    | 微信、QQ、微博、飞书、企业微信                        |
+| 电商购物    | 淘宝、京东、拼多多、唯品会、得物、闲鱼                     |
+| 美食外卖    | 美团、美团外卖、大众点评、海底捞                        |
+| 出行旅游    | 12306、滴滴出行、同程旅行、高德地图、百度地图               |
+| 视频娱乐    | bilibili、抖音、快手、腾讯视频、爱奇艺、芒果TV            |
+| 音乐音频    | QQ音乐、汽水音乐、喜马拉雅                           |
+| 生活服务    | 小红书、知乎、今日头条、58同城、中国移动                   |
+| AI与工具   | 豆包、WPS、UC浏览器、扫描全能王、美图秀秀                 |
+| 系统应用    | 浏览器、日历、相机、时钟、云空间、文件管理器、相册、联系人、短信、设置等   |
+| 华为服务    | 应用市场、音乐、视频、阅读、主题、天气                     |
+
+运行 `python main.py --device-type hdc --list-apps` 查看完整列表。
 
 ## 可用操作
 
