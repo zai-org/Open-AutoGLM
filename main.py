@@ -402,6 +402,13 @@ Examples:
     )
 
     parser.add_argument(
+        "--log-level",
+        type=str,
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        default=os.getenv("PHONE_AGENT_LOG_LEVEL", "INFO"),
+        help="Logging level (default: INFO)",
+
+    parser.add_argument(
         "--device-type",
         type=str,
         choices=["adb", "hdc"],
@@ -542,6 +549,7 @@ def main():
         device_id=args.device_id,
         verbose=not args.quiet,
         lang=args.lang,
+        log_level=args.log_level,
     )
 
     # Create agent

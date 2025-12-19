@@ -7,6 +7,7 @@ from typing import Any
 
 from openai import OpenAI
 
+from phone_agent.logger import logger
 from phone_agent.config.i18n import get_message
 
 
@@ -143,6 +144,7 @@ class ModelClient:
         total_time = time.time() - start_time
 
         # Parse thinking and action from response
+        logger.debug(f"raw response content: {raw_content}")
         thinking, action = self._parse_response(raw_content)
 
         # Print performance metrics
