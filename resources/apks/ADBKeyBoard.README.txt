@@ -1,0 +1,1 @@
+Note on Third-Party Components: This project includes ADBKeyBoard to support automated text input. ADBKeyBoard is licensed under GPL-2.0 and is developed by senzhk. The source code for ADBKeyBoard can be found at: https://github.com/senzhk/ADBKeyBoard
