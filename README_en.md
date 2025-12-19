@@ -95,8 +95,32 @@ Note: After installation, you need to enable `ADB Keyboard` in `Settings > Input
 
 ### 1. Install Dependencies
 
+#### Option 1: Using UV (Recommended)
+
+UV is a fast Python package manager that installs dependencies much faster and automatically creates virtual environments.
+
 ```bash
-pip install -r requirements.txt 
+# Install UV (if not already installed)
+pip install uv
+
+# Install dependencies with UV
+uv sync
+
+# Activate virtual environment
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+```
+
+**Advantages:**
+- Extremely fast installation (10-100x faster than pip)
+- Automatic virtual environment management
+- Resolves dependency conflicts automatically
+- Locks versions for consistent environments
+
+#### Option 2: Using pip
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
 pip install -e .
 ```
 
@@ -592,8 +616,17 @@ Check the `examples/` directory for more usage examples:
 
 Development requires dev dependencies:
 
+#### Using UV (Recommended)
+
 ```bash
-pip install -e ".[dev]"
+# Install development dependencies
+uv add pytest pre-commit black mypy
+```
+
+#### Using pip
+
+```bash
+pip install pytest pre-commit black mypy
 ```
 
 ### Run Tests

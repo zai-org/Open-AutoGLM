@@ -47,7 +47,7 @@ ADB 调试能力，可通过 WiFi 或网络连接设备，实现灵活的远程�
 
 ### 1. Python 环境
 
-建议使用 Python 3.10 及以上版本。
+建议使用 Python 3.11 及以上版本。
 
 ### 2. 手机调试命令行工具
 
@@ -107,8 +107,32 @@ ADB 调试能力，可通过 WiFi 或网络连接设备，实现灵活的远程�
 
 ### 1. 安装依赖
 
+#### 方式一：使用 UV（推荐）
+
+UV 是一个快速的 Python 包管理器，可以更快地安装依赖并自动创建虚拟环境。相比 pip，UV 的安装速度通常快 10-100 倍。
+
 ```bash
-pip install -r requirements.txt 
+# 安装 UV（如果尚未安装）
+pip install uv
+
+# 使用 UV 安装依赖（自动创建虚拟环境）
+uv sync
+
+# 激活虚拟环境
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+```
+
+**优势：**
+- 安装速度极快，比 pip 快 10-100 倍
+- 自动管理虚拟环境，无需手动创建
+- 自动解决依赖冲突
+- 锁定版本，确保环境一致性
+
+#### 方式二：使用 pip
+
+```bash
+# 安装依赖
+pip install -r requirements.txt
 pip install -e .
 ```
 
@@ -647,8 +671,17 @@ agent = PhoneAgent(
 
 二次开发需要使用开发依赖：
 
+#### 使用 UV（推荐）
+
 ```bash
-pip install -e ".[dev]"
+# 安装开发依赖
+uv add pytest pre-commit black mypy
+```
+
+#### 使用 pip
+
+```bash
+pip install pytest pre-commit black mypy
 ```
 
 ### 运行测试
@@ -842,13 +875,18 @@ adb devices
 git clone https://github.com/zai-org/Open-AutoGLM.git
 cd Open-AutoGLM
 
-# 2. 创建虚拟环境(推荐)
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+# 2. 安装依赖（两种方式）
 
-# 3. 安装依赖
-pip install -r requirements.txt
-pip install -e .
+# 方式一：使用 UV（推荐）
+pip install uv          # 安装 UV
+uv sync                 # 安装依赖并创建虚拟环境
+source .venv/bin/activate  # 激活虚拟环境 (Windows: .venv\Scripts\activate)
+
+# 方式二：使用传统方式
+python -m venv venv     # 创建虚拟环境
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -r requirements.txt  # 安装依赖
+pip install -e .        # 安装项目
 ```
 
 **注意：不需要 clone 模型仓库，模型通过 API 调用。**
@@ -954,7 +992,10 @@ adb devices
 # 重启 ADB 服务
 adb kill-server && adb start-server
 
-# 安装依赖
+# 安装依赖（使用 UV）
+uv sync && source .venv/bin/activate
+
+# 或使用 pip
 pip install -r requirements.txt && pip install -e .
 
 # 运行 Agent(交互模式)
