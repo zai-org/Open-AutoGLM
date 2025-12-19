@@ -3,9 +3,12 @@ openai>=2.9.0
 
 # For Model Deployment
 
+## After installing sglang or vLLM, please run pip install -U transformers again to upgrade to 5.0.0rc0.
+## Any dependency conflicts related to Transformers can be ignored.
+
 # sglang>=0.5.6.post1
-# transformers>=5.0.0rc0
 # vllm>=0.12.0
+# transformers>=5.0.0rc0
 
 # Optional: for development
 # pytest>=7.0.0
