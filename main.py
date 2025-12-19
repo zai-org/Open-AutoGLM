@@ -20,6 +20,8 @@ import subprocess
 import sys
 from urllib.parse import urlparse
 
+from dotenv import load_dotenv
+from loguru import logger
 from openai import OpenAI
 
 from phone_agent import PhoneAgent
@@ -493,6 +495,10 @@ def handle_device_commands(args) -> bool:
 
 def main():
     """Main entry point."""
+    load_dotenv()
+    logger.info(f"Loaded environment PHONE_AGENT_API_KEY: {os.getenv('PHONE_AGENT_API_KEY')}")
+    logger.info(f"Loaded environment PHONE_AGENT_BASE_URL: {os.getenv('PHONE_AGENT_BASE_URL')}")
+    logger.info(f"Loaded environment PHONE_AGENT_MODEL: {os.getenv('PHONE_AGENT_MODEL')}")
     args = parse_args()
 
     # Set device type globally based on args
