@@ -2,6 +2,7 @@ import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Terminal, Brain, Zap, CheckCircle, AlertCircle, MessageSquare, Trash2, ArrowUp } from 'lucide-react';
 import clsx from 'clsx';
+import { useLanguage } from '../../i18n/i18n.jsx';
 
 // --- Sub-components for different log types ---
 
@@ -18,7 +19,7 @@ const ThinkingLog = ({ content }) => (
     </div>
 );
 
-const ActionLog = ({ content }) => {
+const ActionLog = ({ content, t }) => {
     let displayContent = content;
     if (typeof content === 'object') {
         displayContent = JSON.stringify(content, null, 2);
@@ -28,7 +29,7 @@ const ActionLog = ({ content }) => {
         <div className="flex gap-2 text-text-primary bg-background-tertiary p-2 rounded border border-white/5">
             <Zap size={14} className="mt-1 shrink-0 text-accent-primary" />
             <div className="flex-1 overflow-hidden">
-                <div className="text-[11px] text-text-muted uppercase font-bold mb-1">执行动作</div>
+                <div className="text-[11px] text-text-muted uppercase font-bold mb-1">{t('log.executeAction')}</div>
                 <pre className="text-[12px] font-mono text-accent-primary whitespace-pre-wrap overflow-x-auto">
                     {displayContent}
                 </pre>
@@ -37,13 +38,13 @@ const ActionLog = ({ content }) => {
     );
 };
 
-const ModelResponseLog = ({ content }) => (
+const ModelResponseLog = ({ content, t }) => (
     <div className="flex flex-col my-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
         <div className="flex items-center gap-2 mb-1 px-1">
             <div className="w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center border border-cyan-500/30">
                 <MessageSquare size={12} />
             </div>
-            <span className="text-xs font-bold text-cyan-400">模型回复</span>
+            <span className="text-xs font-bold text-cyan-400">{t('log.modelResponse')}</span>
         </div>
         <div className="bg-cyan-950/20 border-l-2 border-cyan-500 rounded-r-md p-3 ml-2.5">
             <div className="prose prose-invert prose-sm max-w-none text-cyan-100/90 text-[13px] leading-relaxed break-words whitespace-pre-wrap">
@@ -96,7 +97,7 @@ const ApiLog = ({ content }) => {
 
 // --- Main Viewer Component ---
 
-const LogItem = React.memo(({ step, onDelete }) => {
+const LogItem = React.memo(({ step, onDelete, t }) => {
     const { type, content, timestamp, error, message } = step;
 
     // Resolve actual content text/object
@@ -105,11 +106,11 @@ const LogItem = React.memo(({ step, onDelete }) => {
     const renderContent = () => {
         switch (type) {
             case 'model_response':
-                return <ModelResponseLog content={actualContent} />;
+                return <ModelResponseLog content={actualContent} t={t} />;
             case 'thinking':
                 return <ThinkingLog content={actualContent} />;
             case 'action':
-                return <ActionLog content={actualContent} />;
+                return <ActionLog content={actualContent} t={t} />;
             case 'performance':
                 return <PerformanceLog content={actualContent} />;
             case 'error':
@@ -122,17 +123,17 @@ const LogItem = React.memo(({ step, onDelete }) => {
             case 'raw_log':
                 return <div className="text-[10px] text-text-tertiary font-mono whitespace-pre-wrap opacity-40 ml-6">{actualContent}</div>;
             case 'thinking_start':
-                return <div className="text-[11px] text-text-muted italic ml-6">Thinking...</div>;
+                return <div className="text-[11px] text-text-muted italic ml-6">{t('log.thinking')}</div>;
             case 'start':
-                return <div className="text-xs text-accent-primary font-bold border-b border-accent-primary/20 pb-1 mb-2">🚀 任务开始: {step.task}</div>;
+                return <div className="text-xs text-accent-primary font-bold border-b border-accent-primary/20 pb-1 mb-2">{t('log.taskStart')} {step.task}</div>;
             case 'user_message':
                 return (
                     <div className="flex flex-col my-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
                         <div className="flex items-center gap-2 mb-1 px-1">
                             <div className="w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center border border-blue-500/30">
-                                <span className="text-[10px] font-bold">我</span>
+                                <span className="text-[10px] font-bold">{t('log.me')}</span>
                             </div>
-                            <span className="text-xs font-bold text-blue-400">用户</span>
+                            <span className="text-xs font-bold text-blue-400">{t('log.user')}</span>
                         </div>
                         <div className="bg-blue-950/20 border-l-2 border-blue-500 rounded-r-md p-3 ml-2.5">
                             <div className="text-blue-100/90 text-[13px] leading-relaxed whitespace-pre-wrap">{actualContent}</div>
@@ -146,7 +147,7 @@ const LogItem = React.memo(({ step, onDelete }) => {
                             <div className="w-5 h-5 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center border border-green-500/30">
                                 <span className="text-[10px] font-bold">AI</span>
                             </div>
-                            <span className="text-xs font-bold text-green-400">助手</span>
+                            <span className="text-xs font-bold text-green-400">{t('log.assistant')}</span>
                         </div>
                         <div className="bg-green-950/20 border-l-2 border-green-500 rounded-r-md p-3 ml-2.5">
                             <div className="prose prose-invert prose-sm max-w-none text-green-100/90 text-[13px] leading-relaxed">
@@ -170,7 +171,7 @@ const LogItem = React.memo(({ step, onDelete }) => {
                 <button
                     onClick={() => onDelete()}
                     className="absolute right-2 top-2 p-1 bg-background-secondary rounded text-text-muted hover:text-status-error opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Delete message"
+                    title={t('log.deleteMessage')}
                 >
                     <Trash2 size={12} />
                 </button>
@@ -180,6 +181,7 @@ const LogItem = React.memo(({ step, onDelete }) => {
 });
 
 export default function LogViewer({ logs, autoScroll = true, onDeleteStep }) {
+    const { t } = useLanguage();
     const containerRef = React.useRef(null);
     const endRef = React.useRef(null);
     const prevLogsLengthRef = React.useRef(0);
@@ -201,7 +203,7 @@ export default function LogViewer({ logs, autoScroll = true, onDeleteStep }) {
         return (
             <div className="flex flex-col items-center justify-center h-full text-text-muted opacity-50 space-y-4">
                 <Terminal size={48} strokeWidth={1} />
-                <p className="text-sm">Ready to execute tasks</p>
+                <p className="text-sm">{t('log.ready')}</p>
             </div>
         );
     }
@@ -222,6 +224,7 @@ export default function LogViewer({ logs, autoScroll = true, onDeleteStep }) {
                             key={index}
                             step={step}
                             onDelete={onDeleteStep ? () => onDeleteStep(index) : null}
+                            t={t}
                         />
                     ))}
                     <div ref={endRef} />
@@ -232,7 +235,7 @@ export default function LogViewer({ logs, autoScroll = true, onDeleteStep }) {
             <button
                 onClick={scrollToTop}
                 className="absolute bottom-6 right-6 w-10 h-10 bg-accent-primary hover:bg-accent-secondary text-white rounded-full shadow-lg shadow-accent-primary/30 flex items-center justify-center transition-all hover:scale-110"
-                title="回到顶部"
+                title={t('log.scrollToTop')}
             >
                 <ArrowUp size={18} />
             </button>

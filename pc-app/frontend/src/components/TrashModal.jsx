@@ -1,82 +1,67 @@
 import React, { useState, useEffect } from 'react';
-import { X, Trash2, RotateCcw, Clock, AlertTriangle } from 'lucide-react';
+import { X, Trash2, RotateCcw, AlertTriangle } from 'lucide-react';
 import clsx from 'clsx';
+import storage from '../services/storage';
+import { useLanguage } from '../i18n/i18n.jsx';
 
 export default function TrashModal({ isOpen, onClose, onRestored }) {
-    const [trash, setTrash] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const { t } = useLanguage();
+    const [trashItems, setTrashItems] = useState([]);
+    const [confirmDelete, setConfirmDelete] = useState(null);
 
     useEffect(() => {
         if (isOpen) {
-            loadTrash();
+            setTrashItems(storage.getTrash());
         }
     }, [isOpen]);
 
-    const loadTrash = async () => {
-        setLoading(true);
-        try {
-            const res = await fetch('/api/trash');
-            const data = await res.json();
-            if (data.success) {
-                setTrash(data.trash || []);
-            }
-        } catch (e) {
-            console.error('Failed to load trash:', e);
-        }
-        setLoading(false);
-    };
+    const handleRestore = (trashId) => {
+        const result = storage.restoreFromTrash(trashId);
+        if (result) {
+            // Re-add to history
+            const history = storage.getHistory();
+            history.unshift(result.item);
+            storage.saveHistory(history);
 
-    const handleRestore = async (trashId) => {
-        try {
-            const res = await fetch('/api/trash/restore', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ trashId })
-            });
-            const data = await res.json();
-            if (data.success) {
-                setTrash(prev => prev.filter(item => item.trashId !== trashId));
-                onRestored?.();
-            }
-        } catch (e) {
-            console.error('Failed to restore:', e);
+            // Refresh trash list
+            setTrashItems(storage.getTrash());
+            onRestored?.();
         }
     };
 
-    const handlePermanentDelete = async (trashId) => {
-        try {
-            const res = await fetch('/api/trash/delete', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ trashId })
-            });
-            const data = await res.json();
-            if (data.success) {
-                setTrash(prev => prev.filter(item => item.trashId !== trashId));
-            }
-        } catch (e) {
-            console.error('Failed to delete:', e);
+    const handlePermanentDelete = (trashId) => {
+        setConfirmDelete({
+            id: trashId,
+            message: t('trash.deleteConfirm')
+        });
+    };
+
+    const confirmPermanentDelete = () => {
+        if (confirmDelete) {
+            storage.permanentlyDeleteFromTrash(confirmDelete.id);
+            setTrashItems(storage.getTrash());
+            setConfirmDelete(null);
         }
     };
 
-    const handleEmptyTrash = async () => {
-        if (!confirm('确定要清空垃圾箱吗？此操作不可撤销。')) return;
-        try {
-            const res = await fetch('/api/trash/clear', { method: 'POST' });
-            const data = await res.json();
-            if (data.success) {
-                setTrash([]);
-            }
-        } catch (e) {
-            console.error('Failed to empty trash:', e);
-        }
+    const handleEmptyTrash = () => {
+        setConfirmDelete({
+            id: 'all',
+            message: t('trash.emptyTrashConfirm')
+        });
+    };
+
+    const confirmEmptyTrash = () => {
+        storage.emptyTrash();
+        setTrashItems([]);
+        setConfirmDelete(null);
     };
 
     const getDaysRemaining = (deletedAt) => {
         const deleted = new Date(deletedAt);
         const now = new Date();
         const daysElapsed = Math.floor((now - deleted) / (1000 * 60 * 60 * 24));
-        return Math.max(0, 30 - daysElapsed);
+        return Math.max(0, storage.TRASH_RETENTION_DAYS - daysElapsed);
     };
 
     if (!isOpen) return null;
@@ -87,23 +72,23 @@ export default function TrashModal({ isOpen, onClose, onRestored }) {
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
             {/* Modal */}
-            <div className="relative bg-background-secondary border border-white/10 rounded-xl w-full max-w-2xl mx-4 shadow-2xl overflow-hidden max-h-[80vh] flex flex-col">
+            <div className="relative bg-background-secondary border border-white/10 rounded-xl w-full max-w-lg mx-4 shadow-2xl overflow-hidden max-h-[80vh] flex flex-col">
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 shrink-0">
-                    <div className="flex items-center gap-3">
-                        <Trash2 size={20} className="text-status-error" />
-                        <h2 className="text-lg font-semibold text-text-primary">垃圾箱</h2>
+                    <div className="flex items-center gap-2">
+                        <Trash2 size={20} className="text-text-muted" />
+                        <h2 className="text-lg font-semibold text-text-primary">{t('trash.title')}</h2>
                         <span className="text-xs text-text-muted bg-background-tertiary px-2 py-0.5 rounded-full">
-                            {trash.length} 项
+                            {trashItems.length}
                         </span>
                     </div>
                     <div className="flex items-center gap-2">
-                        {trash.length > 0 && (
+                        {trashItems.length > 0 && (
                             <button
                                 onClick={handleEmptyTrash}
-                                className="text-xs text-status-error hover:bg-status-error/10 px-3 py-1.5 rounded-lg transition-colors"
+                                className="text-xs text-status-error hover:underline"
                             >
-                                清空垃圾箱
+                                {t('trash.emptyTrash')}
                             </button>
                         )}
                         <button onClick={onClose} className="p-1 text-text-muted hover:text-text-primary transition-colors">
@@ -113,56 +98,46 @@ export default function TrashModal({ isOpen, onClose, onRestored }) {
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
-                    {loading ? (
-                        <div className="flex items-center justify-center py-12 text-text-muted">
-                            加载中...
-                        </div>
-                    ) : trash.length === 0 ? (
+                <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                    {trashItems.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-12 text-text-muted">
-                            <Trash2 size={48} strokeWidth={1} className="mb-4 opacity-30" />
-                            <p className="text-sm">垃圾箱是空的</p>
-                            <p className="text-xs mt-1 opacity-50">删除的任务会在这里保留 30 天</p>
+                            <Trash2 size={48} strokeWidth={1} className="mb-4 opacity-50" />
+                            <p className="text-sm">{t('trash.empty')}</p>
+                            <p className="text-xs mt-1">{t('trash.emptyDesc')}</p>
                         </div>
                     ) : (
                         <div className="space-y-2">
-                            {trash.map((item) => (
+                            {trashItems.map(item => (
                                 <div
                                     key={item.trashId}
-                                    className="bg-background-tertiary rounded-lg p-4 border border-white/5 hover:border-white/10 transition-colors"
+                                    className="bg-background-tertiary rounded-lg p-3 border border-white/5"
                                 >
-                                    <div className="flex items-start justify-between gap-4">
+                                    <div className="flex items-start justify-between gap-2">
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-sm text-text-primary truncate font-medium">
-                                                {item.task || '未命名任务'}
-                                            </p>
-                                            <div className="flex items-center gap-3 mt-2 text-xs text-text-muted">
-                                                <span className="flex items-center gap-1">
-                                                    <Clock size={12} />
-                                                    删除于 {new Date(item.deletedAt).toLocaleString('zh-CN')}
-                                                </span>
-                                                <span className="flex items-center gap-1 text-status-warning">
-                                                    <AlertTriangle size={12} />
-                                                    {getDaysRemaining(item.deletedAt)} 天后自动删除
+                                            <div className="font-medium text-text-primary text-sm truncate">
+                                                {item.task}
+                                            </div>
+                                            <div className="text-[10px] text-text-muted mt-1 flex items-center gap-2">
+                                                <span>{new Date(item.deletedAt).toLocaleDateString()}</span>
+                                                <span className="text-status-error">
+                                                    {getDaysRemaining(item.deletedAt)} {t('trash.daysRemaining')}
                                                 </span>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-2 shrink-0">
+                                        <div className="flex items-center gap-1 shrink-0">
                                             <button
                                                 onClick={() => handleRestore(item.trashId)}
-                                                className="flex items-center gap-1 px-3 py-1.5 text-xs bg-accent-primary/10 text-accent-primary hover:bg-accent-primary/20 rounded-lg transition-colors"
-                                                title="恢复"
+                                                className="p-1.5 text-text-muted hover:text-status-success hover:bg-status-success/10 rounded transition-colors"
+                                                title={t('trash.restore')}
                                             >
                                                 <RotateCcw size={14} />
-                                                恢复
                                             </button>
                                             <button
                                                 onClick={() => handlePermanentDelete(item.trashId)}
-                                                className="flex items-center gap-1 px-3 py-1.5 text-xs bg-status-error/10 text-status-error hover:bg-status-error/20 rounded-lg transition-colors"
-                                                title="永久删除"
+                                                className="p-1.5 text-text-muted hover:text-status-error hover:bg-status-error/10 rounded transition-colors"
+                                                title={t('trash.permanentDelete')}
                                             >
                                                 <Trash2 size={14} />
-                                                删除
                                             </button>
                                         </div>
                                     </div>
@@ -172,10 +147,34 @@ export default function TrashModal({ isOpen, onClose, onRestored }) {
                     )}
                 </div>
 
-                {/* Footer hint */}
-                <div className="px-6 py-3 border-t border-white/5 text-xs text-text-muted text-center shrink-0">
-                    删除的任务会保留 30 天，之后将自动永久删除
-                </div>
+                {/* Confirm Delete Dialog */}
+                {confirmDelete && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                        <div className="bg-background-secondary border border-white/10 rounded-lg p-4 max-w-sm mx-4">
+                            <div className="flex items-center gap-2 text-status-error mb-3">
+                                <AlertTriangle size={20} />
+                                <span className="font-semibold">{t('trash.permanentDelete')}</span>
+                            </div>
+                            <p className="text-sm text-text-secondary mb-4">
+                                {confirmDelete.message}
+                            </p>
+                            <div className="flex gap-2 justify-end">
+                                <button
+                                    onClick={() => setConfirmDelete(null)}
+                                    className="px-3 py-1.5 text-sm text-text-secondary hover:text-text-primary"
+                                >
+                                    {t('confirm.cancel')}
+                                </button>
+                                <button
+                                    onClick={confirmDelete.id === 'all' ? confirmEmptyTrash : confirmPermanentDelete}
+                                    className="px-3 py-1.5 text-sm bg-status-error text-white rounded hover:bg-status-error/80"
+                                >
+                                    {t('trash.deletePermanently')}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

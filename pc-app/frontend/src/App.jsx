@@ -9,9 +9,10 @@ import { Toaster, toast } from 'react-hot-toast';
 import {
   Play, StopCircle, Plus, Clock, List, Search,
   Trash2, ChevronDown, ChevronRight, MoreVertical,
-  RefreshCw, XCircle, Settings, MessageSquare, Smartphone
+  RefreshCw, XCircle, Settings, MessageSquare, Smartphone, Globe
 } from 'lucide-react';
 import clsx from 'clsx';
+import { useLanguage } from './i18n/i18n.jsx';
 
 // --- Sidebar Components ---
 
@@ -70,7 +71,8 @@ const SidebarItem = ({
   showStatus = false,
   showTimestamp = false,
   statusKey = 'status',
-  titleKey = 'task'
+  titleKey = 'task',
+  t = (k) => k // translation function passed from parent
 }) => {
   // Determine mode tags based on step types
   const hasChat = item.steps?.some(s => s.type === 'user_message' || s.type === 'assistant_message');
@@ -87,8 +89,8 @@ const SidebarItem = ({
       {(showStatus || showTimestamp) && (
         <div className="text-[10px] text-text-muted flex items-center gap-2">
           <span>{showTimestamp ? item.timestamp : item.added_time || ''}</span>
-          {hasChat && <span className="text-cyan-400">Chat</span>}
-          {hasPhone && <span className="text-purple-400">Phone</span>}
+          {hasChat && <span className="text-cyan-400">{t('common.chat')}</span>}
+          {hasPhone && <span className="text-purple-400">{t('common.phone')}</span>}
           <span className="ml-auto">
             {showStatus && (
               <span className={clsx(
@@ -109,7 +111,7 @@ const SidebarItem = ({
             onDelete(item);
           }}
           className="absolute right-1 top-2 p-1 text-text-muted hover:text-status-error hover:bg-background-secondary rounded opacity-0 group-hover:opacity-100 transition-all"
-          title="删除"
+          title={t('actions.delete')}
         >
           <Trash2 size={12} />
         </button>
@@ -120,7 +122,7 @@ const SidebarItem = ({
 
 
 // --- Confirm Modal Component ---
-const ConfirmModal = ({ isOpen, title, message, onConfirm, onCancel }) => {
+const ConfirmModal = ({ isOpen, title, message, onConfirm, onCancel, cancelText, confirmText }) => {
   // Handle keyboard events
   React.useEffect(() => {
     if (!isOpen) return;
@@ -157,14 +159,14 @@ const ConfirmModal = ({ isOpen, title, message, onConfirm, onCancel }) => {
             onClick={onCancel}
             className="px-4 py-2 text-sm text-text-secondary hover:text-text-primary hover:bg-white/5 rounded-lg transition-colors"
           >
-            取消 <span className="text-text-muted text-xs">(Esc)</span>
+            {cancelText || 'Cancel'} <span className="text-text-muted text-xs">(Esc)</span>
           </button>
           <button
             onClick={onConfirm}
             className="px-4 py-2 text-sm bg-status-error hover:bg-status-error/80 text-white rounded-lg transition-colors"
             autoFocus
           >
-            确认删除 <span className="text-white/70 text-xs">(Enter)</span>
+            {confirmText || 'Confirm'} <span className="text-white/70 text-xs">(Enter)</span>
           </button>
         </div>
       </div>
@@ -175,6 +177,9 @@ const ConfirmModal = ({ isOpen, title, message, onConfirm, onCancel }) => {
 // --- Layout Component ---
 
 export default function Layout() {
+  // i18n
+  const { t, toggleLanguage, locale } = useLanguage();
+
   // State
   const [status, setStatus] = useState({ running: false, task: '', status: 'idle', steps: [] });
   const [queue, setQueue] = useState([]);
@@ -209,6 +214,17 @@ export default function Layout() {
   useEffect(() => {
     loadAllData();
     startPolling();
+
+    // Check if API key is configured
+    const config = storage.getConfig();
+    if (!config.apiKey || config.apiKey.trim() === '') {
+      setShowSettings(true);
+      toast(t('toast.configureApiKey'), {
+        icon: '⚙️',
+        duration: 5000,
+      });
+    }
+
     return () => stopPolling();
   }, []);
 
@@ -223,7 +239,7 @@ export default function Layout() {
       if (settings.enabled && settings.intervalMinutes > 0) {
         backupTimerRef.current = setInterval(() => {
           storage.downloadBackup();
-          toast.success('自动备份已完成');
+          toast.success(t('toast.autoBackupComplete'));
         }, settings.intervalMinutes * 60 * 1000);
       }
     };
@@ -258,15 +274,15 @@ export default function Layout() {
 
       // Task just finished
       if (wasRunning && !isRunning) {
-        if (data.status === 'success') toast.success('Task Completed Successfully!');
-        else if (data.status === 'error') toast.error('Task Action Failed');
+        if (data.status === 'success') toast.success(t('toast.taskCompleted'));
+        else if (data.status === 'error') toast.error(t('toast.taskFailed'));
         loadHistory();
         loadQueue(); // Refresh queue after task completion
       }
 
       // Task just started
       if (!wasRunning && isRunning) {
-        toast.success('Task Started');
+        toast.success(t('toast.taskStarted'));
         loadHistory();
       }
 
@@ -350,7 +366,7 @@ export default function Layout() {
     // Always reset to create new session
     try {
       await api.resetStatus();
-      toast("New Task Session Started");
+      toast(t('toast.newTaskSession'));
       await loadHistory(); // Refresh history list immediately
     } catch (e) { console.error(e); }
 
@@ -363,23 +379,25 @@ export default function Layout() {
 
     setConfirmModal({
       isOpen: true,
-      title: isCurrentSession ? '清除当前会话' : '删除任务',
+      title: isCurrentSession ? t('confirm.clearCurrentSession') : t('confirm.deleteTask'),
       message: isCurrentSession
-        ? '确定要清除当前会话吗？这将开始一个新的空白会话。'
-        : '确定要删除这个任务吗？任务将移入垃圾箱，30天后自动清除。',
+        ? t('confirm.clearSessionMessage')
+        : t('confirm.deleteTaskMessage'),
+      cancelText: t('confirm.cancel'),
+      confirmText: t('confirm.confirmDelete'),
       onConfirm: async () => {
         setConfirmModal(prev => ({ ...prev, isOpen: false }));
         try {
           if (isCurrentSession) {
             // For current session, just reset (skip saving empty task)
             await api.resetStatus(true);
-            toast.success("会话已清除");
+            toast.success(t('toast.sessionCleared'));
             loadHistory();
           } else {
             // For archived tasks, move to trash instead of permanent delete
             const res = await api.moveToTrash(id);
             if (res.success) {
-              toast.success("任务已移入垃圾箱");
+              toast.success(t('toast.movedToTrash'));
               loadHistory();
               if (selectedTask && selectedTask.id === id) {
                 returnToLive();
@@ -389,15 +407,15 @@ export default function Layout() {
               // Try reset instead
               if (res.message && res.message.includes('not found')) {
                 await api.resetStatus(true);
-                toast.success("会话已清除");
+                toast.success(t('toast.sessionCleared'));
                 loadHistory();
               } else {
-                toast.error(res.message || "删除失败");
+                toast.error(res.message || t('toast.deleteFailed'));
               }
             }
           }
         } catch (e) {
-          toast.error("操作失败");
+          toast.error(t('toast.operationFailed'));
         }
       }
     });
@@ -409,14 +427,16 @@ export default function Layout() {
 
     setConfirmModal({
       isOpen: true,
-      title: '删除消息',
-      message: '确定要删除这条消息吗？',
+      title: t('confirm.deleteMessage'),
+      message: t('confirm.deleteMessageConfirm'),
+      cancelText: t('confirm.cancel'),
+      confirmText: t('confirm.confirmDelete'),
       onConfirm: async () => {
         setConfirmModal(prev => ({ ...prev, isOpen: false }));
         try {
           const res = await api.deleteTaskStep(targetTaskId, stepIndex);
           if (res.success) {
-            toast.success("消息已删除");
+            toast.success(t('toast.messageDeleted'));
             if (viewMode === 'archived') {
               const historyRes = await api.getHistory();
               if (historyRes.success) {
@@ -425,11 +445,11 @@ export default function Layout() {
                 if (updatedTask) setSelectedTask(updatedTask);
               }
             } else {
-              toast("注意: 删除只影响保存的历史记录，不影响运行中的内存。");
+              toast(t('toast.deleteNoteMemory'));
             }
           }
         } catch (e) {
-          toast.error("删除失败");
+          toast.error(t('toast.deleteFailed'));
         }
       }
     });
@@ -477,10 +497,10 @@ export default function Layout() {
           }));
           setChatHistory([...updatedHistory, { role: 'assistant', content: res.response }]);
         } else {
-          toast.error(res.message || '聊天请求失败');
+          toast.error(res.message || t('toast.chatError'));
         }
       } catch (e) {
-        toast.error('网络错误：无法发送聊天消息');
+        toast.error(t('toast.networkErrorChat'));
       }
     } else {
       // Phone mode - add to task queue for phone control
@@ -489,13 +509,13 @@ export default function Layout() {
         if (res.success) {
           setInputTask('');
           loadQueue();
-          toast.success("任务已添加到队列");
+          toast.success(t('toast.taskAddedToQueue'));
           checkStatus();
         } else {
-          toast.error(res.message || "Failed to add task");
+          toast.error(res.message || t('toast.failedToAdd'));
         }
       } catch (e) {
-        toast.error("Network Error: Could not add task");
+        toast.error(t('toast.networkErrorTask'));
       }
     }
   };
@@ -503,10 +523,10 @@ export default function Layout() {
   const handleStop = async () => {
     try {
       const res = await api.stopTask();
-      if (res.success) toast.success("Stop signal sent");
+      if (res.success) toast.success(t('toast.stopSignalSent'));
       else toast.error(res.message);
     } catch (e) {
-      toast.error("Failed to stop task");
+      toast.error(t('toast.failedToStop'));
     }
   };
 
@@ -515,14 +535,14 @@ export default function Layout() {
     try {
       const res = await api.addToQueue(inputTask);
       if (res.success) {
-        toast.success("Added to queue");
+        toast.success(t('toast.addedToQueue'));
         setInputTask('');
         loadQueue();
       } else {
         toast.error(res.message);
       }
     } catch (e) {
-      toast.error("Failed to add to queue");
+      toast.error(t('toast.failedToAdd'));
     }
   };
 
@@ -530,31 +550,33 @@ export default function Layout() {
     try {
       const res = await api.removeFromQueue(id);
       if (res.success) {
-        toast.success("Removed from queue");
+        toast.success(t('toast.removedFromQueue'));
         loadQueue();
       }
     } catch (e) {
-      toast.error("Failed to remove item");
+      toast.error(t('toast.failedToRemove'));
     }
   };
 
   const handleDeletePopular = async (taskName) => {
     setConfirmModal({
       isOpen: true,
-      title: '删除常用任务',
-      message: `确定要删除常用任务「${taskName}」吗？`,
+      title: t('confirm.deletePopularTask'),
+      message: t('confirm.deletePopularConfirm', { task: taskName }),
+      cancelText: t('confirm.cancel'),
+      confirmText: t('confirm.confirmDelete'),
       onConfirm: async () => {
         setConfirmModal(prev => ({ ...prev, isOpen: false }));
         try {
           const res = await api.deletePopular(taskName);
           if (res.success) {
-            toast.success("已删除");
+            toast.success(t('toast.deleted'));
             loadPopular();
           } else {
-            toast.error(res.message || "删除失败");
+            toast.error(res.message || t('toast.deleteFailed'));
           }
         } catch (e) {
-          toast.error("删除失败");
+          toast.error(t('toast.deleteFailed'));
         }
       }
     });
@@ -563,20 +585,22 @@ export default function Layout() {
   const handleClearPopular = async () => {
     setConfirmModal({
       isOpen: true,
-      title: '清空常用任务',
-      message: '确定要清空所有常用任务吗？此操作无法撤销。',
+      title: t('confirm.clearPopularTasks'),
+      message: t('confirm.clearPopularConfirm'),
+      cancelText: t('confirm.cancel'),
+      confirmText: t('confirm.confirmDelete'),
       onConfirm: async () => {
         setConfirmModal(prev => ({ ...prev, isOpen: false }));
         try {
           const res = await api.clearPopular();
           if (res.success) {
-            toast.success('已清空');
+            toast.success(t('toast.popularCleared'));
             loadPopular();
           } else {
-            toast.error(res.message || '清空失败');
+            toast.error(res.message || t('toast.clearFailed'));
           }
         } catch (e) {
-          toast.error('清空失败');
+          toast.error(t('toast.clearFailed'));
         }
       }
     });
@@ -585,19 +609,21 @@ export default function Layout() {
   const handleClearQueue = async () => {
     setConfirmModal({
       isOpen: true,
-      title: '清空任务队列',
-      message: '确定要清空任务队列吗？',
+      title: t('confirm.clearTaskQueue'),
+      message: t('confirm.clearQueueConfirm'),
+      cancelText: t('confirm.cancel'),
+      confirmText: t('confirm.confirmDelete'),
       onConfirm: async () => {
         setConfirmModal(prev => ({ ...prev, isOpen: false }));
         try {
           const res = await fetch('/api/queue/clear', { method: 'POST' });
           const data = await res.json();
           if (data.success) {
-            toast.success('队列已清空');
+            toast.success(t('toast.queueCleared'));
             loadQueue();
           }
         } catch (e) {
-          toast.error('清空失败');
+          toast.error(t('toast.clearFailed'));
         }
       }
     });
@@ -606,19 +632,21 @@ export default function Layout() {
   const handleClearHistory = async () => {
     setConfirmModal({
       isOpen: true,
-      title: '清空任务历史',
-      message: '确定要清空所有任务历史吗？此操作无法撤销。',
+      title: t('confirm.clearTaskHistory'),
+      message: t('confirm.clearHistoryConfirm'),
+      cancelText: t('confirm.cancel'),
+      confirmText: t('confirm.confirmDelete'),
       onConfirm: async () => {
         setConfirmModal(prev => ({ ...prev, isOpen: false }));
         try {
           const res = await fetch('/api/history/clear', { method: 'POST' });
           const data = await res.json();
           if (data.success) {
-            toast.success('历史记录已清空');
+            toast.success(t('toast.historyCleared'));
             loadHistory();
           }
         } catch (e) {
-          toast.error('清空失败');
+          toast.error(t('toast.clearFailed'));
         }
       }
     });
@@ -680,7 +708,7 @@ export default function Layout() {
         onClose={() => setShowTrash(false)}
         onRestored={() => {
           loadHistory();
-          toast.success('任务已恢复');
+          toast.success(t('toast.taskRestored'));
         }}
       />
 
@@ -691,14 +719,14 @@ export default function Layout() {
             <div className="w-8 h-8 bg-accent-primary rounded-lg flex items-center justify-center text-white shadow-lg shadow-accent-primary/20">
               <span className="font-bold text-lg">AI</span>
             </div>
-            <h1 className="font-bold text-lg tracking-tight">AI Phone</h1>
+            <h1 className="font-bold text-lg tracking-tight">{t('sidebar.appName')}</h1>
           </div>
-          <p className="text-xs text-text-muted ml-11">Smart Agent Controller</p>
+          <p className="text-xs text-text-muted ml-11">{t('sidebar.appDesc')}</p>
         </div>
 
         <div className="flex-1 flex flex-col py-4 min-h-0">
           <SidebarSection
-            title="Task Queue"
+            title={t('sidebar.taskQueue')}
             count={queue.length}
             isOpen={sections.queue}
             onToggle={() => setSections(s => ({ ...s, queue: !s.queue }))}
@@ -706,30 +734,31 @@ export default function Layout() {
               <>
                 <ActionButton
                   icon={RefreshCw}
-                  title="刷新"
+                  title={t('actions.refresh')}
                   onClick={loadQueue}
                 />
                 <ActionButton
                   icon={XCircle}
-                  title="清空队列"
+                  title={t('actions.clearQueue')}
                   onClick={handleClearQueue}
                   danger
                 />
               </>
             }
           >
-            {queue.length === 0 && <div className="text-xs text-text-muted p-2 text-center">Empty Queue</div>}
+            {queue.length === 0 && <div className="text-xs text-text-muted p-2 text-center">{t('sidebar.emptyQueue')}</div>}
             {queue.map(item => (
               <SidebarItem
                 key={item.id}
                 item={item}
                 onDelete={(i) => handleRemoveFromQueue(i.id)}
+                t={t}
               />
             ))}
           </SidebarSection>
 
           <SidebarSection
-            title="Popular Tasks"
+            title={t('sidebar.popularTasks')}
             count={popular.length}
             isOpen={sections.popular}
             onToggle={() => setSections(s => ({ ...s, popular: !s.popular }))}
@@ -737,17 +766,17 @@ export default function Layout() {
               <>
                 <ActionButton
                   icon={Search}
-                  title="搜索"
+                  title={t('actions.search')}
                   onClick={() => setShowPopularSearch(!showPopularSearch)}
                 />
                 <ActionButton
                   icon={RefreshCw}
-                  title="刷新"
+                  title={t('actions.refresh')}
                   onClick={loadPopular}
                 />
                 <ActionButton
                   icon={XCircle}
-                  title="清空全部"
+                  title={t('actions.clearAll')}
                   onClick={handleClearPopular}
                   danger
                 />
@@ -760,7 +789,7 @@ export default function Layout() {
                 <Search size={12} className="absolute left-2 top-2 text-text-muted" />
                 <input
                   type="text"
-                  placeholder="搜索常用任务..."
+                  placeholder={t('sidebar.searchPopular')}
                   value={popularSearch}
                   onChange={(e) => setPopularSearch(e.target.value)}
                   className="w-full bg-background-primary border border-white/10 rounded pl-7 pr-2 py-1 text-xs focus:ring-1 focus:ring-accent-primary outline-none"
@@ -777,15 +806,16 @@ export default function Layout() {
                   item={item}
                   onClick={(i) => setInputTask(i.task)}
                   onDelete={(i) => handleDeletePopular(i.task)}
+                  t={t}
                 />
               ))}
             {popular.filter(item => item.task.toLowerCase().includes(popularSearch.toLowerCase())).length === 0 && (
-              <div className="text-xs text-text-muted p-2 text-center">无匹配结果</div>
+              <div className="text-xs text-text-muted p-2 text-center">{t('sidebar.noResults')}</div>
             )}
           </SidebarSection>
 
           <SidebarSection
-            title="Tasks"
+            title={t('sidebar.tasks')}
             count={history.length}
             isOpen={sections.history}
             onToggle={() => setSections(s => ({ ...s, history: !s.history }))}
@@ -794,28 +824,28 @@ export default function Layout() {
               <>
                 <ActionButton
                   icon={Plus}
-                  title="新建任务"
+                  title={t('sidebar.newTask')}
                   onClick={returnToLive}
                 />
                 <ActionButton
                   icon={Search}
-                  title="搜索"
+                  title={t('actions.search')}
                   onClick={() => setShowHistorySearch(!showHistorySearch)}
                 />
                 <ActionButton
                   icon={RefreshCw}
-                  title="刷新"
+                  title={t('actions.refresh')}
                   onClick={() => loadHistory()}
                 />
                 <ActionButton
                   icon={XCircle}
-                  title="清空历史"
+                  title={t('actions.clearHistory')}
                   onClick={handleClearHistory}
                   danger
                 />
                 <ActionButton
                   icon={Trash2}
-                  title="垃圾箱"
+                  title={t('actions.trash')}
                   onClick={() => setShowTrash(true)}
                 />
               </>
@@ -825,7 +855,7 @@ export default function Layout() {
               onClick={returnToLive}
               className="w-full mb-3 flex items-center justify-center gap-2 bg-accent-primary hover:bg-accent-secondary text-white py-2 rounded-lg text-xs font-semibold shadow-lg shadow-accent-primary/20 transition-all"
             >
-              <Plus size={14} /> New Task
+              <Plus size={14} /> {t('sidebar.newTask')}
             </button>
 
             {showHistorySearch && (
@@ -833,7 +863,7 @@ export default function Layout() {
                 <Search size={12} className="absolute left-2 top-2 text-text-muted" />
                 <input
                   type="text"
-                  placeholder="搜索任务..."
+                  placeholder={t('sidebar.searchTasks')}
                   value={historySearch}
                   onChange={(e) => {
                     setHistorySearch(e.target.value);
@@ -852,6 +882,7 @@ export default function Layout() {
                 onDelete={(i) => handleDeleteTask(i.id)}
                 showStatus
                 showTimestamp
+                t={t}
               />
             ))}
           </SidebarSection>
@@ -864,11 +895,11 @@ export default function Layout() {
         <header className="h-16 border-b border-white/5 bg-background-secondary/50 backdrop-blur flex items-center justify-between px-6 shrink-0 z-10">
           <div className="flex flex-col">
             <span className="text-xs text-text-muted font-medium uppercase tracking-wider">
-              {viewMode === 'live' ? 'Live Execution' : 'Archived Task'}
+              {viewMode === 'live' ? t('header.liveExecution') : t('header.archivedTask')}
             </span>
             <div className="flex items-center gap-2">
               <span className="font-semibold text-text-primary truncate max-w-md" title={viewMode === 'live' ? status.task : selectedTask?.task}>
-                {viewMode === 'live' ? (status.task || "Waiting for task...") : selectedTask?.task}
+                {viewMode === 'live' ? (status.task || t('header.waitingForTask')) : selectedTask?.task}
               </span>
               {/* Status Badge */}
               <span className={clsx(
@@ -884,8 +915,17 @@ export default function Layout() {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Language Toggle */}
             <button
-              title="设置"
+              title={locale === 'zh-CN' ? 'Switch to English' : '切换到中文'}
+              onClick={toggleLanguage}
+              className="p-2 text-text-secondary hover:text-text-primary hover:bg-white/5 rounded transition-colors flex items-center gap-1"
+            >
+              <Globe size={18} />
+              <span className="text-xs">{locale === 'zh-CN' ? 'EN' : '中'}</span>
+            </button>
+            <button
+              title={t('header.settings')}
               onClick={() => setShowSettings(true)}
               className="p-2 text-text-secondary hover:text-text-primary hover:bg-white/5 rounded transition-colors"
             >
@@ -897,7 +937,7 @@ export default function Layout() {
                 disabled={!status.can_stop}
                 className="flex items-center gap-2 bg-background-primary border border-status-error text-status-error px-4 py-1.5 rounded-md text-sm font-medium hover:bg-status-error hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <StopCircle size={16} /> Stop Task
+                <StopCircle size={16} /> {t('header.stopTask')}
               </button>
             )}
           </div>
@@ -916,7 +956,7 @@ export default function Layout() {
         <div className="p-4 border-t border-white/5 bg-background-secondary shrink-0">
           {/* Mode Toggle */}
           <div className="max-w-4xl mx-auto mb-3 flex items-center gap-2">
-            <span className="text-xs text-text-muted mr-2">模式:</span>
+            <span className="text-xs text-text-muted mr-2">{t('input.mode')}</span>
             <button
               onClick={() => setExecutionMode('chat')}
               className={clsx(
@@ -927,7 +967,7 @@ export default function Layout() {
               )}
             >
               <MessageSquare size={14} />
-              问答对话
+              {t('input.chat')}
             </button>
             <button
               onClick={() => setExecutionMode('phone')}
@@ -939,14 +979,14 @@ export default function Layout() {
               )}
             >
               <Smartphone size={14} />
-              操控手机
+              {t('input.phone')}
             </button>
             {executionMode === 'chat' && chatHistory.length > 0 && (
               <button
                 onClick={() => setChatHistory([])}
                 className="ml-auto text-xs text-text-muted hover:text-status-error transition-colors"
               >
-                清空对话历史 ({chatHistory.length} 条)
+                {t('input.clearChatHistory')} ({chatHistory.length} {t('input.messages')})
               </button>
             )}
           </div>
@@ -960,7 +1000,7 @@ export default function Layout() {
                   handleExecute();
                 }
               }}
-              placeholder="Describe your task here... (Ctrl + Enter to execute)"
+              placeholder={t('input.placeholder')}
               className="flex-1 bg-background-primary border border-white/10 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary/50 resize-none h-14"
             />
             <button
@@ -969,20 +1009,20 @@ export default function Layout() {
               className="bg-accent-primary hover:bg-accent-secondary text-white px-6 rounded-lg font-medium shadow-lg shadow-accent-primary/20 disabled:opacity-50 disabled:cursor-not-allowed flex flex-col items-center justify-center gap-0.5 min-w-[80px] transition-all"
             >
               <Play size={18} fill="currentColor" className={clsx(status.running && "hidden")} />
-              <span className="text-xs">{status.running ? 'Running' : 'Run'}</span>
+              <span className="text-xs">{status.running ? t('status.running') : t('input.run')}</span>
             </button>
 
             <button
               onClick={handleAddToQueue}
               className="bg-background-tertiary hover:bg-white/10 text-text-secondary w-10 rounded-lg flex items-center justify-center border border-white/5 transition-all"
-              title="Add to Queue"
+              title={t('toast.addedToQueue')}
             >
               <Plus size={20} />
             </button>
           </div>
           <div className="max-w-4xl mx-auto mt-2 flex justify-between text-[10px] text-text-muted">
-            <span>Tip: Use specific instructions for better results.</span>
-            <button onClick={() => setInputTask('')} className="hover:text-text-primary">Clear Input</button>
+            <span>{t('input.tip')}</span>
+            <button onClick={() => setInputTask('')} className="hover:text-text-primary">{t('input.clearInput')}</button>
           </div>
         </div>
       </div>

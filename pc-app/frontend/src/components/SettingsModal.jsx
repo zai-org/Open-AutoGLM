@@ -1,27 +1,31 @@
 import React, { useState, useEffect } from 'react';
-import { X, Settings, Database, Clock, HelpCircle, ExternalLink, Eye, EyeOff, Download, Upload } from 'lucide-react';
+import { X, Settings, Database, Clock, HelpCircle, ExternalLink, Eye, EyeOff, Download, Upload, Globe } from 'lucide-react';
 import clsx from 'clsx';
 import storage from '../services/storage';
-
-const TABS = [
-    { id: 'api', label: 'API 配置', icon: Settings },
-    { id: 'data', label: '数据管理', icon: Database },
-    { id: 'backup', label: '自动备份', icon: Clock },
-];
+import { useLanguage, LOCALES } from '../i18n/i18n.jsx';
 
 const BACKUP_INTERVALS = [
-    { value: 30, label: '30 分钟' },
-    { value: 60, label: '1 小时' },
-    { value: 120, label: '2 小时' },
-    { value: 1440, label: '24 小时' },
+    { value: 30, label: '30' },
+    { value: 60, label: '60' },
+    { value: 120, label: '120' },
+    { value: 1440, label: '1440' },
 ];
 
 export default function SettingsModal({ isOpen, onClose, onConfigChange }) {
+    const { t, locale, setLocale } = useLanguage();
+
     const [activeTab, setActiveTab] = useState('api');
     const [config, setConfig] = useState(storage.DEFAULT_CONFIG);
     const [showApiKey, setShowApiKey] = useState(false);
     const [backupSettings, setBackupSettings] = useState(storage.getBackupSettings());
     const [importing, setImporting] = useState(false);
+
+    const TABS = [
+        { id: 'api', label: t('settings.tabs.api'), icon: Settings },
+        { id: 'data', label: t('settings.tabs.data'), icon: Database },
+        { id: 'backup', label: t('settings.tabs.backup'), icon: Clock },
+        { id: 'language', label: t('settings.tabs.language'), icon: Globe },
+    ];
 
     useEffect(() => {
         if (isOpen) {
@@ -51,13 +55,13 @@ export default function SettingsModal({ isOpen, onClose, onConfigChange }) {
                 const data = JSON.parse(event.target.result);
                 const result = storage.importAllData(data);
                 if (result.success) {
-                    alert('导入成功！页面将刷新以加载新数据。');
+                    alert(t('settings.data.importSuccess'));
                     window.location.reload();
                 } else {
-                    alert('导入失败：' + result.error);
+                    alert(t('settings.data.importFailed') + result.error);
                 }
             } catch (err) {
-                alert('文件格式错误：' + err.message);
+                alert(t('settings.data.fileFormatError') + err.message);
             }
             setImporting(false);
         };
@@ -81,7 +85,7 @@ export default function SettingsModal({ isOpen, onClose, onConfigChange }) {
             <div className="relative bg-background-secondary border border-white/10 rounded-xl w-full max-w-lg mx-4 shadow-2xl overflow-hidden">
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
-                    <h2 className="text-lg font-semibold text-text-primary">设置</h2>
+                    <h2 className="text-lg font-semibold text-text-primary">{t('settings.title')}</h2>
                     <button onClick={onClose} className="p-1 text-text-muted hover:text-text-primary transition-colors">
                         <X size={20} />
                     </button>
@@ -112,7 +116,7 @@ export default function SettingsModal({ isOpen, onClose, onConfigChange }) {
                     {activeTab === 'api' && (
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-text-secondary mb-1.5">Base URL</label>
+                                <label className="block text-sm font-medium text-text-secondary mb-1.5">{t('settings.api.baseUrl')}</label>
                                 <input
                                     type="text"
                                     value={config.baseUrl}
@@ -122,7 +126,7 @@ export default function SettingsModal({ isOpen, onClose, onConfigChange }) {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-text-secondary mb-1.5">Model Name</label>
+                                <label className="block text-sm font-medium text-text-secondary mb-1.5">{t('settings.api.modelName')}</label>
                                 <input
                                     type="text"
                                     value={config.modelName}
@@ -133,12 +137,12 @@ export default function SettingsModal({ isOpen, onClose, onConfigChange }) {
 
                             <div>
                                 <div className="flex items-center gap-2 mb-1.5">
-                                    <label className="text-sm font-medium text-text-secondary">API Key</label>
+                                    <label className="text-sm font-medium text-text-secondary">{t('settings.api.apiKey')}</label>
                                     <div className="group relative">
                                         <HelpCircle size={14} className="text-text-muted cursor-help" />
                                         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-background-tertiary border border-white/10 rounded-lg text-xs text-text-secondary w-64 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
-                                            <p className="mb-2">API Key 用于调用智谱 AI 模型服务。</p>
-                                            <p>如果没有 API Key，请前往智谱开放平台注册获取。</p>
+                                            <p className="mb-2">{t('settings.api.apiKeyHelp')}</p>
+                                            <p>{t('settings.api.apiKeyHelpExtra')}</p>
                                         </div>
                                     </div>
                                     <a
@@ -147,7 +151,7 @@ export default function SettingsModal({ isOpen, onClose, onConfigChange }) {
                                         rel="noopener noreferrer"
                                         className="flex items-center gap-1 text-xs text-accent-primary hover:underline"
                                     >
-                                        获取 API Key <ExternalLink size={12} />
+                                        {t('settings.api.getApiKey')} <ExternalLink size={12} />
                                     </a>
                                 </div>
                                 <div className="relative">
@@ -155,7 +159,7 @@ export default function SettingsModal({ isOpen, onClose, onConfigChange }) {
                                         type={showApiKey ? 'text' : 'password'}
                                         value={config.apiKey}
                                         onChange={(e) => setConfig({ ...config, apiKey: e.target.value })}
-                                        placeholder="请输入您的 API Key"
+                                        placeholder={t('settings.api.placeholder')}
                                         className="w-full bg-background-primary border border-white/10 rounded-lg px-3 py-2 pr-10 text-sm text-text-primary focus:ring-2 focus:ring-accent-primary/50 outline-none"
                                     />
                                     <button
@@ -172,7 +176,7 @@ export default function SettingsModal({ isOpen, onClose, onConfigChange }) {
                                 onClick={handleSaveConfig}
                                 className="w-full mt-4 bg-accent-primary hover:bg-accent-secondary text-white py-2 rounded-lg text-sm font-medium transition-colors"
                             >
-                                保存配置
+                                {t('settings.api.save')}
                             </button>
                         </div>
                     )}
@@ -181,23 +185,23 @@ export default function SettingsModal({ isOpen, onClose, onConfigChange }) {
                     {activeTab === 'data' && (
                         <div className="space-y-6">
                             <div>
-                                <h3 className="text-sm font-medium text-text-primary mb-3">导出数据</h3>
-                                <p className="text-xs text-text-muted mb-3">将所有任务历史、配置和统计数据导出为 JSON 文件。</p>
+                                <h3 className="text-sm font-medium text-text-primary mb-3">{t('settings.data.exportTitle')}</h3>
+                                <p className="text-xs text-text-muted mb-3">{t('settings.data.exportDesc')}</p>
                                 <button
                                     onClick={handleExport}
                                     className="flex items-center gap-2 px-4 py-2 bg-background-primary border border-white/10 rounded-lg text-sm text-text-primary hover:bg-white/5 transition-colors"
                                 >
                                     <Download size={16} />
-                                    导出备份
+                                    {t('settings.data.exportButton')}
                                 </button>
                             </div>
 
                             <div className="border-t border-white/10 pt-6">
-                                <h3 className="text-sm font-medium text-text-primary mb-3">导入数据</h3>
-                                <p className="text-xs text-text-muted mb-3">从 JSON 备份文件恢复数据。这将覆盖当前所有数据。</p>
+                                <h3 className="text-sm font-medium text-text-primary mb-3">{t('settings.data.importTitle')}</h3>
+                                <p className="text-xs text-text-muted mb-3">{t('settings.data.importDesc')}</p>
                                 <label className="flex items-center gap-2 px-4 py-2 bg-background-primary border border-white/10 rounded-lg text-sm text-text-primary hover:bg-white/5 transition-colors cursor-pointer">
                                     <Upload size={16} />
-                                    {importing ? '导入中...' : '选择文件导入'}
+                                    {importing ? t('settings.data.importing') : t('settings.data.importButton')}
                                     <input
                                         type="file"
                                         accept=".json"
@@ -209,15 +213,15 @@ export default function SettingsModal({ isOpen, onClose, onConfigChange }) {
                             </div>
 
                             <div className="border-t border-white/10 pt-6">
-                                <h3 className="text-sm font-medium text-text-primary mb-3">数据统计</h3>
+                                <h3 className="text-sm font-medium text-text-primary mb-3">{t('settings.data.statsTitle')}</h3>
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="bg-background-primary p-3 rounded-lg">
                                         <div className="text-2xl font-bold text-accent-primary">{storage.getHistory().length}</div>
-                                        <div className="text-xs text-text-muted">任务记录</div>
+                                        <div className="text-xs text-text-muted">{t('settings.data.taskRecords')}</div>
                                     </div>
                                     <div className="bg-background-primary p-3 rounded-lg">
                                         <div className="text-2xl font-bold text-accent-primary">{storage.getQueue().length}</div>
-                                        <div className="text-xs text-text-muted">队列任务</div>
+                                        <div className="text-xs text-text-muted">{t('settings.data.queueTasks')}</div>
                                     </div>
                                 </div>
                             </div>
@@ -229,8 +233,8 @@ export default function SettingsModal({ isOpen, onClose, onConfigChange }) {
                         <div className="space-y-6">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <h3 className="text-sm font-medium text-text-primary">自动备份</h3>
-                                    <p className="text-xs text-text-muted mt-1">定时自动下载备份文件到默认下载目录</p>
+                                    <h3 className="text-sm font-medium text-text-primary">{t('settings.backup.autoBackup')}</h3>
+                                    <p className="text-xs text-text-muted mt-1">{t('settings.backup.autoBackupDesc')}</p>
                                 </div>
                                 <button
                                     onClick={() => handleBackupSettingsChange('enabled', !backupSettings.enabled)}
@@ -250,14 +254,16 @@ export default function SettingsModal({ isOpen, onClose, onConfigChange }) {
 
                             {backupSettings.enabled && (
                                 <div>
-                                    <label className="block text-sm font-medium text-text-secondary mb-2">备份间隔</label>
+                                    <label className="block text-sm font-medium text-text-secondary mb-2">{t('settings.backup.interval')}</label>
                                     <select
                                         value={backupSettings.intervalMinutes}
                                         onChange={(e) => handleBackupSettingsChange('intervalMinutes', Number(e.target.value))}
                                         className="w-full bg-background-primary border border-white/10 rounded-lg px-3 py-2 text-sm text-text-primary focus:ring-2 focus:ring-accent-primary/50 outline-none"
                                     >
                                         {BACKUP_INTERVALS.map(interval => (
-                                            <option key={interval.value} value={interval.value}>{interval.label}</option>
+                                            <option key={interval.value} value={interval.value}>
+                                                {t(`settings.backup.intervals.${interval.value}`)}
+                                            </option>
                                         ))}
                                     </select>
                                 </div>
@@ -265,9 +271,9 @@ export default function SettingsModal({ isOpen, onClose, onConfigChange }) {
 
                             {backupSettings.lastBackupTime && (
                                 <div className="bg-background-primary p-3 rounded-lg">
-                                    <div className="text-xs text-text-muted">上次备份时间</div>
+                                    <div className="text-xs text-text-muted">{t('settings.backup.lastBackupTime')}</div>
                                     <div className="text-sm text-text-primary mt-1">
-                                        {new Date(backupSettings.lastBackupTime).toLocaleString('zh-CN')}
+                                        {new Date(backupSettings.lastBackupTime).toLocaleString(locale === 'zh-CN' ? 'zh-CN' : 'en-US')}
                                     </div>
                                 </div>
                             )}
@@ -277,8 +283,38 @@ export default function SettingsModal({ isOpen, onClose, onConfigChange }) {
                                 className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-background-primary border border-white/10 rounded-lg text-sm text-text-primary hover:bg-white/5 transition-colors"
                             >
                                 <Download size={16} />
-                                立即备份
+                                {t('settings.backup.backupNow')}
                             </button>
+                        </div>
+                    )}
+
+                    {/* Language Tab */}
+                    {activeTab === 'language' && (
+                        <div className="space-y-6">
+                            <div>
+                                <h3 className="text-sm font-medium text-text-primary mb-2">{t('settings.language.title')}</h3>
+                                <p className="text-xs text-text-muted mb-4">{t('settings.language.desc')}</p>
+
+                                <div className="space-y-2">
+                                    {Object.entries(LOCALES).map(([key, { name }]) => (
+                                        <button
+                                            key={key}
+                                            onClick={() => setLocale(key)}
+                                            className={clsx(
+                                                "w-full flex items-center justify-between p-3 rounded-lg border transition-all",
+                                                locale === key
+                                                    ? "bg-accent-primary/10 border-accent-primary text-text-primary"
+                                                    : "bg-background-primary border-white/10 text-text-secondary hover:border-white/20"
+                                            )}
+                                        >
+                                            <span className="font-medium">{name}</span>
+                                            {locale === key && (
+                                                <span className="text-accent-primary text-xs">✓</span>
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>
