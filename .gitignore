@@ -61,3 +61,6 @@ app_package_name.py
 
 .claude/
 .venv
+
+*test*
+results/

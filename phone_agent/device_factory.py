@@ -9,6 +9,7 @@ class DeviceType(Enum):
 
     ADB = "adb"
     HDC = "hdc"
+    IOS = "ios"
 
 
 class DeviceFactory:
@@ -34,9 +35,11 @@ class DeviceFactory:
         if self._module is None:
             if self.device_type == DeviceType.ADB:
                 from phone_agent import adb
+
                 self._module = adb
             elif self.device_type == DeviceType.HDC:
                 from phone_agent import hdc
+
                 self._module = hdc
             else:
                 raise ValueError(f"Unknown device type: {self.device_type}")
@@ -50,21 +53,43 @@ class DeviceFactory:
         """Get current app name."""
         return self.module.get_current_app(device_id)
 
-    def tap(self, x: int, y: int, device_id: str | None = None, delay: float | None = None):
+    def tap(
+        self, x: int, y: int, device_id: str | None = None, delay: float | None = None
+    ):
         """Tap at coordinates."""
         return self.module.tap(x, y, device_id, delay)
 
-    def double_tap(self, x: int, y: int, device_id: str | None = None, delay: float | None = None):
+    def double_tap(
+        self, x: int, y: int, device_id: str | None = None, delay: float | None = None
+    ):
         """Double tap at coordinates."""
         return self.module.double_tap(x, y, device_id, delay)
 
-    def long_press(self, x: int, y: int, duration_ms: int = 3000, device_id: str | None = None, delay: float | None = None):
+    def long_press(
+        self,
+        x: int,
+        y: int,
+        duration_ms: int = 3000,
+        device_id: str | None = None,
+        delay: float | None = None,
+    ):
         """Long press at coordinates."""
         return self.module.long_press(x, y, duration_ms, device_id, delay)
 
-    def swipe(self, start_x: int, start_y: int, end_x: int, end_y: int, duration_ms: int | None = None, device_id: str | None = None, delay: float | None = None):
+    def swipe(
+        self,
+        start_x: int,
+        start_y: int,
+        end_x: int,
+        end_y: int,
+        duration_ms: int | None = None,
+        device_id: str | None = None,
+        delay: float | None = None,
+    ):
         """Swipe from start to end."""
-        return self.module.swipe(start_x, start_y, end_x, end_y, duration_ms, device_id, delay)
+        return self.module.swipe(
+            start_x, start_y, end_x, end_y, duration_ms, device_id, delay
+        )
 
     def back(self, device_id: str | None = None, delay: float | None = None):
         """Press back button."""
@@ -74,9 +99,11 @@ class DeviceFactory:
         """Press home button."""
         return self.module.home(device_id, delay)
 
-    def launch_app(self, app_name: str, device_id: str | None = None, delay: float | None = None) -> bool:
+    def launch_app(
+        self, app_name: str, device_id: str | None = None, delay: float | None = None, allow_all_apps: bool = False
+    ) -> bool:
         """Launch an app."""
-        return self.module.launch_app(app_name, device_id, delay)
+        return self.module.launch_app(app_name, device_id, delay, allow_all_apps)
 
     def type_text(self, text: str, device_id: str | None = None):
         """Type text."""
@@ -102,9 +129,11 @@ class DeviceFactory:
         """Get the connection class (ADBConnection or HDCConnection)."""
         if self.device_type == DeviceType.ADB:
             from phone_agent.adb import ADBConnection
+
             return ADBConnection
         elif self.device_type == DeviceType.HDC:
             from phone_agent.hdc import HDCConnection
+
             return HDCConnection
         else:
             raise ValueError(f"Unknown device type: {self.device_type}")
