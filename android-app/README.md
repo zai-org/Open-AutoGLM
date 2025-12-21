@@ -17,14 +17,21 @@
 
 ## 编译方法
 
-### 方法一：使用 Android Studio
+### 方法一：一键安装（推荐，Windows）
+
+自动检测设备、编译并安装 Debug 包。
+
+1. 手机连接电脑，开启 **USB 调试**。
+2. 双击运行 `android-app/install_app.bat`。
+
+### 方法二：使用 Android Studio
 
 1. 用 Android Studio 打开 `android-app` 目录
 2. 等待 Gradle 同步完成
 3. 点击 Build > Build Bundle(s) / APK(s) > Build APK(s)
 4. APK 生成在 `app/build/outputs/apk/debug/`
 
-### 方法二：使用命令行
+### 方法三：使用命令行
 
 ```bash
 cd android-app
