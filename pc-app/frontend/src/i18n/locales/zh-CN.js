@@ -6,6 +6,7 @@ const zhCN = {
         appDesc: '智能代理控制器',
         taskQueue: '任务队列',
         popularTasks: '常用任务',
+        shortcuts: '快捷指令',
         tasks: '任务',
         emptyQueue: '队列为空',
         noResults: '无匹配结果',
@@ -221,13 +222,40 @@ const zhCN = {
     common: {
         chat: 'Chat',
         phone: 'Phone',
+        loading: '加载中...',
+        cancel: '取消',
+        save: '保存',
+    },
+
+    // Shortcuts
+    shortcuts: {
+        title: '快捷指令',
+        items: '条',
+        searchPlaceholder: '搜索快捷指令...',
+        allCategories: '全部分类',
+        add: '添加',
+        addTitle: '添加快捷指令',
+        editTitle: '编辑快捷指令',
+        name: '名称',
+        namePlaceholder: '如：发微信给张三',
+        command: '指令',
+        commandPlaceholder: '如：打开微信给张三发消息问他在哪',
+        category: '分类',
+        use: '使用',
+        edit: '编辑',
+        delete: '删除',
+        confirmDelete: '确定要删除这个快捷指令吗？',
+        empty: '暂无快捷指令',
+        addFirst: '添加第一个快捷指令',
+        pageSize: '每页显示',
+        addFromPopular: '添加到快捷指令',
     },
 
     // Footer
     footer: {
         disclaimer: '免责声明：本软件仅供学习和研究使用，使用者需自行承担使用风险。',
         author: '作者：林清扬（qingyang.ai）',
-        version: 'V1.0.0',
+        version: 'V1.1.0',
         releaseDate: '制作于 2025年12月21日',
     },
 };

@@ -6,6 +6,7 @@ const enUS = {
         appDesc: 'Smart Agent Controller',
         taskQueue: 'Task Queue',
         popularTasks: 'Popular Tasks',
+        shortcuts: 'Quick Shortcuts',
         tasks: 'Tasks',
         emptyQueue: 'Empty Queue',
         noResults: 'No matching results',
@@ -221,13 +222,40 @@ const enUS = {
     common: {
         chat: 'Chat',
         phone: 'Phone',
+        loading: 'Loading...',
+        cancel: 'Cancel',
+        save: 'Save',
+    },
+
+    // Shortcuts
+    shortcuts: {
+        title: 'Quick Shortcuts',
+        items: 'items',
+        searchPlaceholder: 'Search shortcuts...',
+        allCategories: 'All Categories',
+        add: 'Add',
+        addTitle: 'Add Shortcut',
+        editTitle: 'Edit Shortcut',
+        name: 'Name',
+        namePlaceholder: 'e.g. Message John on WeChat',
+        command: 'Command',
+        commandPlaceholder: 'e.g. Open WeChat and send a message to John',
+        category: 'Category',
+        use: 'Use',
+        edit: 'Edit',
+        delete: 'Delete',
+        confirmDelete: 'Are you sure you want to delete this shortcut?',
+        empty: 'No shortcuts yet',
+        addFirst: 'Add your first shortcut',
+        pageSize: 'Per page',
+        addFromPopular: 'Add to Shortcuts',
     },
 
     // Footer
     footer: {
         disclaimer: 'Disclaimer: This software is for learning and research purposes only. Users assume all risks.',
         author: 'Author: LinQingYang(qingyang.ai)',
-        version: 'V1.0.0',
+        version: 'V1.1.0',
         releaseDate: 'Released on Dec 21, 2025',
     },
 };

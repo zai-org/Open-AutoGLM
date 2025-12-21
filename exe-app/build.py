@@ -18,7 +18,7 @@ from pathlib import Path
 from datetime import datetime
 
 # 版本配置
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 APP_NAME = "AI_Phone PC"
 
 # 路径配置
@@ -28,8 +28,14 @@ PC_APP_DIR = ROOT_DIR / "pc-app"
 FRONTEND_DIR = PC_APP_DIR / "frontend"
 BACKEND_DIR = PC_APP_DIR / "backend"
 EXE_APP_DIR = ROOT_DIR / "exe-app"
-OUTPUT_DIR = EXE_APP_DIR / "output"
+RELEASES_DIR = EXE_APP_DIR / "releases"  # 版本发布目录
+OUTPUT_DIR = EXE_APP_DIR / "output"  # 临时构建目录
 SPEC_FILE = EXE_APP_DIR / "autoglm.spec"
+
+
+def get_version_dir():
+    """获取当前版本的发布目录"""
+    return RELEASES_DIR / f"v{VERSION}"
 
 
 def run_command(cmd, cwd=None, check=True):
@@ -168,22 +174,55 @@ def create_portable_package(exe_path):
     return zip_path
 
 
-def print_summary():
+def copy_to_version_dir(exe_path, zip_path):
+    """复制构建产物到版本目录"""
+    print("\n📁 复制到版本目录...")
+
+    version_dir = get_version_dir()
+    version_dir.mkdir(parents=True, exist_ok=True)
+
+    # 复制 EXE
+    exe_dest = version_dir / exe_path.name
+    shutil.copy2(exe_path, exe_dest)
+    print(f"   复制: {exe_path.name} → {version_dir.name}/")
+
+    # 复制 ZIP
+    zip_dest = version_dir / zip_path.name
+    shutil.copy2(zip_path, zip_dest)
+    print(f"   复制: {zip_path.name} → {version_dir.name}/")
+
+    # 复制 README
+    readme_src = EXE_APP_DIR / "README.md"
+    if readme_src.exists():
+        shutil.copy2(readme_src, version_dir / "README.md")
+        print(f"   复制: README.md → {version_dir.name}/")
+
+    print(f"✅ 版本目录: {version_dir}")
+    return version_dir
+
+
+def print_summary(version_dir):
     """打印构建摘要"""
     print("\n" + "=" * 60)
     print("🎉 构建完成!")
     print("=" * 60)
     print(f"\n版本: v{VERSION}")
-    print(f"输出目录: {OUTPUT_DIR}")
+    print(f"版本目录: {version_dir}")
     print("\n生成的文件:")
 
-    for f in OUTPUT_DIR.iterdir():
+    for f in version_dir.iterdir():
         size_mb = f.stat().st_size / 1024 / 1024
         print(f"  • {f.name} ({size_mb:.1f} MB)")
 
+    print("\n目录结构:")
+    print(f"  releases/")
+    for vdir in sorted(RELEASES_DIR.iterdir(), reverse=True):
+        if vdir.is_dir():
+            print(f"    └── {vdir.name}/")
+
     print("\n使用说明:")
-    print(f"  1. 解压 {APP_NAME}-Portable-*.zip 到任意目录")
-    print(f"  2. 双击 {APP_NAME} v{VERSION}.exe 运行")
+    print(f"  1. 进入 releases/v{VERSION}/ 目录")
+    print(f"  2. 解压 {APP_NAME}-Portable-*.zip 或直接使用 EXE")
     print("  3. 在设置中配置 API Key")
     print()
 
@@ -217,8 +256,9 @@ def main():
     build_frontend()
     copy_backend_files()
     exe_path = build_executable()
-    create_portable_package(exe_path)
-    print_summary()
+    zip_path = create_portable_package(exe_path)
+    version_dir = copy_to_version_dir(exe_path, zip_path)
+    print_summary(version_dir)
 
 
 if __name__ == "__main__":

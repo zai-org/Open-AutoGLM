@@ -5,11 +5,12 @@ import storage from './services/storage';
 import LogViewer from './components/log-viewer/LogViewer';
 import SettingsModal from './components/SettingsModal';
 import TrashModal from './components/TrashModal';
+import ShortcutsModal from './components/ShortcutsModal';
 import { Toaster, toast } from 'react-hot-toast';
 import {
   Play, StopCircle, Plus, Clock, List, Search,
   Trash2, ChevronDown, ChevronRight, MoreVertical,
-  RefreshCw, XCircle, Settings, MessageSquare, Smartphone, Globe
+  RefreshCw, XCircle, Settings, MessageSquare, Smartphone, Globe, Zap
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useLanguage } from './i18n/i18n.jsx';
@@ -200,6 +201,7 @@ export default function Layout() {
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
   const [showSettings, setShowSettings] = useState(false);
   const [showTrash, setShowTrash] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
 
   // Execution Mode: 'chat' (Q&A) or 'phone' (Phone Control)
   const [executionMode, setExecutionMode] = useState('phone');
@@ -725,6 +727,13 @@ export default function Layout() {
         }}
       />
 
+      {/* Shortcuts Modal */}
+      <ShortcutsModal
+        isOpen={showShortcuts}
+        onClose={() => setShowShortcuts(false)}
+        onUseShortcut={(command) => setInputTask(command)}
+      />
+
       {/* Sidebar */}
       <div className="w-80 bg-background-secondary border-r border-white/5 flex flex-col shrink-0">
         <div className="p-5 border-b border-white/5">
@@ -777,6 +786,11 @@ export default function Layout() {
             onToggle={() => setSections(s => ({ ...s, popular: !s.popular }))}
             actions={
               <>
+                <ActionButton
+                  icon={Zap}
+                  title={t('sidebar.shortcuts')}
+                  onClick={() => setShowShortcuts(true)}
+                />
                 <ActionButton
                   icon={Search}
                   title={t('actions.search')}

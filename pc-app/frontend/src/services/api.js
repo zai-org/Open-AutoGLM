@@ -138,5 +138,66 @@ export const api = {
             body: JSON.stringify({ message, history })
         });
         return res.json();
+    },
+
+    // Shortcuts API
+    getShortcuts: async (params = {}) => {
+        const query = new URLSearchParams(params).toString();
+        const res = await fetch(`${API_BASE}/shortcuts${query ? '?' + query : ''}`);
+        return res.json();
+    },
+
+    addShortcut: async (shortcut) => {
+        const res = await fetch(`${API_BASE}/shortcuts/add`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(shortcut)
+        });
+        return res.json();
+    },
+
+    updateShortcut: async (shortcut) => {
+        const res = await fetch(`${API_BASE}/shortcuts/update`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(shortcut)
+        });
+        return res.json();
+    },
+
+    deleteShortcut: async (id) => {
+        const res = await fetch(`${API_BASE}/shortcuts/delete`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id })
+        });
+        return res.json();
+    },
+
+    reorderShortcuts: async (orderMap) => {
+        const res = await fetch(`${API_BASE}/shortcuts/reorder`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderMap })
+        });
+        return res.json();
+    },
+
+    useShortcut: async (id) => {
+        const res = await fetch(`${API_BASE}/shortcuts/use`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id })
+        });
+        return res.json();
+    },
+
+    syncShortcuts: async (shortcuts) => {
+        const res = await fetch(`${API_BASE}/shortcuts/sync`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ shortcuts })
+        });
+        return res.json();
     }
 };

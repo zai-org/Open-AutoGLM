@@ -9,6 +9,8 @@ const STORAGE_KEYS = {
     BACKUP_SETTINGS: 'aiphone_backup_settings',
     LAST_BACKUP: 'aiphone_last_backup',
     TRASH: 'aiphone_trash', // Trash bin for deleted items
+    SHORTCUTS: 'aiphone_shortcuts', // Quick command shortcuts
+    PREFERENCES: 'aiphone_preferences', // User preferences (page size, etc.)
 };
 
 // Default configuration
@@ -25,6 +27,11 @@ const DEFAULT_BACKUP_SETTINGS = {
 };
 
 const TRASH_RETENTION_DAYS = 30;
+
+const DEFAULT_PREFERENCES = {
+    shortcutsPageSize: 10,
+    shortcutsCategoryFilter: '',
+};
 
 // Generic get/set helpers
 const getItem = (key, defaultValue = null) => {
@@ -118,10 +125,18 @@ export const emptyTrash = () => {
     return setItem(STORAGE_KEYS.TRASH, []);
 };
 
+// Shortcuts operations
+export const getShortcuts = () => getItem(STORAGE_KEYS.SHORTCUTS, []);
+export const saveShortcuts = (shortcuts) => setItem(STORAGE_KEYS.SHORTCUTS, shortcuts);
+
+// User preferences operations
+export const getPreferences = () => getItem(STORAGE_KEYS.PREFERENCES, DEFAULT_PREFERENCES);
+export const savePreferences = (prefs) => setItem(STORAGE_KEYS.PREFERENCES, { ...DEFAULT_PREFERENCES, ...prefs });
+
 // Export all data
 export const exportAllData = () => {
     const data = {
-        version: '1.0',
+        version: '1.1',
         exportedAt: new Date().toISOString(),
         config: getConfig(),
         history: getHistory(),
@@ -129,6 +144,8 @@ export const exportAllData = () => {
         stats: getStats(),
         backupSettings: getBackupSettings(),
         trash: getTrash(),
+        shortcuts: getShortcuts(),
+        preferences: getPreferences(),
     };
     return data;
 };
@@ -142,6 +159,8 @@ export const importAllData = (data) => {
         if (data.stats) saveStats(data.stats);
         if (data.backupSettings) saveBackupSettings(data.backupSettings);
         if (data.trash) setItem(STORAGE_KEYS.TRASH, data.trash);
+        if (data.shortcuts) saveShortcuts(data.shortcuts);
+        if (data.preferences) savePreferences(data.preferences);
         return { success: true };
     } catch (e) {
         return { success: false, error: e.message };
@@ -182,9 +201,14 @@ export default {
     restoreFromTrash,
     permanentlyDeleteFromTrash,
     emptyTrash,
+    getShortcuts,
+    saveShortcuts,
+    getPreferences,
+    savePreferences,
     exportAllData,
     importAllData,
     downloadBackup,
     DEFAULT_CONFIG,
+    DEFAULT_PREFERENCES,
     TRASH_RETENTION_DAYS,
 };

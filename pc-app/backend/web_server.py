@@ -87,6 +87,7 @@ HISTORY_FILE = DATA_DIR / "task_history.json"
 QUEUE_FILE = DATA_DIR / "task_queue.json"
 STATS_FILE = DATA_DIR / "task_stats.json"
 TRASH_FILE = DATA_DIR / "task_trash.json"
+SHORTCUTS_FILE = DATA_DIR / "shortcuts.json"
 
 # 全局变量
 current_task = {
@@ -1039,6 +1040,211 @@ def api_stats():
             "unique_tasks": len(stats.get("task_count", {})),
         }
     )
+
+
+# ========== 快捷指令 ==========
+
+# 预设分类
+SHORTCUT_CATEGORIES = ["社交", "购物", "工具", "娱乐", "出行", "生活", "工作", "其他"]
+
+
+def load_shortcuts():
+    """加载快捷指令"""
+    if SHORTCUTS_FILE.exists():
+        try:
+            with open(SHORTCUTS_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except:
+            return []
+    return []
+
+
+def save_shortcuts(shortcuts):
+    """保存快捷指令"""
+    with open(SHORTCUTS_FILE, "w", encoding="utf-8") as f:
+        json.dump(shortcuts, f, ensure_ascii=False, indent=2)
+
+
+@app.route("/api/shortcuts", methods=["GET"])
+def api_shortcuts_list():
+    """获取快捷指令列表（支持搜索、分类、分页）"""
+    search = request.args.get("search", "").strip()
+    category = request.args.get("category", "").strip()
+    page = int(request.args.get("page", 1))
+    page_size = int(request.args.get("pageSize", 10))
+
+    shortcuts = load_shortcuts()
+
+    # 搜索过滤
+    if search:
+        shortcuts = [
+            s
+            for s in shortcuts
+            if search.lower() in s.get("name", "").lower()
+            or search.lower() in s.get("command", "").lower()
+        ]
+
+    # 分类过滤
+    if category:
+        shortcuts = [s for s in shortcuts if s.get("category") == category]
+
+    # 按 order 排序
+    shortcuts.sort(key=lambda x: x.get("order", 9999))
+
+    # 分页
+    total = len(shortcuts)
+    start = (page - 1) * page_size
+    end = start + page_size
+    paginated = shortcuts[start:end]
+
+    return jsonify(
+        {
+            "success": True,
+            "shortcuts": paginated,
+            "total": total,
+            "page": page,
+            "pageSize": page_size,
+            "totalPages": (total + page_size - 1) // page_size if page_size > 0 else 1,
+            "categories": SHORTCUT_CATEGORIES,
+        }
+    )
+
+
+@app.route("/api/shortcuts/add", methods=["POST"])
+def api_shortcuts_add():
+    """添加快捷指令"""
+    data = request.json
+    name = data.get("name", "").strip()
+    command = data.get("command", "").strip()
+    category = data.get("category", "其他")
+
+    if not name or not command:
+        return jsonify({"success": False, "message": "名称和指令不能为空"})
+
+    shortcuts = load_shortcuts()
+
+    # 生成唯一ID和排序号
+    shortcut_id = f"sc_{int(time.time() * 1000)}_{len(shortcuts)}"
+    max_order = max([s.get("order", 0) for s in shortcuts], default=0)
+
+    new_shortcut = {
+        "id": shortcut_id,
+        "name": name,
+        "command": command,
+        "category": category,
+        "order": max_order + 1,
+        "createdAt": datetime.now().isoformat(),
+        "usedCount": 0,
+        "lastUsedAt": None,
+    }
+
+    shortcuts.append(new_shortcut)
+    save_shortcuts(shortcuts)
+
+    return jsonify(
+        {"success": True, "message": "快捷指令已添加", "shortcut": new_shortcut}
+    )
+
+
+@app.route("/api/shortcuts/update", methods=["POST"])
+def api_shortcuts_update():
+    """更新快捷指令"""
+    data = request.json
+    shortcut_id = data.get("id")
+
+    if not shortcut_id:
+        return jsonify({"success": False, "message": "缺少快捷指令ID"})
+
+    shortcuts = load_shortcuts()
+    target = next((s for s in shortcuts if s.get("id") == shortcut_id), None)
+
+    if not target:
+        return jsonify({"success": False, "message": "快捷指令不存在"})
+
+    # 更新字段
+    if "name" in data:
+        target["name"] = data["name"]
+    if "command" in data:
+        target["command"] = data["command"]
+    if "category" in data:
+        target["category"] = data["category"]
+    if "order" in data:
+        target["order"] = data["order"]
+
+    save_shortcuts(shortcuts)
+    return jsonify({"success": True, "message": "快捷指令已更新", "shortcut": target})
+
+
+@app.route("/api/shortcuts/delete", methods=["POST"])
+def api_shortcuts_delete():
+    """删除快捷指令"""
+    data = request.json
+    shortcut_id = data.get("id")
+
+    if not shortcut_id:
+        return jsonify({"success": False, "message": "缺少快捷指令ID"})
+
+    shortcuts = load_shortcuts()
+    new_shortcuts = [s for s in shortcuts if s.get("id") != shortcut_id]
+
+    if len(shortcuts) == len(new_shortcuts):
+        return jsonify({"success": False, "message": "快捷指令不存在"})
+
+    save_shortcuts(new_shortcuts)
+    return jsonify({"success": True, "message": "快捷指令已删除"})
+
+
+@app.route("/api/shortcuts/reorder", methods=["POST"])
+def api_shortcuts_reorder():
+    """批量更新排序"""
+    data = request.json
+    order_map = data.get("orderMap", {})  # {id: new_order}
+
+    if not order_map:
+        return jsonify({"success": False, "message": "缺少排序数据"})
+
+    shortcuts = load_shortcuts()
+    for s in shortcuts:
+        if s.get("id") in order_map:
+            s["order"] = order_map[s["id"]]
+
+    shortcuts.sort(key=lambda x: x.get("order", 9999))
+    save_shortcuts(shortcuts)
+    return jsonify({"success": True, "message": "排序已更新"})
+
+
+@app.route("/api/shortcuts/use", methods=["POST"])
+def api_shortcuts_use():
+    """记录快捷指令使用（更新使用次数和时间）"""
+    data = request.json
+    shortcut_id = data.get("id")
+
+    if not shortcut_id:
+        return jsonify({"success": False, "message": "缺少快捷指令ID"})
+
+    shortcuts = load_shortcuts()
+    target = next((s for s in shortcuts if s.get("id") == shortcut_id), None)
+
+    if target:
+        target["usedCount"] = target.get("usedCount", 0) + 1
+        target["lastUsedAt"] = datetime.now().isoformat()
+        save_shortcuts(shortcuts)
+
+    return jsonify({"success": True})
+
+
+@app.route("/api/shortcuts/sync", methods=["POST"])
+def api_shortcuts_sync():
+    """前端数据同步到后端（覆盖式同步）"""
+    data = request.json
+    shortcuts = data.get("shortcuts", [])
+
+    # 验证数据格式
+    if not isinstance(shortcuts, list):
+        return jsonify({"success": False, "message": "无效的数据格式"})
+
+    save_shortcuts(shortcuts)
+    return jsonify({"success": True, "message": "同步完成", "count": len(shortcuts)})
 
 
 @app.route("/guide")
