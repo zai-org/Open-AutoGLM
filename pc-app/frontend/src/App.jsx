@@ -204,6 +204,7 @@ export default function Layout() {
   // Execution Mode: 'chat' (Q&A) or 'phone' (Phone Control)
   const [executionMode, setExecutionMode] = useState('phone');
   const [chatHistory, setChatHistory] = useState([]); // For multi-turn chat
+  const [tipIndex, setTipIndex] = useState(0); // For rotating tips
 
   // Refs for polling and backup
   const pollingRef = useRef(null);
@@ -251,6 +252,18 @@ export default function Layout() {
       }
     };
   }, [showSettings]); // Re-setup when settings change
+
+  // Rotating tips timer
+  useEffect(() => {
+    const tips = t('input.tips');
+    if (!Array.isArray(tips) || tips.length <= 1) return;
+
+    const tipTimer = setInterval(() => {
+      setTipIndex(prev => (prev + 1) % tips.length);
+    }, 4000);
+
+    return () => clearInterval(tipTimer);
+  }, [t]);
 
   const startPolling = () => {
     if (pollingRef.current) return;
@@ -953,9 +966,9 @@ export default function Layout() {
         </div>
 
         {/* Input Area */}
-        <div className="p-4 border-t border-white/5 bg-background-secondary shrink-0">
+        <div className="py-2 px-4 border-t border-white/5 bg-background-secondary shrink-0">
           {/* Mode Toggle */}
-          <div className="max-w-4xl mx-auto mb-3 flex items-center gap-2">
+          <div className="max-w-4xl mx-auto mb-2 flex items-center gap-2">
             <span className="text-xs text-text-muted mr-2">{t('input.mode')}</span>
             <button
               onClick={() => setExecutionMode('chat')}
@@ -1001,7 +1014,7 @@ export default function Layout() {
                 }
               }}
               placeholder={t('input.placeholder')}
-              className="flex-1 bg-background-primary border border-white/10 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary/50 resize-none h-14"
+              className="flex-1 bg-background-primary border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-primary/50 resize-none h-10"
             />
             <button
               onClick={handleExecute}
@@ -1011,18 +1024,20 @@ export default function Layout() {
               <Play size={18} fill="currentColor" className={clsx(status.running && "hidden")} />
               <span className="text-xs">{status.running ? t('status.running') : t('input.run')}</span>
             </button>
-
             <button
-              onClick={handleAddToQueue}
-              className="bg-background-tertiary hover:bg-white/10 text-text-secondary w-10 rounded-lg flex items-center justify-center border border-white/5 transition-all"
-              title={t('toast.addedToQueue')}
+              onClick={() => setInputTask('')}
+              className="bg-background-tertiary hover:bg-white/10 text-text-secondary px-6 rounded-lg font-medium border border-white/5 flex items-center justify-center min-w-[80px] transition-all"
             >
-              <Plus size={20} />
+              <span className="text-xs">{t('input.clearInput')}</span>
             </button>
           </div>
-          <div className="max-w-4xl mx-auto mt-2 flex justify-between text-[10px] text-text-muted">
-            <span>{t('input.tip')}</span>
-            <button onClick={() => setInputTask('')} className="hover:text-text-primary">{t('input.clearInput')}</button>
+          <div className="max-w-4xl mx-auto mt-1 text-[10px] text-text-muted overflow-hidden h-4">
+            <span
+              key={tipIndex}
+              className="inline-block animate-fade-in"
+            >
+              {Array.isArray(t('input.tips')) ? t('input.tips')[tipIndex] : t('input.tips')}
+            </span>
           </div>
         </div>
 
