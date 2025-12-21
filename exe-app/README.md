@@ -41,11 +41,13 @@ AutoGLM 智能手机控制平台的 Windows 可执行程序版本。
 ### 如何获取 API Key？
 
 **智谱 API Key**（必需）:
+
 1. 访问 https://open.bigmodel.cn/
 2. 注册并登录
 3. 在控制台创建 API Key
 
 **SiliconFlow API Key**（可选）:
+
 1. 访问 https://siliconflow.cn/
 2. 注册并登录
 3. 创建 API Key
@@ -61,6 +63,7 @@ AutoGLM 智能手机控制平台的 Windows 可执行程序版本。
 ### 配置保存在哪里？
 
 所有配置和数据保存在 AutoGLM.exe 所在目录：
+
 - `config.json` - API Key 等配置
 - `task_history.json` - 任务历史
 - `task_queue.json` - 任务队列
@@ -73,33 +76,11 @@ AutoGLM 智能手机控制平台的 Windows 可执行程序版本。
 3. 将备份的文件复制到新目录
 4. 运行新版本的 AutoGLM.exe
 
-## 开发者信息
-
-### 构建说明
-
-如需从源码构建：
-
-```powershell
-cd e:\code\autoglm\Open-AutoGLM\exe-app
-python build.py
-```
-
-构建产物在 `output` 目录。
-
-### 前置要求
-
-- Python 3.10+
-- Node.js 18+
-- PyInstaller: `pip install pyinstaller`
-
 ## 技术支持
 
 如遇问题，请检查：
+
 1. 是否已正确配置 API Key
 2. ADB 是否正常工作（运行 `adb devices` 测试）
 3. 防火墙是否允许应用访问网络
 4. 控制台窗口中的错误信息
-
-## 许可证
-
-与 Open-AutoGLM 项目相同
