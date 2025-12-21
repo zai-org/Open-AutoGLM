@@ -1025,6 +1025,17 @@ export default function Layout() {
             <button onClick={() => setInputTask('')} className="hover:text-text-primary">{t('input.clearInput')}</button>
           </div>
         </div>
+
+        {/* Footer - Disclaimer and Author */}
+        <div className="py-2 px-4 border-t border-white/5 bg-background-tertiary shrink-0">
+          <div className="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-1 text-[10px] text-text-muted">
+            <span className="opacity-70">{t('footer.disclaimer')}</span>
+            <div className="flex items-center gap-3">
+              <span className="opacity-50">{t('footer.version')} · {t('footer.releaseDate')}</span>
+              <span className="font-medium text-accent-primary/70">{t('footer.author')}</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

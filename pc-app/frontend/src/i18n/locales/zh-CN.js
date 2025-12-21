@@ -195,6 +195,14 @@ const zhCN = {
         chat: 'Chat',
         phone: 'Phone',
     },
+
+    // Footer
+    footer: {
+        disclaimer: '免责声明：本软件仅供学习和研究使用，使用者需自行承担使用风险。',
+        author: '作者：林清扬（qingyang.ai）',
+        version: 'V1.0.0',
+        releaseDate: '制作于 2025年12月21日',
+    },
 };
 
 export default zhCN;

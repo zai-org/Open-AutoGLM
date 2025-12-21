@@ -195,6 +195,14 @@ const enUS = {
         chat: 'Chat',
         phone: 'Phone',
     },
+
+    // Footer
+    footer: {
+        disclaimer: 'Disclaimer: This software is for learning and research purposes only. Users assume all risks.',
+        author: 'Author: LinQingYang(qingyang.ai)',
+        version: 'V1.0.0',
+        releaseDate: 'Released on Dec 21, 2025',
+    },
 };
 
 export default enUS;
