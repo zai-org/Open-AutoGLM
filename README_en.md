@@ -184,6 +184,13 @@ If you don't want to deploy the model yourself, you can use the following third-
 - `--model`: `parasail-auto-glm-9b-multilingual`
 - `--apikey`: Apply for your own API key on the Parasail platform
 
+**4. Google Gemini API**
+
+- Documentation: https://ai.google.dev/docs
+- `--api-type`: `gemini`
+- `--model`: `gemini-1.5-flash` or `gemini-1.5-pro`
+- `--apikey`: Apply for your API key at Google AI Studio
+
 Example usage with third-party services:
 
 ```bash
@@ -195,6 +202,9 @@ python main.py --base-url https://api.novita.ai/openai --model "zai-org/autoglm-
 
 # Using Parasail
 python main.py --base-url https://api.parasail.io/v1 --model "parasail-auto-glm-9b-multilingual" --apikey "your-parasail-api-key" "Open Chrome browser"
+
+# Using Google Gemini
+python main.py --api-type gemini --model gemini-1.5-flash --apikey "your-gemini-api-key" "Open Chrome browser"
 ```
 
 #### Option B: Deploy Model Yourself

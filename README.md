@@ -189,6 +189,13 @@ hdc list targets
 - `--model`: `ZhipuAI/AutoGLM-Phone-9B`
 - `--apikey`: 在 ModelScope 平台申请你的 API Key
 
+**3. Google Gemini API**
+
+- 文档: https://ai.google.dev/docs
+- `--api-type`: `gemini`
+- `--model`: `gemini-1.5-flash` 或 `gemini-1.5-pro`
+- `--apikey`: 在 Google AI Studio 申请你的 API Key
+
 使用第三方服务的示例：
 
 ```bash
@@ -197,6 +204,9 @@ python main.py --base-url https://open.bigmodel.cn/api/paas/v4 --model "autoglm-
 
 # 使用 ModelScope
 python main.py --base-url https://api-inference.modelscope.cn/v1 --model "ZhipuAI/AutoGLM-Phone-9B" --apikey "your-modelscope-api-key" "打开美团搜索附近的火锅店"
+
+# 使用 Google Gemini
+python main.py --api-type gemini --model gemini-1.5-flash --apikey "your-gemini-api-key" "打开美团搜索附近的火锅店"
 ```
 
 #### 选项 B: 自行部署模型
@@ -506,6 +516,7 @@ conn.disconnect("192.168.1.100:5555")
 | `PHONE_AGENT_BASE_URL`      | 模型 API 地址              | `http://localhost:8000/v1` |
 | `PHONE_AGENT_MODEL`         | 模型名称                   | `autoglm-phone-9b`         |
 | `PHONE_AGENT_API_KEY`       | 模型认证 API Key           | `EMPTY`                    |
+| `PHONE_AGENT_API_TYPE`      | API 类型 (`openai` 或 `gemini`) | `openai`                   |
 | `PHONE_AGENT_MAX_STEPS`     | 每个任务最大步数               | `100`                      |
 | `PHONE_AGENT_DEVICE_ID`     | ADB/HDC 设备 ID          | (自动检测)                     |
 | `PHONE_AGENT_DEVICE_TYPE`   | 设备类型 (`adb` 或 `hdc`)   | `adb`                      |

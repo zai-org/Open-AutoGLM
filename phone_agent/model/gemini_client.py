@@ -1,68 +1,35 @@
-"""Model client for AI inference using OpenAI-compatible API."""
+"""Gemini API client for AI inference using Google's Generative AI."""
 
+import base64
+import io
 import json
 import time
-from dataclasses import dataclass, field
-from typing import Any, Literal
-
-from openai import OpenAI
+from dataclasses import dataclass
+from typing import Any
 
 from phone_agent.config.i18n import get_message
+from phone_agent.model.client import ModelConfig, ModelResponse, MessageBuilder
 
 
-@dataclass
-class ModelConfig:
-    """Configuration for the AI model."""
-
-    base_url: str = "http://localhost:8000/v1"
-    api_key: str = "EMPTY"
-    model_name: str = "autoglm-phone-9b"
-    api_type: Literal["openai", "gemini"] = "openai"  # API type: openai or gemini
-    max_tokens: int = 3000
-    temperature: float = 0.0
-    top_p: float = 0.85
-    frequency_penalty: float = 0.2
-    extra_body: dict[str, Any] = field(default_factory=dict)
-    lang: str = "cn"  # Language for UI messages: 'cn' or 'en'
-
-
-@dataclass
-class ModelResponse:
-    """Response from the AI model."""
-
-    thinking: str
-    action: str
-    raw_content: str
-    # Performance metrics
-    time_to_first_token: float | None = None  # Time to first token (seconds)
-    time_to_thinking_end: float | None = None  # Time to thinking end (seconds)
-    total_time: float | None = None  # Total inference time (seconds)
-
-
-class ModelClient:
+class GeminiModelClient:
     """
-    Client for interacting with vision-language models.
-    Supports both OpenAI-compatible and Gemini APIs.
+    Client for interacting with Google's Gemini vision-language models.
 
-    Args:
-        config: Model configuration.
+    This client provides compatibility with the OpenAI-style interface while
+    using Google's Generative AI API under the hood.
     """
 
     def __init__(self, config: ModelConfig | None = None):
         self.config = config or ModelConfig()
 
-        # Initialize the appropriate client based on API type
-        if self.config.api_type == "gemini":
-            from phone_agent.model.gemini_client import GeminiModelClient
-            self.client = GeminiModelClient(self.config)
-        else:
-            # Default to OpenAI
-            self.client = OpenAI(base_url=self.config.base_url, api_key=self.config.api_key)
-            self.api_type = "openai"
+        # Import and configure Gemini
+        from google import genai
+        self.genai = genai
+        self.client = genai.Client(api_key=self.config.api_key)
 
     def request(self, messages: list[dict[str, Any]]) -> ModelResponse:
         """
-        Send a request to the model.
+        Send a request to the Gemini model.
 
         Args:
             messages: List of message dictionaries in OpenAI format.
@@ -73,29 +40,23 @@ class ModelClient:
         Raises:
             ValueError: If the response cannot be parsed.
         """
-        # Delegate to the appropriate client
-        if self.config.api_type == "gemini":
-            return self.client.request(messages)
-        else:
-            # Use OpenAI client
-            return self._openai_request(messages)
-
-    def _openai_request(self, messages: list[dict[str, Any]]) -> ModelResponse:
-        """OpenAI-specific request implementation."""
         # Start timing
         start_time = time.time()
         time_to_first_token = None
         time_to_thinking_end = None
 
-        stream = self.client.chat.completions.create(
-            messages=messages,
+        # Convert OpenAI format messages to Gemini format
+        contents = self._convert_messages(messages)
+
+        # Start streaming
+        response = self.client.models.generate_content_stream(
             model=self.config.model_name,
-            max_tokens=self.config.max_tokens,
-            temperature=self.config.temperature,
-            top_p=self.config.top_p,
-            frequency_penalty=self.config.frequency_penalty,
-            extra_body=self.config.extra_body,
-            stream=True,
+            contents=contents,
+            generation_config={
+                "max_output_tokens": self.config.max_tokens,
+                "temperature": self.config.temperature,
+                "top_p": self.config.top_p,
+            }
         )
 
         raw_content = ""
@@ -104,11 +65,9 @@ class ModelClient:
         in_action_phase = False  # Track if we've entered the action phase
         first_token_received = False
 
-        for chunk in stream:
-            if len(chunk.choices) == 0:
-                continue
-            if chunk.choices[0].delta.content is not None:
-                content = chunk.choices[0].delta.content
+        for chunk in response:
+            if hasattr(chunk, 'text') and chunk.text:
+                content = chunk.text
                 raw_content += content
 
                 # Record time to first token
@@ -192,6 +151,62 @@ class ModelClient:
             total_time=total_time,
         )
 
+    def _convert_messages(self, messages: list[dict[str, Any]]) -> str | list[dict]:
+        """
+        Convert OpenAI format messages to Gemini format.
+
+        Args:
+            messages: List of messages in OpenAI format
+
+        Returns:
+            Content in Gemini format
+        """
+        # Collect system prompt
+        system_prompt = ""
+        for msg in messages:
+            if msg["role"] == "system":
+                system_prompt = msg.get("content", "")
+                break
+
+        # Find the first user message with content
+        user_content = ""
+        image_data = None
+
+        for msg in messages:
+            if msg["role"] == "user":
+                content = msg.get("content", "")
+
+                if isinstance(content, list):
+                    # Handle multi-modal content
+                    for item in content:
+                        if item.get("type") == "text":
+                            user_content = item["text"]
+                        elif item.get("type") == "image_url":
+                            # Extract base64 image data
+                            image_url = item["image_url"]["url"]
+                            if image_url.startswith("data:image/png;base64,"):
+                                base64_data = image_url.split(",", 1)[1]
+                                image_data = base64.b64decode(base64_data)
+                else:
+                    user_content = content
+                break  # Only process the first user message
+
+        # Combine system prompt and user content
+        if system_prompt:
+            user_content = f"System: {system_prompt}\n\nUser: {user_content}"
+
+        # If there's an image, return a list with both text and image
+        if image_data:
+            return [
+                {"text": user_content},
+                {"inline_data": {
+                    "mime_type": "image/png",
+                    "data": base64.b64encode(image_data).decode('utf-8')
+                }}
+            ]
+        else:
+            return user_content
+
     def _parse_response(self, content: str) -> tuple[str, str]:
         """
         Parse the model response into thinking and action parts.
@@ -227,83 +242,9 @@ class ModelClient:
         # Rule 3: Fallback to legacy XML tag parsing
         if "<answer>" in content:
             parts = content.split("<answer>", 1)
-            thinking = parts[0].replace("<think>", "").replace("</think>", "").strip()
+            thinking = parts[0].replace("", "").replace("", "").strip()
             action = parts[1].replace("</answer>", "").strip()
             return thinking, action
 
         # Rule 4: No markers found, return content as action
         return "", content
-
-
-class MessageBuilder:
-    """Helper class for building conversation messages."""
-
-    @staticmethod
-    def create_system_message(content: str) -> dict[str, Any]:
-        """Create a system message."""
-        return {"role": "system", "content": content}
-
-    @staticmethod
-    def create_user_message(
-        text: str, image_base64: str | None = None
-    ) -> dict[str, Any]:
-        """
-        Create a user message with optional image.
-
-        Args:
-            text: Text content.
-            image_base64: Optional base64-encoded image.
-
-        Returns:
-            Message dictionary.
-        """
-        content = []
-
-        if image_base64:
-            content.append(
-                {
-                    "type": "image_url",
-                    "image_url": {"url": f"data:image/png;base64,{image_base64}"},
-                }
-            )
-
-        content.append({"type": "text", "text": text})
-
-        return {"role": "user", "content": content}
-
-    @staticmethod
-    def create_assistant_message(content: str) -> dict[str, Any]:
-        """Create an assistant message."""
-        return {"role": "assistant", "content": content}
-
-    @staticmethod
-    def remove_images_from_message(message: dict[str, Any]) -> dict[str, Any]:
-        """
-        Remove image content from a message to save context space.
-
-        Args:
-            message: Message dictionary.
-
-        Returns:
-            Message with images removed.
-        """
-        if isinstance(message.get("content"), list):
-            message["content"] = [
-                item for item in message["content"] if item.get("type") == "text"
-            ]
-        return message
-
-    @staticmethod
-    def build_screen_info(current_app: str, **extra_info) -> str:
-        """
-        Build screen info string for the model.
-
-        Args:
-            current_app: Current app name.
-            **extra_info: Additional info to include.
-
-        Returns:
-            JSON string with screen info.
-        """
-        info = {"current_app": current_app, **extra_info}
-        return json.dumps(info, ensure_ascii=False)

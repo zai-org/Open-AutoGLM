@@ -9,6 +9,7 @@ Environment Variables:
     PHONE_AGENT_BASE_URL: Model API base URL (default: http://localhost:8000/v1)
     PHONE_AGENT_MODEL: Model name (default: autoglm-phone-9b)
     PHONE_AGENT_API_KEY: API key for model authentication (default: EMPTY)
+    PHONE_AGENT_API_TYPE: API type - openai or gemini (default: openai)
     PHONE_AGENT_MAX_STEPS: Maximum steps per task (default: 100)
     PHONE_AGENT_DEVICE_ID: ADB device ID for multi-device setups
 """
@@ -18,7 +19,6 @@ import os
 import shutil
 import subprocess
 import sys
-from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 from loguru import logger
@@ -202,7 +202,7 @@ def check_system_requirements(device_type: DeviceType = DeviceType.ADB) -> bool:
     return all_passed
 
 
-def check_model_api(base_url: str, model_name: str, api_key: str = "EMPTY") -> bool:
+def check_model_api(base_url: str, model_name: str, api_key: str = "EMPTY", api_type: str = "openai") -> bool:
     """
     Check if the model API is accessible and the specified model exists.
 
@@ -214,6 +214,7 @@ def check_model_api(base_url: str, model_name: str, api_key: str = "EMPTY") -> b
         base_url: The API base URL
         model_name: The model name to check
         api_key: The API key for authentication
+        api_type: The API type ("openai" or "gemini")
 
     Returns:
         True if all checks pass, False otherwise.
@@ -224,56 +225,106 @@ def check_model_api(base_url: str, model_name: str, api_key: str = "EMPTY") -> b
     all_passed = True
 
     # Check 1: Network connectivity using chat API
-    print(f"1. Checking API connectivity ({base_url})...", end=" ")
-    try:
-        # Create OpenAI client
-        client = OpenAI(base_url=base_url, api_key=api_key, timeout=30.0)
+    if api_type == "gemini":
+        print(f"1. Checking Gemini API connectivity...", end=" ")
+        try:
+            from google import genai
 
-        # Use chat completion to test connectivity (more universally supported than /models)
-        response = client.chat.completions.create(
-            model=model_name,
-            messages=[{"role": "user", "content": "Hi"}],
-            max_tokens=5,
-            temperature=0.0,
-            stream=False,
-        )
+            # Configure Gemini
+            client = genai.Client(api_key=api_key)
 
-        # Check if we got a valid response
-        if response.choices and len(response.choices) > 0:
+            # Test with a simple prompt
+            response = client.models.generate_content(
+                model=model_name,
+                contents="Hi",
+                generation_config={
+                    "max_output_tokens": 5
+                }
+            )
+
             print("✅ OK")
-        else:
+
+        except Exception as e:
             print("❌ FAILED")
-            print("   Error: Received empty response from API")
+            error_msg = str(e)
+
+            # Provide specific error messages for Gemini
+            if "API_KEY_INVALID" in error_msg or "API key not valid" in error_msg:
+                print("   Error: Invalid API key")
+                print("   Solution:")
+                print("     1. Get a valid API key from https://aistudio.google.com/app/apikey")
+                print("     2. Set it with --apikey or PHONE_AGENT_API_KEY environment variable")
+            elif "Permission denied" in error_msg:
+                print("   Error: Permission denied")
+                print("   Solution:")
+                print("     1. Check if the model name is correct")
+                print("     2. Ensure your API key has access to the specified model")
+            elif "Model not found" in error_msg:
+                print(f"   Error: Model '{model_name}' not found")
+                print("   Solution:")
+                print("     1. Check available Gemini models:")
+                print("       - gemini-1.5-flash")
+                print("       - gemini-1.5-pro")
+                print("     2. Verify the model name spelling")
+            else:
+                print(f"   Error: {error_msg}")
+                print("   Solution:")
+                print("     1. Check your network connection")
+                print("     2. Verify your API key is valid")
+
             all_passed = False
+    else:
+        # OpenAI-compatible API check
+        print(f"1. Checking API connectivity ({base_url})...", end=" ")
+        try:
+            # Create OpenAI client
+            client = OpenAI(base_url=base_url, api_key=api_key, timeout=30.0)
 
-    except Exception as e:
-        print("❌ FAILED")
-        error_msg = str(e)
+            # Use chat completion to test connectivity (more universally supported than /models)
+            response = client.chat.completions.create(
+                model=model_name,
+                messages=[{"role": "user", "content": "Hi"}],
+                max_tokens=5,
+                temperature=0.0,
+                stream=False,
+            )
 
-        # Provide more specific error messages
-        if "Connection refused" in error_msg or "Connection error" in error_msg:
-            print(f"   Error: Cannot connect to {base_url}")
-            print("   Solution:")
-            print("     1. Check if the model server is running")
-            print("     2. Verify the base URL is correct")
-            print(f"     3. Try: curl {base_url}/chat/completions")
-        elif "timed out" in error_msg.lower() or "timeout" in error_msg.lower():
-            print(f"   Error: Connection to {base_url} timed out")
-            print("   Solution:")
-            print("     1. Check your network connection")
-            print("     2. Verify the server is responding")
-        elif (
-            "Name or service not known" in error_msg
-            or "nodename nor servname" in error_msg
-        ):
-            print(f"   Error: Cannot resolve hostname")
-            print("   Solution:")
-            print("     1. Check the URL is correct")
-            print("     2. Verify DNS settings")
-        else:
-            print(f"   Error: {error_msg}")
+            # Check if we got a valid response
+            if response.choices and len(response.choices) > 0:
+                print("✅ OK")
+            else:
+                print("❌ FAILED")
+                print("   Error: Received empty response from API")
+                all_passed = False
 
-        all_passed = False
+        except Exception as e:
+            print("❌ FAILED")
+            error_msg = str(e)
+
+            # Provide more specific error messages
+            if "Connection refused" in error_msg or "Connection error" in error_msg:
+                print(f"   Error: Cannot connect to {base_url}")
+                print("   Solution:")
+                print("     1. Check if the model server is running")
+                print("     2. Verify the base URL is correct")
+                print(f"     3. Try: curl {base_url}/chat/completions")
+            elif "timed out" in error_msg.lower() or "timeout" in error_msg.lower():
+                print(f"   Error: Connection to {base_url} timed out")
+                print("   Solution:")
+                print("     1. Check your network connection")
+                print("     2. Verify the server is responding")
+            elif (
+                "Name or service not known" in error_msg
+                or "nodename nor servname" in error_msg
+            ):
+                print(f"   Error: Cannot resolve hostname")
+                print("   Solution:")
+                print("     1. Check the URL is correct")
+                print("     2. Verify DNS settings")
+            else:
+                print(f"   Error: {error_msg}")
+
+            all_passed = False
 
     print("-" * 50)
 
@@ -292,7 +343,7 @@ def parse_args() -> argparse.Namespace:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-    # Run with default settings
+    # Run with default settings (OpenAI-compatible API)
     python main.py
 
     # Specify model endpoint
@@ -300,6 +351,9 @@ Examples:
 
     # Use API key for authentication
     python main.py --apikey sk-xxxxx
+
+    # Use Google Gemini API
+    python main.py --api-type gemini --model gemini-1.5-flash --apikey YOUR_GEMINI_API_KEY
 
     # Run with specific device
     python main.py --device-id emulator-5554
@@ -338,6 +392,14 @@ Examples:
         type=str,
         default=os.getenv("PHONE_AGENT_API_KEY", "EMPTY"),
         help="API key for model authentication",
+    )
+
+    parser.add_argument(
+        "--api-type",
+        type=str,
+        choices=["openai", "gemini"],
+        default=os.getenv("PHONE_AGENT_API_TYPE", "openai"),
+        help="API type: openai for OpenAI-compatible APIs, gemini for Google Gemini",
     )
 
     parser.add_argument(
@@ -499,6 +561,7 @@ def main():
     logger.info(f"Loaded environment PHONE_AGENT_API_KEY: {os.getenv('PHONE_AGENT_API_KEY')}")
     logger.info(f"Loaded environment PHONE_AGENT_BASE_URL: {os.getenv('PHONE_AGENT_BASE_URL')}")
     logger.info(f"Loaded environment PHONE_AGENT_MODEL: {os.getenv('PHONE_AGENT_MODEL')}")
+    logger.info(f"Loaded environment PHONE_AGENT_API_TYPE: {os.getenv('PHONE_AGENT_API_TYPE')}")
     args = parse_args()
 
     # Set device type globally based on args
@@ -532,7 +595,7 @@ def main():
         sys.exit(1)
 
     # Check model API connectivity and model availability
-    if not check_model_api(args.base_url, args.model, args.apikey):
+    if not check_model_api(args.base_url, args.model, args.apikey, args.api_type):
         sys.exit(1)
 
     # Create configurations
@@ -540,6 +603,7 @@ def main():
         base_url=args.base_url,
         model_name=args.model,
         api_key=args.apikey,
+        api_type=args.api_type,
         lang=args.lang,
     )
 
