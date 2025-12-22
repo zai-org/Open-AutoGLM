@@ -11,4 +11,5 @@ dependencies = [
     "pillow>=12.0.0",
     "python-dotenv>=1.2.1",
     "pyyaml>=6.0.3",
+    "google-genai>=1.0.0",
 ]
