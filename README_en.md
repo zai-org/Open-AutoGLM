@@ -91,6 +91,14 @@ If you are using an Android device:
 Download the [installation package](https://github.com/senzhk/ADBKeyBoard/blob/master/ADBKeyboard.apk) and install it on the corresponding Android device.
 Note: After installation, you need to enable `ADB Keyboard` in `Settings > Input Method` or `Settings > Keyboard List` for it to work.(or use command `adb shell ime enable com.android.adbkeyboard/.AdbIME`[How-to-use](https://github.com/senzhk/ADBKeyBoard/blob/master/README.md#how-to-use))
 
+## iPhone Environment Setup
+
+If you are using an iPhone device, please refer to the dedicated iOS setup documentation:
+
+📱 [iOS Environment Setup Guide](docs/ios_setup/ios_setup_en.md)
+
+This document provides detailed instructions on how to configure WebDriverAgent and iPhone devices to use AutoGLM on iOS.
+
 ## Deployment Preparation
 
 ### 1. Install Dependencies
