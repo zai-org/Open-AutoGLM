@@ -1,6 +1,6 @@
 # Open-AutoGLM
 
-[中文阅读.](./README.md)
+[中文阅读。](./README.md)
 
 <div align="center">
 <img src=resources/logo.svg width="20%"/>
@@ -13,7 +13,7 @@
 
 You can use Claude Code with [GLM Coding Plan](https://z.ai/subscribe) and enter the following prompt to quickly deploy this project:
 
-```
+```text
 Access the documentation and install AutoGLM for me
 https://raw.githubusercontent.com/zai-org/Open-AutoGLM/refs/heads/main/README_en.md
 ```
@@ -141,21 +141,21 @@ If you don't want to deploy the model yourself, you can use the following third-
 
 **1. z.ai**
 
-- Documentation: https://docs.z.ai/api-reference/introduction
+- Documentation: <https://docs.z.ai/api-reference/introduction>
 - `--base-url`: `https://api.z.ai/api/paas/v4`
 - `--model`: `autoglm-phone-multilingual`
 - `--apikey`: Apply for your own API key on the z.ai platform
 
 **2. Novita AI**
 
-- Documentation: https://novita.ai/models/model-detail/zai-org-autoglm-phone-9b-multilingual
+- Documentation: <https://novita.ai/models/model-detail/zai-org-autoglm-phone-9b-multilingual>
 - `--base-url`: `https://api.novita.ai/openai`
 - `--model`: `zai-org/autoglm-phone-9b-multilingual`
 - `--apikey`: Apply for your own API key on the Novita AI platform
 
 **3. Parasail**
 
-- Documentation: https://www.saas.parasail.io/serverless?name=auto-glm-9b-multilingual
+- Documentation: <https://www.saas.parasail.io/serverless?name=auto-glm-9b-multilingual>
 - `--base-url`: `https://api.parasail.io/v1`
 - `--model`: `parasail-auto-glm-9b-multilingual`
 - `--apikey`: Apply for your own API key on the Parasail platform
@@ -182,7 +182,7 @@ If you prefer to deploy the model locally or on your own server:
 
 - vLLM:
 
-```shell
+```bash
 python3 -m vllm.entrypoints.openai.api_server \
  --served-model-name autoglm-phone-9b-multilingual \
  --allowed-local-media-path /   \
@@ -289,6 +289,7 @@ Ensure the phone and computer are on the same WiFi network, as shown below:
 ##### HarmonyOS Devices
 
 Ensure the phone and computer are on the same WiFi network:
+
 1. Go to `Settings > System & Updates > Developer Options`
 2. Enable `USB Debugging` and `Wireless Debugging`
 3. Note the displayed IP address and port number
@@ -347,7 +348,7 @@ python main.py --device-type hdc --device-id 192.168.1.100:5555 --base-url http:
 
 ### Python API Remote Connection
 
-#### Android Devices (ADB)
+#### Connect Android Devices (ADB)
 
 ```python
 from phone_agent.adb import ADBConnection, list_devices
@@ -373,7 +374,7 @@ print(f"Device IP: {ip}")
 conn.disconnect("192.168.1.100:5555")
 ```
 
-#### HarmonyOS Devices (HDC)
+#### Connect HarmonyOS Devices (HDC)
 
 ```python
 from phone_agent.hdc import HDCConnection, list_devices
@@ -467,7 +468,7 @@ config = AgentConfig(
 
 When `verbose=True`, the Agent outputs detailed information at each step:
 
-```
+```text
 ==================================================
 💭 Thinking Process:
 --------------------------------------------------
@@ -604,7 +605,7 @@ pytest tests/
 
 ### Complete Project Structure
 
-```
+```text
 phone_agent/
 ├── __init__.py          # Package exports
 ├── agent.py             # PhoneAgent main class
@@ -638,6 +639,7 @@ adb devices
 ```
 
 If the device is still not recognized, please check:
+
 1. Whether USB debugging is enabled
 2. Whether the USB cable supports data transfer (some cables only support charging)
 3. Whether you have tapped "Allow" on the authorization popup on your phone
@@ -646,6 +648,7 @@ If the device is still not recognized, please check:
 ### Can Open Apps but Cannot Tap
 
 Some devices require both debugging options to be enabled:
+
 - **USB Debugging**
 - **USB Debugging (Security Settings)**
 
@@ -662,11 +665,13 @@ Please check in `Settings → Developer Options` that both options are enabled.
 This usually means the app is displaying a sensitive page (payment, password, banking apps). The Agent will automatically detect this and request manual takeover.
 
 ### Windows Encoding Issues
+
 Error message like `UnicodeEncodeError gbk code`
 
 Solution: Add the environment variable before running the code: `PYTHONIOENCODING=utf-8`
 
 ### Interactive Mode Not Working in Non-TTY Environment
+
 Error like: `EOF when reading a line`
 
 Solution: Use non-interactive mode to specify tasks directly, or switch to a TTY-mode terminal application.
@@ -703,11 +708,13 @@ If you find our work helpful, please cite the following papers:
 ### Project Overview
 
 Open-AutoGLM is a phone agent framework:
+
 - **Input**: User's natural language instructions (e.g., "Open WhatsApp and send a message to John")
 - **Output**: Automatically operates the user's Android phone to complete tasks
 - **Mechanism**: Screenshot → Vision model understands interface → Outputs tap coordinates → ADB executes actions → Loop
 
 The architecture consists of two parts:
+
 1. **Agent Code** (this repository): Runs on the user's computer, responsible for calling models, parsing actions, and controlling the phone
 2. **Vision Model Service**: Can be a remote API or deployed locally
 
@@ -718,15 +725,17 @@ The architecture consists of two parts:
 Before starting deployment, confirm the following items with the user:
 
 #### Hardware Requirements
+
 - [ ] User has an Android phone (Android 7.0+)
 - [ ] User has a USB cable that supports data transfer (not just charging)
 - [ ] Phone and computer can be connected via USB cable
 
 #### Phone Configuration
+
 - [ ] Phone has Developer Mode enabled (Settings → About Phone → Tap Build Number 7 times)
 - [ ] Phone has USB Debugging enabled (Settings → Developer Options → USB Debugging)
 - [ ] Some models require enabling "USB Debugging (Security Settings)" as well
-- [ ] ADB Keyboard app is installed (Download: https://github.com/senzhk/ADBKeyBoard/blob/master/ADBKeyboard.apk)
+- [ ] ADB Keyboard app is installed (Download: <https://github.com/senzhk/ADBKeyBoard/blob/master/ADBKeyboard.apk>)
 - [ ] ADB Keyboard is enabled in system settings (Settings → Language & Input → Enable ADB Keyboard)
 
 #### Model Service Confirmation (Choose One)
@@ -771,6 +780,7 @@ adb devices
 ```
 
 **If `adb devices` shows empty list or unauthorized:**
+
 1. Check if authorization popup appeared on phone, tap "Allow"
 2. Check if USB debugging is enabled
 3. Try a different cable or USB port
@@ -801,19 +811,19 @@ pip install -e .
 You can use the following third-party model services:
 
 1. **z.ai**
-   - Documentation: https://docs.z.ai/api-reference/introduction
+   - Documentation: <https://docs.z.ai/api-reference/introduction>
    - `--base-url`: `https://api.z.ai/api/paas/v4`
    - `--model`: `autoglm-phone-multilingual`
    - `--apikey`: Apply for your own API key on the z.ai platform
 
 2. **Novita AI**
-   - Documentation: https://novita.ai/models/model-detail/zai-org-autoglm-phone-9b-multilingual
+   - Documentation: <https://novita.ai/models/model-detail/zai-org-autoglm-phone-9b-multilingual>
    - `--base-url`: `https://api.novita.ai/openai`
    - `--model`: `zai-org/autoglm-phone-9b-multilingual`
    - `--apikey`: Apply for your own API key on the Novita AI platform
 
 3. **Parasail**
-   - Documentation: https://www.saas.parasail.io/serverless?name=auto-glm-9b-multilingual
+   - Documentation: <https://www.saas.parasail.io/serverless?name=auto-glm-9b-multilingual>
    - `--base-url`: `https://api.parasail.io/v1`
    - `--model`: `parasail-auto-glm-9b-multilingual`
    - `--apikey`: Apply for your own API key on the Parasail platform
@@ -865,6 +875,7 @@ python main.py --base-url {MODEL_URL} --model "autoglm-phone-9b-multilingual" "O
 ```
 
 **Expected Result:**
+
 - Phone automatically opens Gmail
 - Automatically searches for recipient
 - Automatically sends the message "Deployment successful"

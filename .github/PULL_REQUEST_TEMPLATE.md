@@ -16,7 +16,7 @@ the following contribution guidelines.
 Good code style is an art. We have prepared a `pre-commit` hook to enforce consistent code
 formatting across the project. You can clean up your code following the steps below:
 
-```shell
+```bash
 pre-commit run --all-files
 ```
 

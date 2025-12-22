@@ -17,9 +17,9 @@
 
 ## 懒人版快速安装
 
-你可以使用Claude Code，配置 [GLM Coding Plan](https://bigmodel.cn/glm-coding) 后，输入以下提示词，快速部署本项目。
+你可以使用 Claude Code，配置 [GLM Coding Plan](https://bigmodel.cn/glm-coding) 后，输入以下提示词，快速部署本项目。
 
-```
+```text
 访问文档，为我安装 AutoGLM
 https://raw.githubusercontent.com/zai-org/Open-AutoGLM/refs/heads/main/README.md
 ```
@@ -27,7 +27,7 @@ https://raw.githubusercontent.com/zai-org/Open-AutoGLM/refs/heads/main/README.md
 ## 项目介绍
 
 Phone Agent 是一个基于 AutoGLM 构建的手机端智能助理框架，它能够以多模态方式理解手机屏幕内容，并通过自动化操作帮助用户完成任务。系统通过
-ADB(Android Debug Bridge)来控制设备，以视觉语言模型进行屏幕感知，再结合智能规划能力生成并执行操作流程。用户只需用自然语言描述需求，如“打开小红书搜索美食”，Phone
+ADB(Android Debug Bridge) 来控制设备，以视觉语言模型进行屏幕感知，再结合智能规划能力生成并执行操作流程。用户只需用自然语言描述需求，如“打开小红书搜索美食”，Phone
 Agent 即可自动解析意图、理解当前界面、规划下一步动作并完成整个流程。系统还内置敏感操作确认机制，并支持在登录或验证码场景下进行人工接管。同时，它提供远程
 ADB 调试能力，可通过 WiFi 或网络连接设备，实现灵活的远程控制与开发。
 
@@ -67,7 +67,7 @@ ADB 调试能力，可通过 WiFi 或网络连接设备，实现灵活的远程�
 
 - Windows 配置方法：可参考 [第三方教程](https://blog.csdn.net/x2584179909/article/details/108319973) 进行配置。
 
-#### 对于鸿蒙设备 (HarmonyOS NEXT版本以上) - 使用 HDC
+#### 对于鸿蒙设备 (HarmonyOS NEXT 版本以上) - 使用 HDC
 
 1. 下载 HDC 工具：
    - 从 [HarmonyOS SDK](https://developer.huawei.com/consumer/cn/download/) 下载
@@ -87,8 +87,8 @@ ADB 调试能力，可通过 WiFi 或网络连接设备，实现灵活的远程�
 1. 开发者模式启用：通常启用方法是，找到 `设置-关于手机-版本号` 然后连续快速点击 10
    次左右，直到弹出弹窗显示“开发者模式已启用”。不同手机会有些许差别，如果找不到，可以上网搜索一下教程。
 2. USB 调试启用：启用开发者模式之后，会出现 `设置-开发者选项-USB 调试`，勾选启用
-3. 部分机型在设置开发者选项以后, 可能需要重启设备才能生效. 可以测试一下: 将手机用USB数据线连接到电脑后, `adb devices`
-   查看是否有设备信息, 如果没有说明连接失败.
+3. 部分机型在设置开发者选项以后，可能需要重启设备才能生效。可以测试一下：将手机用 USB 数据线连接到电脑后，`adb devices`
+   查看是否有设备信息，如果没有说明连接失败。
 
 **请务必仔细检查相关权限**
 
@@ -101,7 +101,7 @@ ADB 调试能力，可通过 WiFi 或网络连接设备，实现灵活的远程�
 如果你使用的是 Android 设备：
 
 下载 [安装包](https://github.com/senzhk/ADBKeyBoard/blob/master/ADBKeyboard.apk) 并在对应的安卓设备中进行安装。
-注意，安装完成后还需要到 `设置-输入法` 或者 `设置-键盘列表` 中启用 `ADB Keyboard` 才能生效(或使用命令`adb shell ime enable com.android.adbkeyboard/.AdbIME`[How-to-use](https://github.com/senzhk/ADBKeyBoard/blob/master/README.md#how-to-use))
+注意，安装完成后还需要到 `设置-输入法` 或者 `设置-键盘列表` 中启用 `ADB Keyboard` 才能生效 (或使用命令`adb shell ime enable com.android.adbkeyboard/.AdbIME`[How-to-use](https://github.com/senzhk/ADBKeyBoard/blob/master/README.md#how-to-use))
 
 ## iPhone 环境准备
 
@@ -124,9 +124,9 @@ pip install -e .
 
 #### 对于 Android 设备
 
-确认 **USB数据线具有数据传输功能**, 而不是仅有充电功能
+确认 **USB 数据线具有数据传输功能**, 而不是仅有充电功能
 
-确保已安装 ADB 并使用 **USB数据线** 连接设备：
+确保已安装 ADB 并使用 **USB 数据线** 连接设备：
 
 ```bash
 # 检查已连接的设备
@@ -139,9 +139,9 @@ adb devices
 
 #### 对于鸿蒙设备
 
-确认 **USB数据线具有数据传输功能**, 而不是仅有充电功能
+确认 **USB 数据线具有数据传输功能**, 而不是仅有充电功能
 
-确保已安装 HDC 并使用 **USB数据线** 连接设备：
+确保已安装 HDC 并使用 **USB 数据线** 连接设备：
 
 ```bash
 # 检查已连接的设备
@@ -161,14 +161,14 @@ hdc list targets
 
 **1. 智谱 BigModel**
 
-- 文档: https://docs.bigmodel.cn/cn/api/introduction
+- 文档：<https://docs.bigmodel.cn/cn/api/introduction>
 - `--base-url`: `https://open.bigmodel.cn/api/paas/v4`
 - `--model`: `autoglm-phone`
 - `--apikey`: 在智谱平台申请你的 API Key
 
 **2. ModelScope(魔搭社区)**
 
-- 文档: https://modelscope.cn/models/ZhipuAI/AutoGLM-Phone-9B
+- 文档：<https://modelscope.cn/models/ZhipuAI/AutoGLM-Phone-9B>
 - `--base-url`: `https://api-inference.modelscope.cn/v1`
 - `--model`: `ZhipuAI/AutoGLM-Phone-9B`
 - `--apikey`: 在 ModelScope 平台申请你的 API Key
@@ -189,37 +189,37 @@ python main.py --base-url https://api-inference.modelscope.cn/v1 --model "ZhipuA
 
 1. 按照 `requirements.txt` 中 `For Model Deployment` 章节自行安装推理引擎框架。
 
-对于SGLang， 除了使用pip安装，你也可以使用官方docker:
+对于 SGLang，除了使用 pip 安装，你也可以使用官方 docker:
 >
-> ```shell
+> ```bash
 > docker pull lmsysorg/sglang:v0.5.6.post1
 > ```
 >
 > 进入容器，执行
 >
-> ```
+> ```bash
 > pip install nvidia-cudnn-cu12==9.16.0.29
 > ```
 
-对于 vLLM，除了使用pip 安装，你也可以使用官方docker:
+对于 vLLM，除了使用 pip 安装，你也可以使用官方 docker:
 >
-> ```shell
+> ```bash
 > docker pull vllm/vllm-openai:v0.12.0
 > ```
 >
 > 进入容器，执行
 >
-> ```
+> ```bash
 > pip install -U transformers --pre
 > ```
 
 **注意**: 上述步骤出现的关于 transformers 的依赖冲突可以忽略。
 
-1. 在对应容器或者实体机中(非容器安装)下载模型，通过 SGlang / vLLM 启动，得到 OpenAI 格式服务。这里提供一个 vLLM部署方案，请严格遵循我们提供的启动参数:
+1. 在对应容器或者实体机中 (非容器安装) 下载模型，通过 SGlang / vLLM 启动，得到 OpenAI 格式服务。这里提供一个 vLLM 部署方案，请严格遵循我们提供的启动参数：
 
 - vLLM:
 
-```shell
+```bash
 python3 -m vllm.entrypoints.openai.api_server \
  --served-model-name autoglm-phone-9b \
  --allowed-local-media-path /   \
@@ -235,7 +235,7 @@ python3 -m vllm.entrypoints.openai.api_server \
 
 - SGLang:
 
-```shell
+```bash
 python3 -m sglang.launch_server --model-path  zai-org/AutoGLM-Phone-9B \
         --served-model-name autoglm-phone-9b  \
         --context-length 25480  \
@@ -244,10 +244,10 @@ python3 -m sglang.launch_server --model-path  zai-org/AutoGLM-Phone-9B \
         --port 8000
 ```
 
-- 该模型结构与 `GLM-4.1V-9B-Thinking` 相同, 关于模型部署的详细内容，你也以查看 [GLM-V](https://github.com/zai-org/GLM-V)
+- 该模型结构与 `GLM-4.1V-9B-Thinking` 相同，关于模型部署的详细内容，你也以查看 [GLM-V](https://github.com/zai-org/GLM-V)
   获取模型部署和使用指南。
 
-- 运行成功后，将可以通过 `http://localhost:8000/v1` 访问模型服务。 如果您在远程服务器部署模型, 使用该服务器的IP访问模型.
+- 运行成功后，将可以通过 `http://localhost:8000/v1` 访问模型服务。如果您在远程服务器部署模型，使用该服务器的 IP 访问模型。
 
 ### 4. 检查模型部署
 
@@ -259,32 +259,33 @@ python scripts/check_deployment_cn.py --base-url http://你的IP:你的端口/v1
 
 脚本将发送测试请求并展示模型的推理结果，你可以根据输出判断模型部署是否正常工作。
 
-基于给定的任务, 预期输出如下。**如果思维链长度很短, 或者出现了乱码, 很可能是模型部署失败**, 请仔细检查文档要求的配置和依赖。
+基于给定的任务，预期输出如下。**如果思维链长度很短，或者出现了乱码，很可能是模型部署失败**, 请仔细检查文档要求的配置和依赖。
 
-```
-<think>用户想要比较这个洗发水在京东和淘宝上的价格，然后选择最便宜的平台下单。当前在小红书app上，显示的是一个关于LUMMI MOOD洗发水的帖子。
+```text
+<think>用户想要比较这个洗发水在京东和淘宝上的价格，然后选择最便宜的平台下单。当前在小红书 app 上，显示的是一个关于 LUMMI MOOD 洗发水的帖子。
 
 我需要：
-1. 先启动京东app，搜索这个洗发水
+1. 先启动京东 app，搜索这个洗发水
 2. 查看京东的价格
-3. 再启动淘宝app，搜索这个洗发水
+3. 再启动淘宝 app，搜索这个洗发水
 4. 查看淘宝的价格
 5. 比较价格后，选择最便宜的京东或淘宝下单
 
-首先，我需要从当前的小红书界面退出，然后启动京东app。</think>
+首先，我需要从当前的小红书界面退出，然后启动京东 app。</think>
 <answer>do(action="Launch", app="京东")
 ```
 
 **参数说明：**
-- `--base-url`: 模型服务地址(根据实际部署地址修改)
+
+- `--base-url`: 模型服务地址 (根据实际部署地址修改)
 - `--model`: 模型名称
-- `--messages-file`: 可选，指定自定义测试消息文件(默认使用 `scripts/sample_messages.json`)
+- `--messages-file`: 可选，指定自定义测试消息文件 (默认使用 `scripts/sample_messages.json`)
 
 ## 使用 AutoGLM
 
 ### 命令行
 
-根据你部署的模型, 设置 `--base-url` 和 `--model` 参数, 设置 `--device-type` 指定是安卓设备或鸿蒙设备 (默认值 adb 表示安卓设备, hdc 表示鸿蒙设备). 例如:
+根据你部署的模型，设置 `--base-url` 和 `--model` 参数，设置 `--device-type` 指定是安卓设备或鸿蒙设备 (默认值 adb 表示安卓设备，hdc 表示鸿蒙设备). 例如：
 
 ```bash
 # Android 设备 - 交互模式
@@ -342,13 +343,14 @@ Phone Agent 支持通过 WiFi/网络进行远程 ADB/HDC 调试，无需 USB 连
 
 ##### Android 设备
 
-确保手机和电脑在同一个WiFi中，如图所示
+确保手机和电脑在同一个 WiFi 中，如图所示
 
 ![开启无线调试](resources/setting.png)
 
 ##### 鸿蒙设备
 
-确保手机和电脑在同一个WiFi中：
+确保手机和电脑在同一个 WiFi 中：
+
 1. 进入 `设置 > 系统和更新 > 开发者选项`
 2. 开启 `USB 调试` 和 `无线调试`
 3. 记录显示的 IP 地址和端口号
@@ -407,7 +409,7 @@ python main.py --device-type hdc --device-id 192.168.1.100:5555 --base-url http:
 
 ### Python API 远程连接
 
-#### Android 设备（ADB）
+#### 连接 Android 设备（ADB）
 
 ```python
 from phone_agent.adb import ADBConnection, list_devices
@@ -417,7 +419,7 @@ conn = ADBConnection()
 
 # 连接远程设备
 success, message = conn.connect("192.168.1.100:5555")
-print(f"连接状态: {message}")
+print(f"连接状态：{message}")
 
 # 列出已连接设备
 devices = list_devices()
@@ -433,7 +435,7 @@ print(f"设备 IP: {ip}")
 conn.disconnect("192.168.1.100:5555")
 ```
 
-#### 鸿蒙设备（HDC）
+#### 连接鸿蒙设备（HDC）
 
 ```python
 from phone_agent.hdc import HDCConnection, list_devices
@@ -443,7 +445,7 @@ conn = HDCConnection()
 
 # 连接远程设备
 success, message = conn.connect("192.168.1.100:5555")
-print(f"连接状态: {message}")
+print(f"连接状态：{message}")
 
 # 列出已连接设备
 devices = list_devices()
@@ -474,7 +476,7 @@ conn.disconnect("192.168.1.100:5555")
 
 ## 配置
 
-### 自定义SYSTEM PROMPT
+### 自定义 SYSTEM PROMPT
 
 系统提供中英文两套 prompt，通过 `--lang` 参数切换：
 
@@ -502,7 +504,7 @@ from phone_agent.model import ModelConfig
 
 config = ModelConfig(
     base_url="http://localhost:8000/v1",
-    api_key="EMPTY",  # API 密钥(如需要)
+    api_key="EMPTY",  # API 密钥 (如需要)
     model_name="autoglm-phone-9b",  # 模型名称
     max_tokens=3000,  # 最大输出 token 数
     temperature=0.1,  # 采样温度
@@ -518,8 +520,8 @@ from phone_agent.agent import AgentConfig
 config = AgentConfig(
     max_steps=100,  # 每个任务最大步数
     device_id=None,  # ADB 设备 ID(None 为自动检测)
-    lang="cn",  # 语言选择：cn(中文)或 en(英文)
-    verbose=True,  # 打印调试信息(包括思考过程和执行动作)
+    lang="cn",  # 语言选择：cn(中文) 或 en(英文)
+    verbose=True,  # 打印调试信息 (包括思考过程和执行动作)
 )
 ```
 
@@ -527,13 +529,13 @@ config = AgentConfig(
 
 当 `verbose=True` 时，Agent 会在每一步输出详细信息：
 
-```
+```text
 ==================================================
-💭 思考过程:
+💭 思考过程：
 --------------------------------------------------
 当前在系统桌面，需要先启动小红书应用
 --------------------------------------------------
-🎯 执行动作:
+🎯 执行动作：
 {
   "_metadata": "do",
   "action": "Launch",
@@ -544,11 +546,11 @@ config = AgentConfig(
 ... (执行动作后继续下一步)
 
 ==================================================
-💭 思考过程:
+💭 思考过程：
 --------------------------------------------------
 小红书已打开，现在需要点击搜索框
 --------------------------------------------------
-🎯 执行动作:
+🎯 执行动作：
 {
   "_metadata": "do",
   "action": "Tap",
@@ -557,7 +559,7 @@ config = AgentConfig(
 ==================================================
 
 🎉 ================================================
-✅ 任务完成: 已成功搜索美食攻略
+✅ 任务完成：已成功搜索美食攻略
 ==================================================
 ```
 
@@ -576,7 +578,7 @@ Phone Agent 支持 50+ 款主流中文应用：
 | 美食外卖 | 美团、饿了么、肯德基      |
 | 出行旅游 | 携程、12306、滴滴出行   |
 | 视频娱乐 | bilibili、抖音、爱奇艺 |
-| 音乐音频 | 网易云音乐、QQ音乐、喜马拉雅 |
+| 音乐音频 | 网易云音乐、QQ 音乐、喜马拉雅 |
 | 生活服务 | 大众点评、高德地图、百度地图  |
 | 内容社区 | 小红书、知乎、豆瓣       |
 
@@ -592,10 +594,10 @@ Phone Agent 支持 60+ 款鸿蒙原生应用和系统应用：
 | 电商购物    | 淘宝、京东、拼多多、唯品会、得物、闲鱼                     |
 | 美食外卖    | 美团、美团外卖、大众点评、海底捞                        |
 | 出行旅游    | 12306、滴滴出行、同程旅行、高德地图、百度地图               |
-| 视频娱乐    | bilibili、抖音、快手、腾讯视频、爱奇艺、芒果TV            |
-| 音乐音频    | QQ音乐、汽水音乐、喜马拉雅                           |
-| 生活服务    | 小红书、知乎、今日头条、58同城、中国移动                   |
-| AI与工具   | 豆包、WPS、UC浏览器、扫描全能王、美图秀秀                 |
+| 视频娱乐    | bilibili、抖音、快手、腾讯视频、爱奇艺、芒果 TV            |
+| 音乐音频    | QQ 音乐、汽水音乐、喜马拉雅                           |
+| 生活服务    | 小红书、知乎、今日头条、58 同城、中国移动                   |
+| AI 与工具   | 豆包、WPS、UC 浏览器、扫描全能王、美图秀秀                 |
 | 系统应用    | 浏览器、日历、相机、时钟、云空间、文件管理器、相册、联系人、短信、设置等   |
 | 华为服务    | 应用市场、音乐、视频、阅读、主题、天气                     |
 
@@ -616,7 +618,7 @@ Agent 可以执行以下操作：
 | `Long Press` | 长按              |
 | `Double Tap` | 双击              |
 | `Wait`       | 等待页面加载          |
-| `Take_over`  | 请求人工接管(登录/验证码等) |
+| `Take_over`  | 请求人工接管 (登录/验证码等) |
 
 ## 自定义回调
 
@@ -630,7 +632,7 @@ def my_confirmation(message: str) -> bool:
 
 def my_takeover(message: str) -> None:
     """人工接管回调"""
-    print(f"请手动完成: {message}")
+    print(f"请手动完成：{message}")
     input("完成后按回车继续...")
 
 
@@ -667,7 +669,7 @@ pytest tests/
 
 ### 完整项目结构
 
-```
+```text
 phone_agent/
 ├── __init__.py          # 包导出
 ├── agent.py             # PhoneAgent 主类
@@ -703,7 +705,7 @@ adb devices
 如果仍然无法识别，请检查：
 
 1. USB 调试是否已开启
-2. 数据线是否支持数据传输(部分数据线仅支持充电)
+2. 数据线是否支持数据传输 (部分数据线仅支持充电)
 3. 手机上弹出的授权框是否已点击「允许」
 4. 尝试更换 USB 接口或数据线
 
@@ -712,7 +714,7 @@ adb devices
 部分机型需要同时开启两个调试选项才能正常使用：
 
 - **USB 调试**
-- **USB 调试(安全设置)**
+- **USB 调试 (安全设置)**
 
 请在 `设置 → 开发者选项` 中检查这两个选项是否都已启用。
 
@@ -722,21 +724,21 @@ adb devices
 2. 在设置 > 系统 > 语言和输入法 > 虚拟键盘 中启用
 3. Agent 会在需要输入时自动切换到 ADB Keyboard
 
-### 截图失败(黑屏)
+### 截图失败 (黑屏)
 
-这通常意味着应用正在显示敏感页面(支付、密码、银行类应用)。Agent 会自动检测并请求人工接管。
+这通常意味着应用正在显示敏感页面 (支付、密码、银行类应用)。Agent 会自动检测并请求人工接管。
 
 ### windows 编码异常问题
 
 报错信息形如 `UnicodeEncodeError gbk code`
 
-解决办法: 在运行代码的命令前面加上环境变量: `PYTHONIOENCODING=utf-8`
+解决办法：在运行代码的命令前面加上环境变量：`PYTHONIOENCODING=utf-8`
 
-### 交互模式非TTY环境无法使用
+### 交互模式非 TTY 环境无法使用
 
-报错形如: `EOF when reading a line`
+报错形如：`EOF when reading a line`
 
-解决办法: 使用非交互模式直接指定任务, 或者切换到 TTY 模式的终端应用.
+解决办法：使用非交互模式直接指定任务，或者切换到 TTY 模式的终端应用。
 
 ### 引用
 
@@ -759,9 +761,9 @@ adb devices
 
 ---
 
-## 自动化部署指南(面向 AI)
+## 自动化部署指南 (面向 AI)
 
-> **本章节专为 AI 助手(如 Claude Code)设计，用于自动化部署 Open-AutoGLM。**
+> **本章节专为 AI 助手 (如 Claude Code) 设计，用于自动化部署 Open-AutoGLM。**
 >
 > 如果你是人类读者，可以跳过本章节，按照上面的文档操作即可。
 
@@ -770,11 +772,13 @@ adb devices
 ### 项目概述
 
 Open-AutoGLM 是一个手机 Agent 框架：
-- **输入**：用户的自然语言指令(如"打开微信发消息给张三")
+
+- **输入**：用户的自然语言指令 (如"打开微信发消息给张三")
 - **输出**：自动操作用户的安卓手机完成任务
 - **原理**：截图 → 视觉模型理解界面 → 输出点击坐标 → ADB 执行操作 → 循环
 
 架构分为两部分：
+
 1. **Agent 代码**(本仓库)：运行在用户电脑上，负责调用模型、解析动作、控制手机
 2. **视觉模型服务**：可以是远程 API，也可以本地部署
 
@@ -785,27 +789,29 @@ Open-AutoGLM 是一个手机 Agent 框架：
 在开始部署前，请逐项向用户确认以下内容：
 
 #### 硬件环境
-- [ ] 用户有一台安卓手机(Android 7.0+)
-- [ ] 用户有一根支持数据传输的 USB 数据线(不是仅充电线)
+
+- [ ] 用户有一台安卓手机 (Android 7.0+)
+- [ ] 用户有一根支持数据传输的 USB 数据线 (不是仅充电线)
 - [ ] 手机和电脑可以通过数据线连接
 
 #### 手机端配置
+
 - [ ] 手机已开启「开发者模式」(设置 → 关于手机 → 连续点击版本号 7 次)
 - [ ] 手机已开启「USB 调试」(设置 → 开发者选项 → USB 调试)
-- [ ] 部分机型需要同时开启「USB 调试(安全设置)」
-- [ ] 手机已安装 ADB Keyboard 应用(下载地址：https://github.com/senzhk/ADBKeyBoard/blob/master/ADBKeyboard.apk)
-- [ ] ADB Keyboard 已在系统设置中启用(设置 → 语言和输入法 → 启用 ADB Keyboard)
+- [ ] 部分机型需要同时开启「USB 调试 (安全设置)」
+- [ ] 手机已安装 ADB Keyboard 应用 (下载地址：<https://github.com/senzhk/ADBKeyBoard/blob/master/ADBKeyboard.apk>)
+- [ ] ADB Keyboard 已在系统设置中启用 (设置 → 语言和输入法 → 启用 ADB Keyboard)
 
-#### 模型服务确认(二选一)
+#### 模型服务确认 (二选一)
 
 **请明确询问用户：你是否已有可用的 AutoGLM 模型服务？**
 
-- **选项 A：使用已部署的模型服务(推荐)**
+- **选项 A：使用已部署的模型服务 (推荐)**
   - 用户提供模型服务的 URL(如 `http://xxx.xxx.xxx.xxx:8000/v1`)
   - 无需本地 GPU，无需下载模型
   - 直接使用该 URL 作为 `--base-url` 参数
 
-- **选项 B：本地部署模型(高配置要求)**
+- **选项 B：本地部署模型 (高配置要求)**
   - 需要 NVIDIA GPU(建议 24GB+ 显存)
   - 需要安装 vLLM 或 SGLang
   - 需要下载约 20GB 的模型文件
@@ -838,6 +844,7 @@ adb devices
 ```
 
 **如果 `adb devices` 显示空列表或 unauthorized：**
+
 1. 检查手机上是否弹出授权框，点击「允许」
 2. 检查 USB 调试是否开启
 3. 尝试更换数据线或 USB 接口
@@ -868,13 +875,13 @@ pip install -e .
 你可以使用以下第三方模型服务：
 
 1. **智谱 BigModel**
-   - 文档：https://docs.bigmodel.cn/cn/api/introduction
+   - 文档：<https://docs.bigmodel.cn/cn/api/introduction>
    - `--base-url`：`https://open.bigmodel.cn/api/paas/v4`
    - `--model`：`autoglm-phone`
    - `--apikey`：在智谱平台申请你的 API Key
 
 2. **ModelScope(魔搭社区)**
-   - 文档：https://modelscope.cn/models/ZhipuAI/AutoGLM-Phone-9B
+   - 文档：<https://modelscope.cn/models/ZhipuAI/AutoGLM-Phone-9B>
    - `--base-url`：`https://api-inference.modelscope.cn/v1`
    - `--model`：`ZhipuAI/AutoGLM-Phone-9B`
    - `--apikey`：在 ModelScope 平台申请你的 API Key
@@ -923,6 +930,7 @@ python main.py --base-url {MODEL_URL} --model "autoglm-phone-9b" "打开微信�
 ```
 
 **预期结果：**
+
 - 手机自动打开微信
 - 自动搜索「文件传输助手」
 - 自动发送消息「部署成功」
@@ -935,9 +943,9 @@ python main.py --base-url {MODEL_URL} --model "autoglm-phone-9b" "打开微信�
 |---------|---------|---------|
 | `adb devices` 无输出 | USB 调试未开启或数据线问题 | 检查开发者选项，更换数据线 |
 | `adb devices` 显示 unauthorized | 手机未授权 | 手机上点击「允许 USB 调试」|
-| 能打开应用但无法点击 | 缺少安全调试权限 | 开启「USB 调试(安全设置)」|
+| 能打开应用但无法点击 | 缺少安全调试权限 | 开启「USB 调试 (安全设置)」|
 | 中文输入变成乱码或无输入 | ADB Keyboard 未启用 | 在系统设置中启用 ADB Keyboard |
-| 截图返回黑屏 | 敏感页面(支付/银行) | 正常现象，系统会自动处理 |
+| 截图返回黑屏 | 敏感页面 (支付/银行) | 正常现象，系统会自动处理 |
 | 连接模型服务失败 | URL 错误或服务未启动 | 检查 URL，确认服务正在运行 |
 | `ModuleNotFoundError` | 依赖未安装 | 执行 `pip install -r requirements.txt` |
 
