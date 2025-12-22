@@ -29,10 +29,10 @@ cd WebDriverAgent
 2. 进入 `Signing & Capabilities` 选项卡
 3. 勾选 `Automatically manage signing`。在 Team 中选择自己的开发者账号
 4. 将 Bundle ID 改为唯一标识符，例如：`com.yourname.WebDriverAgentRunner`
-![设置签名 1](resources/ios0_WebDriverAgent0.png)
+![设置签名 1](assets/ios_setup/ios0_WebDriverAgent0.png)
 
 5. TARGETS 中，建议将 WebDriverAgentLib、WebDriverAgentRunner、IntegrationApp 的`Signing & Capabilities` 都按照相同方式设置。
-![设置签名 1](resources/ios0_WebDriverAgent1.png)
+![设置签名 1](assets/ios_setup/ios0_WebDriverAgent1.png)
 
 ### 3. 测试 XCode 的 GUI 模式和 UI 自动化设置
 
@@ -51,11 +51,11 @@ Mac 和 iPhone 有 USB 和 WiFi 两种连接方式，建议通过 USB 方式，�
 1. 从项目 Target 选择 `WebDriverAgentRunner`
 2. 选择你的设备
 
-   ![选择设备](resources/select-your-iphone-device.png)
+   ![选择设备](assets/ios_setup/select-your-iphone-device.png)
 
 3. 长按"▶️"运行按钮，选择 "Test" 后开始编译并部署到你的 iPhone 上
 
-   ![开始测试](resources/start-wda-testing.png)
+   ![开始测试](assets/ios_setup/start-wda-testing.png)
 
 部署成功的标志：1. XCode 没有报错。2. 你可以在 iPhone 上找到名为 WebDriverAgentRunner 的 App
 
@@ -69,13 +69,13 @@ Mac 和 iPhone 有 USB 和 WiFi 两种连接方式，建议通过 USB 方式，�
    - 在“开发者 App”中选择对应开发者
    - 点击信任“XXX”
 
-   ![信任设备](resources/trust-dev-app.jpg)
+   ![信任设备](assets/ios_setup/trust-dev-app.jpg)
 
 3. **启用 UI 自动化**
    - 进入：设置 → 开发者
    - 打开 UI 自动化设置
 
-   ![启用 UI 自动化](resources/enable-ui-automation.jpg)
+   ![启用 UI 自动化](assets/ios_setup/enable-ui-automation.jpg)
 
 ### 4. XCode 命令行模式部署
 
@@ -106,7 +106,7 @@ ServerURLHere->http://[设备 IP]:8100<-ServerURLHere
 ```
 
 同时，观察到手机上安装好了 WebDriverAgentRunner，屏幕显示 Automation Running 字样。
-其中，**http://[设备 IP]:8100**为 WiFi 所需的 WDA_URL。
+其中，`http://[设备 IP]:8100` 为 WiFi 所需的 WDA_URL。
 
 ## 使用 AutoGLM
 
