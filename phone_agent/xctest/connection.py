@@ -252,6 +252,78 @@ class XCTestConnection:
         except Exception as e:
             return False, f"Error starting WDA session: {e}"
 
+    def get_wda_screen(self) -> dict | None:
+        """Get WDA screen information (/wda/screen).
+
+        Returns:
+            The JSON-decoded response dict on success, otherwise None.
+        """
+        try:
+            import requests
+
+            response = requests.get(f"{self.wda_url}/wda/screen", timeout=5, verify=False)
+            if response.status_code == 200:
+                return response.json()
+            return None
+        except Exception:
+            return None
+
+    def detect_screen_scale(
+        self,
+        session_id: str | None = None,
+        device_id: str | None = None,
+        default: float = 3.0,
+    ) -> float:
+        """Detect iOS screen scale factor used by WDA coordinate system.
+
+        Priority:
+        1) Use `/wda/screen` -> value.scale if available.
+        2) Fallback: infer scale by comparing screenshot pixel size with screenSize points.
+
+        This keeps the detection details inside xctest, so CLI/agent code can stay clean.
+        """
+        screen = self.get_wda_screen()
+        try:
+            if screen and isinstance(screen, dict):
+                value = screen.get("value", {}) or {}
+                scale = value.get("scale")
+                if isinstance(scale, (int, float)) and scale > 0:
+                    return float(scale)
+
+                screen_size = value.get("screenSize", {}) or {}
+                width_pt = screen_size.get("width")
+                height_pt = screen_size.get("height")
+
+                if isinstance(width_pt, (int, float)) and isinstance(height_pt, (int, float)):
+                    # Import locally to avoid circular import at module import time.
+                    from phone_agent.xctest.screenshot import get_screenshot
+
+                    shot = get_screenshot(
+                        wda_url=self.wda_url,
+                        session_id=session_id,
+                        device_id=device_id,
+                    )
+
+                    # Best-effort inference: choose the more stable ratio between width/height.
+                    ratio_w = shot.width / float(width_pt) if width_pt else 0
+                    ratio_h = shot.height / float(height_pt) if height_pt else 0
+                    ratio = ratio_w if ratio_w > 0 else ratio_h
+                    if ratio_h > 0 and ratio_w > 0:
+                        # If both available, use the rounded average to reduce rotation noise.
+                        ratio = (ratio_w + ratio_h) / 2
+
+                    # WDA scale is typically 1/2/3. Round to nearest int if close.
+                    rounded = round(ratio) if ratio > 0 else 0
+                    if rounded in (1, 2, 3) and abs(ratio - rounded) < 0.25:
+                        return float(rounded)
+                    if ratio > 0:
+                        return float(ratio)
+        except Exception:
+            # Never block agent startup due to scale detection.
+            pass
+
+        return float(default)
+
     def get_wda_status(self) -> dict | None:
         """
         Get WebDriverAgent status information.
