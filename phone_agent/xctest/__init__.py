@@ -10,10 +10,12 @@ from phone_agent.xctest.connection import (
 from phone_agent.xctest.device import (
     back,
     double_tap,
+    get_scale_factor,
     get_current_app,
     home,
     launch_app,
     long_press,
+    set_scale_factor,
     swipe,
     tap,
 )
@@ -38,6 +40,8 @@ __all__ = [
     "double_tap",
     "long_press",
     "launch_app",
+    "set_scale_factor",
+    "get_scale_factor",
     # Connection management
     "XCTestConnection",
     "DeviceInfo",
@@ -45,3 +49,7 @@ __all__ = [
     "quick_connect",
     "list_devices",
 ]
+
+# Re-export convenience methods (available on XCTestConnection).
+# Kept for discoverability in higher-level modules.
+
