@@ -345,6 +345,12 @@ def parse_action(response: str) -> dict[str, Any]:
     print(f"Parsing action: {response}")
     try:
         response = response.strip()
+
+        # Clean up <answer> tags that may be in model output
+        response = response.replace('<answer>', '')
+        response = response.replace('</answer>', '')
+        response = response.strip()
+
         if response.startswith('do(action="Type"') or response.startswith(
             'do(action="Type_Name"'
         ):
