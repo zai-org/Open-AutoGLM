@@ -20,6 +20,12 @@ import subprocess
 import sys
 from urllib.parse import urlparse
 
+# Enable readline support for arrow key navigation in interactive mode
+try:
+    import readline  # noqa: F401
+except ImportError:
+    pass  # readline not available on Windows by default
+
 from openai import OpenAI
 
 from phone_agent import PhoneAgent
