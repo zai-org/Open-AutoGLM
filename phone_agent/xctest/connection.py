@@ -53,6 +53,79 @@ class XCTestConnection:
                      For network devices, use http://<device-ip>:8100
         """
         self.wda_url = wda_url.rstrip("/")
+    
+    def list_simulate_devices(self) -> list[DeviceInfo]:
+        """
+        List all Booted iOS Simulate devices.
+
+        Returns:
+            List of DeviceInfo objects.
+
+        Note:
+            Requires xcode-select to be installed.
+            Install on macOS: brew install xcode-select
+        """
+        conn_type = (
+            ConnectionType.NETWORK
+        )
+        try:
+            # Get list of booted simulate
+            result = subprocess.run(
+                ["xcrun", "simctl", "list", "devices", "booted"],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+
+            devices = []
+
+            for line in result.stdout.strip().split("\n"):
+                simulate_info = line.strip()
+                if not simulate_info or "Booted" not in simulate_info:
+                    continue
+                for uuid in simulate_info.split(" "):
+                    if '-' not in uuid:
+                        continue
+                    uuid = uuid.replace("(", "").replace(")", "").replace(" ", "")
+                    device_name_result = subprocess.run(
+                        ["xcrun", "simctl", "getenv", uuid, "SIMULATOR_DEVICE_NAME"],
+                        capture_output=True,
+                        text=True,
+                        timeout=5,
+                    )
+                    device_version_result = subprocess.run(
+                        ["xcrun", "simctl", "getenv", uuid, "SIMULATOR_RUNTIME_VERSION"],
+                        capture_output=True,
+                        text=True,
+                        timeout=5,
+                    )
+                    device_model_result = subprocess.run(
+                        ["xcrun", "simctl", "getenv", uuid, "SIMULATOR_MODEL_IDENTIFIER"],
+                        capture_output=True,
+                        text=True,
+                        timeout=5,
+                    )
+                    devices.append(
+                        DeviceInfo(
+                            device_id=uuid,
+                            status="connected",
+                            connection_type=conn_type,
+                            model=device_model_result.stdout.strip().split("\n"),
+                            ios_version=device_version_result.stdout.strip().split("\n"),
+                            device_name=device_name_result.stdout.strip().split("\n"),
+                        )
+                    )
+            return devices
+
+        except FileNotFoundError:
+            print(
+                "Error: xcrun not found.  Install xcode-select: brew install xcode-select"
+            )
+            return []
+        except Exception as e:
+            print(f"Error listing devices: {e}")
+            return []
+        pass
 
     def list_devices(self) -> list[DeviceInfo]:
         """
@@ -379,4 +452,4 @@ def list_devices() -> list[DeviceInfo]:
         List of DeviceInfo objects.
     """
     conn = XCTestConnection()
-    return conn.list_devices()
+    return conn.list_devices() + conn.list_simulate_devices()
