@@ -33,8 +33,8 @@ def check_system_requirements(wda_url: str = "http://localhost:8100") -> bool:
     Check system requirements before running the agent.
 
     Checks:
-    1. libimobiledevice tools installed
-    2. At least one iOS device connected
+    1. libimobiledevice tools installed (optional for WiFi connections)
+    2. At least one iOS device connected (optional for WiFi connections)
     3. WebDriverAgent is running
 
     Args:
@@ -46,17 +46,17 @@ def check_system_requirements(wda_url: str = "http://localhost:8100") -> bool:
     print("🔍 Checking system requirements...")
     print("-" * 50)
 
+    # Determine if this is a WiFi connection (not localhost)
+    is_wifi = "localhost" not in wda_url and "127.0.0.1" not in wda_url
+    
     all_passed = True
+    libimobiledevice_available = False
 
-    # Check 1: libimobiledevice installed
+    # Check 1: libimobiledevice installed (optional - only needed for device listing)
     print("1. Checking libimobiledevice installation...", end=" ")
     if shutil.which("idevice_id") is None:
-        print("❌ FAILED")
-        print("   Error: libimobiledevice is not installed or not in PATH.")
-        print("   Solution: Install libimobiledevice:")
-        print("     - macOS: brew install libimobiledevice")
-        print("     - Linux: sudo apt-get install libimobiledevice-utils")
-        all_passed = False
+        print("⚠️  NOT FOUND (optional - only needed for device listing)")
+        print("   Note: Not required for WiFi/SSH connections")
     else:
         # Double check by running idevice_id
         try:
@@ -65,54 +65,30 @@ def check_system_requirements(wda_url: str = "http://localhost:8100") -> bool:
             )
             if result.returncode == 0:
                 print("✅ OK")
+                libimobiledevice_available = True
             else:
-                print("❌ FAILED")
-                print("   Error: idevice_id command failed to run.")
-                all_passed = False
-        except FileNotFoundError:
-            print("❌ FAILED")
-            print("   Error: idevice_id command not found.")
-            all_passed = False
-        except subprocess.TimeoutExpired:
-            print("❌ FAILED")
-            print("   Error: idevice_id command timed out.")
-            all_passed = False
+                print("⚠️  NOT WORKING (optional - continuing anyway)")
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            print("⚠️  NOT AVAILABLE (optional - continuing anyway)")
 
-    # If libimobiledevice is not installed, skip remaining checks
-    if not all_passed:
-        print("-" * 50)
-        print("❌ System check failed. Please fix the issues above.")
-        return False
+    # Check 2: iOS Device connected (optional for WiFi/SSH connections)
+    if is_wifi or not libimobiledevice_available:
+        print("2. Checking connected iOS devices...", end=" ")
+        print("⏭️  SKIPPED (using WDA URL directly)")
+    else:
+        print("2. Checking connected iOS devices...", end=" ")
+        try:
+            devices = list_devices()
 
-    # Check 2: iOS Device connected
-    print("2. Checking connected iOS devices...", end=" ")
-    try:
-        devices = list_devices()
-
-        if not devices:
-            print("❌ FAILED")
-            print("   Error: No iOS devices connected.")
-            print("   Solution:")
-            print("     1. Connect your iOS device via USB")
-            print("     2. Unlock the device and tap 'Trust This Computer'")
-            print("     3. Verify connection: idevice_id -l")
-            print("     4. Or connect via WiFi using device IP")
-            all_passed = False
-        else:
-            device_names = [
-                d.device_name or d.device_id[:8] + "..." for d in devices
-            ]
-            print(f"✅ OK ({len(devices)} device(s): {', '.join(device_names)})")
-    except Exception as e:
-        print("❌ FAILED")
-        print(f"   Error: {e}")
-        all_passed = False
-
-    # If no device connected, skip WebDriverAgent check
-    if not all_passed:
-        print("-" * 50)
-        print("❌ System check failed. Please fix the issues above.")
-        return False
+            if not devices:
+                print("⚠️  NONE FOUND (continuing - may be using WiFi/SSH)")
+            else:
+                device_names = [
+                    d.device_name or d.device_id[:8] + "..." for d in devices
+                ]
+                print(f"✅ OK ({len(devices)} device(s): {', '.join(device_names)})")
+        except Exception as e:
+            print(f"⚠️  ERROR: {e} (continuing anyway)")
 
     # Check 3: WebDriverAgent running
     print(f"3. Checking WebDriverAgent ({wda_url})...", end=" ")

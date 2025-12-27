@@ -368,27 +368,118 @@ def launch_app(
     Returns:
         True if app was launched, False if app not found.
     """
+    # Try exact match first
     if app_name not in APP_PACKAGES:
-        return False
+        # Try case-insensitive match
+        app_name_lower = app_name.lower()
+        matched_name = None
+        for name in APP_PACKAGES.keys():
+            if name.lower() == app_name_lower:
+                matched_name = name
+                break
+        
+        # Try common aliases
+        if not matched_name:
+            aliases = {
+                "chrome": "Google Chrome",
+                "safari": "Safari",
+                "wechat": "微信",
+                "weixin": "微信",
+                "qq": "QQ",
+                "taobao": "淘宝",
+                "tmall": "天猫",
+                "jd": "京东",
+                "douyin": "抖音",
+                "tiktok": "Tiktok",
+            }
+            matched_name = aliases.get(app_name_lower)
+        
+        if matched_name:
+            app_name = matched_name
+            print(f"[iOS] Using app name '{app_name}' for '{app_name_lower}'")
+        else:
+            print(f"[iOS] App '{app_name}' not found in supported apps.")
+            print(f"[iOS] Available apps include: {', '.join(sorted(list(APP_PACKAGES.keys())[:10]))}...")
+            return False
 
     try:
         import requests
 
         bundle_id = APP_PACKAGES[app_name]
-        url = _get_wda_session_url(wda_url, session_id, "wda/apps/launch")
-
-        response = requests.post(
-            url, json={"bundleId": bundle_id}, timeout=10, verify=False
-        )
-
-        time.sleep(delay)
-        return response.status_code in (200, 201)
+        
+        # Try multiple endpoint formats for WebDriverAgent
+        # Note: /wda/apps/launch is the correct WebDriverAgent endpoint
+        endpoints_to_try = [
+            "wda/apps/launch",  # WebDriverAgent native endpoint (this one works!)
+            "appium/device/activate_app",  # Appium format (fallback)
+            "wda/activateApp",  # Alternative WDA format (fallback)
+        ]
+        
+        url = None
+        response = None
+        
+        for endpoint in endpoints_to_try:
+            try:
+                url = _get_wda_session_url(wda_url, session_id, endpoint)
+                response = requests.post(
+                    url, json={"bundleId": bundle_id}, timeout=10, verify=False
+                )
+                
+                if response.status_code in (200, 201):
+                    time.sleep(delay)
+                    print(f"[iOS] Successfully launched app: {app_name} (using {endpoint})")
+                    return True
+                elif response.status_code == 404:
+                    # Try next endpoint
+                    continue
+                else:
+                    # Got a response but not success, try next
+                    continue
+            except Exception as e:
+                # Try next endpoint
+                continue
+        
+        # If all endpoints failed, try using URL scheme as fallback
+        # Some apps can be launched via URL schemes
+        url_schemes = {
+            "com.google.chrome.ios": "googlechrome://",
+            "com.apple.mobilesafari": "http://",
+        }
+        
+        if bundle_id in url_schemes:
+            try:
+                scheme = url_schemes[bundle_id]
+                # Use WDA to open URL
+                url = _get_wda_session_url(wda_url, session_id, "url")
+                response = requests.post(
+                    url, json={"url": scheme}, timeout=10, verify=False
+                )
+                if response.status_code in (200, 201):
+                    time.sleep(delay)
+                    print(f"[iOS] Successfully launched app via URL scheme: {app_name}")
+                    return True
+            except:
+                pass
+        
+        # All methods failed
+        print(f"[iOS] Failed to launch app '{app_name}' (bundle ID: {bundle_id})")
+        if response:
+            print(f"[iOS] Last attempt returned HTTP {response.status_code}")
+            try:
+                error_msg = response.json()
+                print(f"[iOS] Error: {error_msg.get('value', {}).get('message', error_msg)}")
+            except:
+                print(f"[iOS] Response: {response.text[:200]}")
+        else:
+            print(f"[iOS] No valid endpoint found. WebDriverAgent may not support app launching.")
+            print(f"[iOS] Try manually launching the app on your iPhone.")
+        return False
 
     except ImportError:
         print("Error: requests library required. Install: pip install requests")
         return False
     except Exception as e:
-        print(f"Error launching app: {e}")
+        print(f"Error launching app '{app_name}': {e}")
         return False
 
 
