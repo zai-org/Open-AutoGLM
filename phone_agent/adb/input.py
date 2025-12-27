@@ -72,21 +72,28 @@ def detect_and_set_adb_keyboard(device_id: str | None = None) -> str:
         text=True,
     )
     current_ime = (result.stdout + result.stderr).strip()
-
+    
     # Switch to ADB Keyboard if not already set
     if "com.android.adbkeyboard/.AdbIME" not in current_ime:
-        subprocess.run(
-            adb_prefix + ["shell", "ime", "set", "com.android.adbkeyboard/.AdbIME"],
-            capture_output=True,
-            text=True,
-        )
-
+        # Get the list of enabled IMEs
+        ime_list = [
+            line.strip()
+            for line in run_shell(adb_prefix + ["shell", "ime", "list", "-s"]).split("\n")
+            if line.strip()
+        ]
+        # Enable ADB Keyboard if not already enabled
+        if "com.android.adbkeyboard/.AdbIME" not in ime_list:
+            run_shell(adb_prefix + ["shell", "ime", "enable", "com.android.adbkeyboard/.AdbIME"])
+        # Set the input method
+        run_shell(adb_prefix + ["shell", "ime", "set", "com.android.adbkeyboard/.AdbIME"])
+    
     # Warm up the keyboard
     type_text("", device_id)
-
+    
     return current_ime
-
-
+    
+    
+    
 def restore_keyboard(ime: str, device_id: str | None = None) -> None:
     """
     Restore the original keyboard IME.
