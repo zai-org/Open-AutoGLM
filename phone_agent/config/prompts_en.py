@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """System prompts for the AI agent."""
 
 from datetime import datetime
