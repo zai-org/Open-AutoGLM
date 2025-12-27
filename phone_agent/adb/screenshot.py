@@ -37,44 +37,26 @@ def get_screenshot(device_id: str | None = None, timeout: int = 10) -> Screensho
         If the screenshot fails (e.g., on sensitive screens like payment pages),
         a black fallback image is returned with is_sensitive=True.
     """
-    temp_path = os.path.join(tempfile.gettempdir(), f"screenshot_{uuid.uuid4()}.png")
     adb_prefix = _get_adb_prefix(device_id)
 
     try:
-        # Execute screenshot command
+        # Read PNG from stdout directly to avoid reading /sdcard fail
         result = subprocess.run(
-            adb_prefix + ["shell", "screencap", "-p", "/sdcard/tmp.png"],
+            adb_prefix + ["exec-out", "screencap", "-p"],
             capture_output=True,
-            text=True,
             timeout=timeout,
         )
 
-        # Check for screenshot failure (sensitive screen)
-        output = result.stdout + result.stderr
-        if "Status: -1" in output or "Failed" in output:
-            return _create_fallback_screenshot(is_sensitive=True)
-
-        # Pull screenshot to local temp path
-        subprocess.run(
-            adb_prefix + ["pull", "/sdcard/tmp.png", temp_path],
-            capture_output=True,
-            text=True,
-            timeout=5,
-        )
-
-        if not os.path.exists(temp_path):
+        if result.returncode != 0 or not result.stdout:
             return _create_fallback_screenshot(is_sensitive=False)
 
         # Read and encode image
-        img = Image.open(temp_path)
+        img = Image.open(BytesIO(result.stdout))
         width, height = img.size
 
         buffered = BytesIO()
         img.save(buffered, format="PNG")
         base64_data = base64.b64encode(buffered.getvalue()).decode("utf-8")
-
-        # Cleanup
-        os.remove(temp_path)
 
         return Screenshot(
             base64_data=base64_data, width=width, height=height, is_sensitive=False
