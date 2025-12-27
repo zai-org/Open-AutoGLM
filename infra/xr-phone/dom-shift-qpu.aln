@@ -1,0 +1,190 @@
+PATH ./infra/xr-phone/dom-shift-qpu.aln
+TITLE InfraNet XR-Phone DOM-Shift QPU.Datashard v1.0.0
+
+CONFIG xrphone.version 1.0.0,
+       compliance PCI-DSS, GDPR, SOC2, ISO27001,
+       platform ANY-XR-PHONE,
+       runtime REAL,
+       domshift.modes SMART CITY, GAMING, MEDICAL,
+       neuromorphic.edge TRUE,
+       timesync IEEE1588-PTP, gPTP, TSN
+
+DIRS  ./infra/xr-phone/.alnconfig,
+      ./infra/xr-phone/.alnlogs,
+      ./infra/xr-phone/.alnpolicies,
+      ./infra/xr-phone/.alnchips,
+      ./infra/xr-phone/.alnsession,
+      ./infra/xr-phone/.alnDOM,
+      ./infra/xr-phone/.alnws,
+      ./infra/xr-phone/.alnedge
+
+ACTION system.init
+INPUT  xrprofile string, chipsetid string
+EXEC
+  MKDIR ./infra/xr-phone/.alnsession/xrprofile
+  LOG   XR-Phone profile xrprofile initialized
+  COPY  ./infra/xr-phone/.alnchips/chipsetid.json
+        -> ./infra/xr-phone/.alnsession/xrprofile/chipset.json
+  CALL  timesync.init IEEE1588-PTP
+  CALL  sanitization.init
+  CALL  domshift.registry.bootstrap
+END
+
+ACTION timesync.init
+INPUT  protocol string
+EXEC
+  WRITE ./infra/xr-phone/.alnconfig/timesync.json
+        { "protocol": "protocol", "targetSkewNs": 200 }
+  LOG Time-sync engine protocol attached for XR-Phone nodes
+END
+
+ACTION sanitization.init
+INPUT  -
+EXEC
+  WRITE ./infra/xr-phone/.alnpolicies/sanitize.rego
+        package xrphone.sanitize
+        default allow = false
+        allow {
+          input.field == "domNodeId"
+          regex.match("^[a-zA-Z0-9_\\-]{1,64}$", input.value)
+        }
+        allow {
+          input.field == "route"
+          regex.match("^/[a-zA-Z0-9/_\\-]{1,128}$", input.value)
+        }
+        allow {
+          input.field == "wsTopic"
+          regex.match("^[a-zA-Z0-9._\\-]{1,96}$", input.value)
+        }
+  LOG XR-Phone sanitization policy deployed
+END
+
+ACTION domshift.registry.bootstrap
+INPUT  -
+EXEC
+  WRITE ./infra/xr-phone/.alnDOM/registry.json
+  {
+    "nodes": [
+      { "id": "HOME_DASH", "route": "/xr/home",  "role": "root" },
+      { "id": "CITY_TWIN", "route": "/xr/city",  "role": "smart-city" },
+      { "id": "GAME_PORT", "route": "/xr/game",  "role": "gaming" },
+      { "id": "MED_HUB",   "route": "/xr/med",   "role": "clinical" }
+    ]
+  }
+  LOG DOM-Shift registry initialized with 4 core virtual nodes
+END
+
+ACTION domshift.request
+INPUT  sessionid string,
+       currentNode string,
+       targetNode string,
+       cause string
+EXEC
+  CALL  domshift.guardian sessionid, currentNode, targetNode, cause
+  CALL  domshift.apply    sessionid, targetNode
+END
+
+ACTION domshift.guardian
+INPUT  sessionid string,
+       currentNode string,
+       targetNode string,
+       cause string
+EXEC
+  LOAD  ./infra/xr-phone/.alnDOM/registry.json -> DOMREG
+  IF NOT DOMREG.nodes.contains(targetNode) THEN
+      THROW "INVALID_TARGET_NODE"
+  END
+  WRITE ./infra/xr-phone/.alnpolicies/domshift.rego
+        package xrphone.domshift
+        default allow = false
+        allow {
+          input.session == "sessionid"
+          input.source  == "currentNode"
+          input.target  == "targetNode"
+          input.cause   == "cause"
+        }
+  LOG DOM-Shift guardian prepared for session sessionid
+END
+
+ACTION domshift.apply
+INPUT  sessionid string,
+       targetNode string
+EXEC
+  CALL  ws.broadcast sessionid, "domshift/event",
+        "targetNode:targetNode"
+  LOG DOM-Shift applied sessionid -> targetNode
+END
+
+ACTION ws.bootstrap
+INPUT  endpoint string
+EXEC
+  WRITE ./infra/xr-phone/.alnws/config.json
+        { "endpoint": "endpoint", "protocol": "wss", "heartbeatMs": 10000 }
+  LOG XR-Phone WebSocket endpoint registered endpoint
+END
+
+ACTION ws.broadcast
+INPUT  sessionid string,
+       topic string,
+       payload string
+EXEC
+  LOG WS[sessionid] topic topic payload payload
+END
+
+ACTION edge.virtualnode.register
+INPUT  nodeid string,
+       region string,
+       latencyBudgetMs int
+EXEC
+  WRITE ./infra/xr-phone/.alnedge/nodeid.json
+  {
+    "node": "nodeid",
+    "region": "region",
+    "latencyBudgetMs": latencyBudgetMs
+  }
+  LOG Edge virtual-node nodeid bound to region region
+END
+
+ACTION chipset.attach
+INPUT  chipsetid string,
+       vendor string,
+       aiTops float
+EXEC
+  WRITE ./infra/xr-phone/.alnchips/chipsetid.json
+  {
+    "id": "chipsetid",
+    "vendor": "vendor",
+    "aiTOPS": aiTops,
+    "secureBoot": true,
+    "trustZone": true
+  }
+  LOG Chipset chipsetid vendor vendor AI aiTops TOPS attached to XR-Phone
+END
+
+ACTION neuromorphic.route
+INPUT  sessionid string,
+       biosignalChannel string,
+       edgeNode string
+EXEC
+  WRITE ./infra/xr-phone/.alnedge/routes.sessionid.biosignalChannel.json
+  {
+    "session": "sessionid",
+    "channel": "biosignalChannel",
+    "edgeNode": "edgeNode",
+    "mode": "SPIKE_STREAM",
+    "samplingHz": 250
+  }
+  LOG Neuromorphic biosignalChannel routed to edgeNode for session sessionid
+END
+
+ENTRYPOINT xrphone.boot
+INPUT  xrprofile string,
+       chipsetid string,
+       wsEndpoint string
+EXEC
+  CALL system.init      xrprofile, chipsetid
+  CALL ws.bootstrap     wsEndpoint
+  CALL edge.virtualnode.register "XR-CITY-01", "NA-WEST", 50
+  CALL edge.virtualnode.register "XR-GAME-01", "NA-CENTRAL", 25
+  LOG  XR-Phone DOM-Shift Core ready for xrprofile
+END
