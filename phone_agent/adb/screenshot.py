@@ -41,24 +41,25 @@ def get_screenshot(device_id: str | None = None, timeout: int = 10) -> Screensho
     adb_prefix = _get_adb_prefix(device_id)
 
     try:
-        # Execute screenshot command
+        # Execute screenshot command (use binary mode to avoid encoding issues)
         result = subprocess.run(
             adb_prefix + ["shell", "screencap", "-p", "/sdcard/tmp.png"],
             capture_output=True,
-            text=True,
+            text=False,
             timeout=timeout,
         )
 
         # Check for screenshot failure (sensitive screen)
-        output = result.stdout + result.stderr
+        # Decode with error handling for binary output
+        output = (result.stdout + result.stderr).decode("utf-8", errors="replace")
         if "Status: -1" in output or "Failed" in output:
             return _create_fallback_screenshot(is_sensitive=True)
 
-        # Pull screenshot to local temp path
+        # Pull screenshot to local temp path (use binary mode for file transfer)
         subprocess.run(
             adb_prefix + ["pull", "/sdcard/tmp.png", temp_path],
             capture_output=True,
-            text=True,
+            text=False,
             timeout=5,
         )
 
