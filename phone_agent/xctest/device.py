@@ -355,26 +355,33 @@ def launch_app(
     wda_url: str = "http://localhost:8100",
     session_id: str | None = None,
     delay: float = 1.0,
+    allow_all_apps: bool = False,
 ) -> bool:
     """
     Launch an app by name.
 
     Args:
-        app_name: The app name (must be in APP_PACKAGES).
+        app_name: The app name (must be in APP_PACKAGES if allow_all_apps is False).
         wda_url: WebDriverAgent URL.
         session_id: Optional WDA session ID.
         delay: Delay in seconds after launching.
+        allow_all_apps: If True, allow launching any app by bundle ID, not limited to APP_PACKAGES.
 
     Returns:
         True if app was launched, False if app not found.
     """
-    if app_name not in APP_PACKAGES:
-        return False
-
     try:
         import requests
 
-        bundle_id = APP_PACKAGES[app_name]
+        # If allow_all_apps is True, use app_name directly as bundle ID
+        # Otherwise, check if app_name is in APP_PACKAGES
+        if allow_all_apps:
+            bundle_id = app_name  # Use app_name directly as bundle ID
+        else:
+            if app_name not in APP_PACKAGES:
+                return False
+            bundle_id = APP_PACKAGES[app_name]
+        
         url = _get_wda_session_url(wda_url, session_id, "wda/apps/launch")
 
         response = requests.post(

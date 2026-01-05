@@ -37,10 +37,12 @@ class ActionHandler:
         device_id: str | None = None,
         confirmation_callback: Callable[[str], bool] | None = None,
         takeover_callback: Callable[[str], None] | None = None,
+        allow_all_apps: bool = False,
     ):
         self.device_id = device_id
         self.confirmation_callback = confirmation_callback or self._default_confirmation
         self.takeover_callback = takeover_callback or self._default_takeover
+        self.allow_all_apps = allow_all_apps
 
     def execute(
         self, action: dict[str, Any], screen_width: int, screen_height: int
@@ -122,7 +124,7 @@ class ActionHandler:
             return ActionResult(False, False, "No app name specified")
 
         device_factory = get_device_factory()
-        success = device_factory.launch_app(app_name, self.device_id)
+        success = device_factory.launch_app(app_name, self.device_id, allow_all_apps=self.allow_all_apps)
         if success:
             return ActionResult(True, False)
         return ActionResult(False, False, f"App not found: {app_name}")
