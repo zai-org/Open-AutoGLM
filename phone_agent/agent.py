@@ -1,9 +1,25 @@
 """Main PhoneAgent class for orchestrating phone automation."""
 
 import json
+import logging
+import os
 import traceback
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any, Callable
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.FileHandler("agent.log", encoding="utf-8"),
+        logging.StreamHandler()
+        if not os.environ.get("QUIET_LOG")
+        else logging.NullHandler(),
+    ],
+)
+logger = logging.getLogger(__name__)
 
 from phone_agent.actions import ActionHandler
 from phone_agent.actions.handler import do, finish, parse_action
@@ -171,9 +187,6 @@ class PhoneAgent:
         # Get model response
         try:
             msgs = get_messages(self.agent_config.lang)
-            print("\n" + "=" * 50)
-            print(f"💭 {msgs['thinking']}:")
-            print("-" * 50)
             response = self.model_client.request(self._context)
         except Exception as e:
             if self.agent_config.verbose:
@@ -195,8 +208,7 @@ class PhoneAgent:
             action = finish(message=response.action)
 
         if self.agent_config.verbose:
-            # Print thinking process
-            print("-" * 50)
+            # Print parsed action
             print(f"🎯 {msgs['action']}:")
             print(json.dumps(action, ensure_ascii=False, indent=2))
             print("=" * 50 + "\n")

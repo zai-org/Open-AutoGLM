@@ -10,7 +10,6 @@
 - iOS 设备（iPhone/iPad）
 - USB 数据线或同一 WiFi 网络
 
-
 ## WebDriverAgent 配置
 
 WebDriverAgent 是 iOS 自动化的核心组件，需要在 iOS 设备上运行。
@@ -28,7 +27,7 @@ cd WebDriverAgent
 
 1. 在 Xcode 中选中 `WebDriverAgent`，出现General、Signing&Capabilities等选项。
 2. 进入 `Signing & Capabilities` 选项卡
-3.   勾选 `Automatically manage signing`。在Team中选择自己的开发者账号
+3. 勾选 `Automatically manage signing`。在Team中选择自己的开发者账号
 4. 将 Bundle ID 改为唯一标识符，例如：`com.yourname.WebDriverAgentRunner`
 ![设置签名1](resources/ios0_WebDriverAgent0.png)
 
@@ -43,7 +42,7 @@ Mac和iPhone有USB和WiFi两种连接方式，建议通过USB方式，成功率�
 #### 通过 WiFi 连接
 
 需要满足以下条件：
-1.  通过USB连接。在Finder中选中连接的IPhone，在“通用”中勾选"在 WiFi 中显示这台 iPhone"
+1. 通过USB连接。在Finder中选中连接的IPhone，在“通用”中勾选"在 WiFi 中显示这台 iPhone"
 2. Mac 与 iPhone 处于同一 WiFi 网络之下
 
 #### 具体步骤
@@ -52,7 +51,7 @@ Mac和iPhone有USB和WiFi两种连接方式，建议通过USB方式，成功率�
 
 ![选择设备](resources/select-your-iphone-device.png)
 
-3. 长按"▶️"运行按钮，选择 "Test" 后开始编译并部署到你的 iPhone 上
+1. 长按"▶️"运行按钮，选择 "Test" 后开始编译并部署到你的 iPhone 上
 
 ![开始测试](resources/start-wda-testing.png)
 
@@ -85,6 +84,7 @@ brew install libimobiledevice
 # 设备检查
 idevice_id -ln
 ```
+
 2.使用xcodebuild安装WebAgent。命令行也需要进行“设备信任配置”，参考GUI模式下的方法。
 
 ```
@@ -95,6 +95,7 @@ xcodebuild -project WebDriverAgent.xcodeproj \
            -destination 'platform=iOS,name=YOUR_PHONE_NAME' \
            test
 ```
+
 这里，YOUR_PHONE_NAME可以在xcode的GUI中看到。
 WebDriverAgent 成功运行后，会在 Xcode 控制台输出类似以下信息：
 

@@ -49,11 +49,16 @@ def type_text(
 
         # Send text to WDA
         response = requests.post(
-            url, json={"value": list(text), "frequency": frequency}, timeout=30, verify=False
+            url,
+            json={"value": list(text), "frequency": frequency},
+            timeout=30,
+            verify=False,
         )
 
         if response.status_code not in (200, 201):
-            print(f"Warning: Text input may have failed. Status: {response.status_code}")
+            print(
+                f"Warning: Text input may have failed. Status: {response.status_code}"
+            )
 
     except ImportError:
         print("Error: requests library required. Install: pip install requests")
@@ -86,11 +91,15 @@ def clear_text(
 
         if response.status_code == 200:
             data = response.json()
-            element_id = data.get("value", {}).get("ELEMENT") or data.get("value", {}).get("element-6066-11e4-a52e-4f735466cecf")
+            element_id = data.get("value", {}).get("ELEMENT") or data.get(
+                "value", {}
+            ).get("element-6066-11e4-a52e-4f735466cecf")
 
             if element_id:
                 # Clear the element
-                clear_url = _get_wda_session_url(wda_url, session_id, f"element/{element_id}/clear")
+                clear_url = _get_wda_session_url(
+                    wda_url, session_id, f"element/{element_id}/clear"
+                )
                 requests.post(clear_url, timeout=10, verify=False)
                 return
 
@@ -259,7 +268,10 @@ def set_pasteboard(
         url = f"{wda_url.rstrip('/')}/wda/setPasteboard"
 
         requests.post(
-            url, json={"content": text, "contentType": "plaintext"}, timeout=10, verify=False
+            url,
+            json={"content": text, "contentType": "plaintext"},
+            timeout=10,
+            verify=False,
         )
 
     except ImportError:

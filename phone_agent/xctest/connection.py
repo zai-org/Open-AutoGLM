@@ -17,7 +17,7 @@ class ConnectionType(Enum):
 class DeviceInfo:
     """Information about a connected iOS device."""
 
-    device_id: str  # UDID
+    device_id: str  # UUID
     status: str
     connection_type: ConnectionType
     model: str | None = None
@@ -76,23 +76,23 @@ class XCTestConnection:
 
             devices = []
             for line in result.stdout.strip().split("\n"):
-                udid = line.strip()
-                if not udid:
+                uuid = line.strip()
+                if not uuid:
                     continue
 
                 # Determine connection type (network devices have specific format)
                 conn_type = (
                     ConnectionType.NETWORK
-                    if "-" in udid and len(udid) > 40
+                    if "-" in uuid and len(uuid) > 40
                     else ConnectionType.USB
                 )
 
                 # Get detailed device info
-                device_info = self._get_device_details(udid)
+                device_info = self._get_device_details(uuid)
 
                 devices.append(
                     DeviceInfo(
-                        device_id=udid,
+                        device_id=uuid,
                         status="connected",
                         connection_type=conn_type,
                         model=device_info.get("model"),
@@ -112,19 +112,19 @@ class XCTestConnection:
             print(f"Error listing devices: {e}")
             return []
 
-    def _get_device_details(self, udid: str) -> dict[str, str]:
+    def _get_device_details(self, uuid: str) -> dict[str, str]:
         """
         Get detailed information about a specific device.
 
         Args:
-            udid: Device UDID.
+            uuid: Device UUID.
 
         Returns:
             Dictionary with device details.
         """
         try:
             result = subprocess.run(
-                ["ideviceinfo", "-u", udid],
+                ["ideviceinfo", "-u", uuid],
                 capture_output=True,
                 text=True,
                 timeout=5,
@@ -154,7 +154,7 @@ class XCTestConnection:
         Get detailed information about a device.
 
         Args:
-            device_id: Device UDID. If None, uses first available device.
+            device_id: Device UUID. If None, uses first available device.
 
         Returns:
             DeviceInfo or None if not found.
@@ -178,7 +178,7 @@ class XCTestConnection:
         Check if a device is connected.
 
         Args:
-            device_id: Device UDID to check. If None, checks if any device is connected.
+            device_id: Device UUID to check. If None, checks if any device is connected.
 
         Returns:
             True if connected, False otherwise.
@@ -211,9 +211,7 @@ class XCTestConnection:
             )
             return response.status_code == 200
         except ImportError:
-            print(
-                "Error: requests library not found. Install it: pip install requests"
-            )
+            print("Error: requests library not found. Install it: pip install requests")
             return False
         except Exception:
             return False
@@ -276,7 +274,7 @@ class XCTestConnection:
         Pair with an iOS device (required for some operations).
 
         Args:
-            device_id: Device UDID. If None, uses first available device.
+            device_id: Device UUID. If None, uses first available device.
 
         Returns:
             Tuple of (success, message).
@@ -309,7 +307,7 @@ class XCTestConnection:
         Get the device name.
 
         Args:
-            device_id: Device UDID. If None, uses first available device.
+            device_id: Device UUID. If None, uses first available device.
 
         Returns:
             Device name string or None if not found.
