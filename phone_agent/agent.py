@@ -1,25 +1,11 @@
 """Main PhoneAgent class for orchestrating phone automation."""
 
 import json
-import logging
 import os
 import traceback
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Callable
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.FileHandler("agent.log", encoding="utf-8"),
-        logging.StreamHandler()
-        if not os.environ.get("QUIET_LOG")
-        else logging.NullHandler(),
-    ],
-)
-logger = logging.getLogger(__name__)
 
 from phone_agent.actions import ActionHandler
 from phone_agent.actions.handler import do, finish, parse_action
