@@ -1,9 +1,9 @@
 """HDC utilities for HarmonyOS device interaction."""
 
 from phone_agent.hdc.connection import (
-    HDCConnection,
     ConnectionType,
     DeviceInfo,
+    HDCConnection,
     list_devices,
     quick_connect,
     set_hdc_verbose,

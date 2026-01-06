@@ -129,9 +129,7 @@ class IOSActionHandler:
         if not app_name:
             return ActionResult(False, False, "No app name specified")
 
-        success = launch_app(
-            app_name, wda_url=self.wda_url, session_id=self.session_id
-        )
+        success = launch_app(app_name, wda_url=self.wda_url, session_id=self.session_id)
         if success:
             return ActionResult(True, False)
         return ActionResult(False, False, f"App not found: {app_name}")

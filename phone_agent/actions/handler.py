@@ -265,7 +265,7 @@ class ActionHandler:
         # Handle HDC devices with HarmonyOS-specific keyEvent command
         if device_factory.device_type == DeviceType.HDC:
             hdc_prefix = ["hdc", "-t", self.device_id] if self.device_id else ["hdc"]
-            
+
             # Map common keycodes to HarmonyOS keyEvent codes
             # KEYCODE_ENTER (66) -> 2054 (HarmonyOS Enter key code)
             if keycode == "KEYCODE_ENTER" or keycode == "66":
@@ -283,7 +283,8 @@ class ActionHandler:
                         # For now, only handle ENTER, other keys may need mapping
                         if "ENTER" in keycode:
                             _run_hdc_command(
-                                hdc_prefix + ["shell", "uitest", "uiInput", "keyEvent", "2054"],
+                                hdc_prefix
+                                + ["shell", "uitest", "uiInput", "keyEvent", "2054"],
                                 capture_output=True,
                                 text=True,
                             )
@@ -297,7 +298,8 @@ class ActionHandler:
                     else:
                         # Assume it's a numeric code
                         _run_hdc_command(
-                            hdc_prefix + ["shell", "uitest", "uiInput", "keyEvent", str(keycode)],
+                            hdc_prefix
+                            + ["shell", "uitest", "uiInput", "keyEvent", str(keycode)],
                             capture_output=True,
                             text=True,
                         )
@@ -342,22 +344,101 @@ def parse_action(response: str) -> dict[str, Any]:
     Raises:
         ValueError: If the response cannot be parsed.
     """
-    print(f"Parsing action: {response}")
+    if not response or not response.strip():
+        return {"_metadata": "finish", "message": "Model returned an empty action."}
+
     try:
         response = response.strip()
+
+        # 1. Try to extract do(...) or finish(...) using regex if it's wrapped in other text
+        do_match = re.search(r"do\(.*?\)", response, re.DOTALL)
+        finish_match = re.search(r"finish\(.*?\)", response, re.DOTALL)
+
+        if do_match:
+            action_str = do_match.group(0)
+            # Special handling for Type action with text that might contain special characters
+            if 'action="Type"' in action_str or 'action="Type_Name"' in action_str:
+                if "text=" in action_str:
+                    try:
+                        # Try to extract text between quotes more robustly
+                        text_part = action_str.split("text=", 1)[1]
+                        # Find the first and last quote
+                        first_quote = text_part.find('"')
+                        last_quote = text_part.rfind('"')
+                        if (
+                            first_quote != -1
+                            and last_quote != -1
+                            and first_quote < last_quote
+                        ):
+                            text = text_part[first_quote + 1 : last_quote]
+                            # Extract action type
+                            action_type = (
+                                "Type" if 'action="Type"' in action_str else "Type_Name"
+                            )
+                            return {
+                                "_metadata": "do",
+                                "action": action_type,
+                                "text": text,
+                            }
+                    except Exception:
+                        pass  # Fallback to AST if regex fails
+
+            # Standard do(...) parsing using AST
+            try:
+                # Clean up the string for AST
+                clean_str = (
+                    action_str.replace("\n", "\\n")
+                    .replace("\r", "\\r")
+                    .replace("\t", "\\t")
+                )
+                tree = ast.parse(clean_str, mode="eval")
+                if isinstance(tree.body, ast.Call):
+                    call = tree.body
+                    action = {"_metadata": "do"}
+                    for keyword in call.keywords:
+                        key = keyword.arg
+                        try:
+                            value = ast.literal_eval(keyword.value)
+                            action[key] = value
+                        except (ValueError, SyntaxError):
+                            # Fallback for non-literal values (though model should only output literals)
+                            if isinstance(keyword.value, ast.Constant):
+                                action[key] = keyword.value.value
+                            else:
+                                # Last resort: raw string representation
+                                action[key] = str(keyword.value)
+                    return action
+            except (SyntaxError, ValueError) as e:
+                print(f"AST parsing failed for {action_str}: {e}")
+                # If it's a simple do(action="Home") but AST failed, try one more manual parse
+                if 'action="Home"' in action_str:
+                    return {"_metadata": "do", "action": "Home"}
+
+        if finish_match:
+            action_str = finish_match.group(0)
+            # Simple extraction for finish(message="...")
+            message = ""
+            if 'message="' in action_str:
+                parts = action_str.split('message="', 1)[1].rsplit('"', 1)
+                if len(parts) >= 1:
+                    message = parts[0]
+            elif "message='" in action_str:
+                parts = action_str.split("message='", 1)[1].rsplit("'", 1)
+                if len(parts) >= 1:
+                    message = parts[0]
+
+            return {"_metadata": "finish", "message": message}
+
+        # Legacy/Fallback behavior
         if response.startswith('do(action="Type"') or response.startswith(
             'do(action="Type_Name"'
         ):
-            text = response.split("text=", 1)[1][1:-2]
-            action = {"_metadata": "do", "action": "Type", "text": text}
-            return action
-        elif response.startswith("do"):
             # Use AST parsing instead of eval for safety
             try:
                 # Escape special characters (newlines, tabs, etc.) for valid Python syntax
-                response = response.replace('\n', '\\n')
-                response = response.replace('\r', '\\r')
-                response = response.replace('\t', '\\t')
+                response = response.replace("\n", "\\n")
+                response = response.replace("\r", "\\r")
+                response = response.replace("\t", "\\t")
 
                 tree = ast.parse(response, mode="eval")
                 if not isinstance(tree.body, ast.Call):
@@ -381,10 +462,16 @@ def parse_action(response: str) -> dict[str, Any]:
                 "message": response.replace("finish(message=", "")[1:-2],
             }
         else:
-            raise ValueError(f"Failed to parse action: {response}")
+            # If all parsing attempts fail, treat the entire response as a message for 'finish'
+            # This is more robust than crashing with a ValueError
+            action = {"_metadata": "finish", "message": response}
         return action
     except Exception as e:
-        raise ValueError(f"Failed to parse action: {e}")
+        # Final fallback: return the original response if possible
+        return {
+            "_metadata": "finish",
+            "message": f"Parsing failed: {str(e)}. Raw response: {response}",
+        }
 
 
 def do(**kwargs) -> dict[str, Any]:
