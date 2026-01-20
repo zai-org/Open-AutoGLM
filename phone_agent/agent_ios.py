@@ -20,7 +20,7 @@ class IOSAgentConfig:
     max_steps: int = 100
     wda_url: str = "http://localhost:8100"
     session_id: str | None = None
-    device_id: str | None = None  # iOS device UDID
+    device_id: str | None = None  # iOS device UUID
     lang: str = "cn"
     system_prompt: str | None = None
     verbose: bool = True
@@ -214,13 +214,8 @@ class IOSPhoneAgent:
             action = finish(message=response.action)
 
         if self.agent_config.verbose:
-            # Print thinking process
+            # Print parsed action
             msgs = get_messages(self.agent_config.lang)
-            print("\n" + "=" * 50)
-            print(f"💭 {msgs['thinking']}:")
-            print("-" * 50)
-            print(response.thinking)
-            print("-" * 50)
             print(f"🎯 {msgs['action']}:")
             print(json.dumps(action, ensure_ascii=False, indent=2))
             print("=" * 50 + "\n")

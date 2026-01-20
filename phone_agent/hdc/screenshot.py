@@ -10,6 +10,7 @@ from io import BytesIO
 from typing import Tuple
 
 from PIL import Image
+
 from phone_agent.hdc.connection import _run_hdc_command
 
 
@@ -56,7 +57,11 @@ def get_screenshot(device_id: str | None = None, timeout: int = 10) -> Screensho
 
         # Check for screenshot failure (sensitive screen)
         output = result.stdout + result.stderr
-        if "fail" in output.lower() or "error" in output.lower() or "not found" in output.lower():
+        if (
+            "fail" in output.lower()
+            or "error" in output.lower()
+            or "not found" in output.lower()
+        ):
             # Try method 2: snapshot_display (older versions or different devices)
             result = _run_hdc_command(
                 hdc_prefix + ["shell", "snapshot_display", "-f", remote_path],
