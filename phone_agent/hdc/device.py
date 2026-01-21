@@ -253,15 +253,16 @@ def home(device_id: str | None = None, delay: float | None = None) -> None:
 
 
 def launch_app(
-    app_name: str, device_id: str | None = None, delay: float | None = None
+    app_name: str, device_id: str | None = None, delay: float | None = None, allow_all_apps: bool = False
 ) -> bool:
     """
     Launch an app by name.
 
     Args:
-        app_name: The app name (must be in APP_PACKAGES).
+        app_name: The app name (must be in APP_PACKAGES if allow_all_apps is False).
         device_id: Optional HDC device ID.
         delay: Delay in seconds after launching. If None, uses configured default.
+        allow_all_apps: If True, allow launching any app by bundle name, not limited to APP_PACKAGES.
 
     Returns:
         True if app was launched, False if app not found.
@@ -269,17 +270,23 @@ def launch_app(
     if delay is None:
         delay = TIMING_CONFIG.device.default_launch_delay
 
-    if app_name not in APP_PACKAGES:
-        print(f"[HDC] App '{app_name}' not found in HarmonyOS app list")
-        print(f"[HDC] Available apps: {', '.join(sorted(APP_PACKAGES.keys())[:10])}...")
-        return False
-
     hdc_prefix = _get_hdc_prefix(device_id)
-    bundle = APP_PACKAGES[app_name]
-
-    # Get the ability name for this bundle
-    # Default to "EntryAbility" if not specified in APP_ABILITIES
-    ability = APP_ABILITIES.get(bundle, "EntryAbility")
+    
+    # If allow_all_apps is True, use app_name directly as bundle name
+    # Otherwise, check if app_name is in APP_PACKAGES
+    if allow_all_apps:
+        bundle = app_name  # Use app_name directly as bundle name
+        # Default to "EntryAbility" if not specified in APP_ABILITIES
+        ability = APP_ABILITIES.get(bundle, "EntryAbility")
+    else:
+        if app_name not in APP_PACKAGES:
+            print(f"[HDC] App '{app_name}' not found in HarmonyOS app list")
+            print(f"[HDC] Available apps: {', '.join(sorted(APP_PACKAGES.keys())[:10])}...")
+            return False
+        bundle = APP_PACKAGES[app_name]
+        # Get the ability name for this bundle
+        # Default to "EntryAbility" if not specified in APP_ABILITIES
+        ability = APP_ABILITIES.get(bundle, "EntryAbility")
 
     # HarmonyOS uses 'aa start' command to launch apps
     # Format: aa start -b {bundle} -a {ability}
