@@ -105,9 +105,15 @@ class DeviceFactory:
         """Launch an app."""
         return self.module.launch_app(app_name, device_id, delay)
 
-    def type_text(self, text: str, device_id: str | None = None):
-        """Type text."""
-        return self.module.type_text(text, device_id)
+    def type_text(self, text: str, device_id: str | None = None, x: int | None = None, y: int | None = None):
+        """Type text with optional coordinates for HDC."""
+        import inspect
+        sig = inspect.signature(self.module.type_text)
+        # Check if the module supports x, y parameters (HDC does, ADB/iOS don't)
+        if 'x' in sig.parameters and 'y' in sig.parameters:
+            return self.module.type_text(text, device_id, x, y)
+        else:
+            return self.module.type_text(text, device_id)
 
     def clear_text(self, device_id: str | None = None):
         """Clear text."""
