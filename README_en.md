@@ -24,6 +24,14 @@ Phone Agent is a mobile intelligent assistant framework built on AutoGLM. It und
 
 > ⚠️ This project is for research and learning purposes only. It is strictly prohibited to use for illegal information acquisition, system interference, or any illegal activities. Please carefully review the [Terms of Use](resources/privacy_policy_en.txt).
 
+## Integration with Other Automation Tools
+
+### Midscene.js
+
+[Midscene.js](https://midscenejs.com/en/index.html) is an open-source, vision-model-driven UI automation SDK that supports JavaScript or YAML flow syntax for cross-platform automation.
+
+Midscene.js already supports AutoGLM; see the [Midscene.js integration guide](https://midscenejs.com/model-common-config.html#auto-glm) to quickly try AutoGLM automation on both iOS and Android devices.
+
 ## Model Download Links
 
 | Model             | Download Links                                                                                                                                             |

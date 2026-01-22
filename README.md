@@ -34,6 +34,14 @@ ADB 调试能力，可通过 WiFi 或网络连接设备，实现灵活的远程�
 > ⚠️
 > 本项目仅供研究和学习使用。严禁用于非法获取信息、干扰系统或任何违法活动。请仔细审阅 [使用条款](resources/privacy_policy.txt)。
 
+## 与其他自动化工具集成
+
+### Midscene.js
+
+[Midscene.js](https://midscenejs.com/zh/index.html) 是一款由视觉模型驱动的开源 UI 自动化 SDK，支持通过 JavaScript 或 Yaml 格式的流程语法，实现多平台的自动化。
+
+目前 Midscene.js 已完成对 AutoGLM 模型的适配，你可以通过 [Midscene.js 接入指南](https://midscenejs.com/zh/model-common-config.html#auto-glm) 快速体验 AutoGLM 在 iOS 和 Android 设备上的自动化效果。
+
 ## 模型下载地址
 
 | Model                         | Download Links                                                                                                                                                         |
