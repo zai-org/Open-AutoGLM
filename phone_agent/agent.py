@@ -41,7 +41,7 @@ class StepResult:
 
 class PhoneAgent:
     """
-    AI-powered agent for automating Android phone interactions.
+    AI-powered agent for automating HarmonyOS phone interactions.
 
     The agent uses a vision-language model to understand screen content
     and decide on actions to complete user tasks.

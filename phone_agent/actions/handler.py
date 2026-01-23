@@ -154,8 +154,8 @@ class ActionHandler:
 
         device_factory = get_device_factory()
 
-        # Switch to ADB keyboard
-        original_ime = device_factory.detect_and_set_adb_keyboard(self.device_id)
+        # Record current keyboard so it can be restored after typing
+        original_ime = device_factory.detect_and_set_keyboard(self.device_id)
         time.sleep(TIMING_CONFIG.action.keyboard_switch_delay)
 
         # Clear existing text and type new text
@@ -257,62 +257,25 @@ class ActionHandler:
 
     def _send_keyevent(self, keycode: str) -> None:
         """Send a keyevent to the device."""
-        from phone_agent.device_factory import DeviceType, get_device_factory
         from phone_agent.hdc.connection import _run_hdc_command
+        hdc_prefix = ["hdc", "-t", self.device_id] if self.device_id else ["hdc"]
 
-        device_factory = get_device_factory()
-
-        # Handle HDC devices with HarmonyOS-specific keyEvent command
-        if device_factory.device_type == DeviceType.HDC:
-            hdc_prefix = ["hdc", "-t", self.device_id] if self.device_id else ["hdc"]
-            
-            # Map common keycodes to HarmonyOS keyEvent codes
-            # KEYCODE_ENTER (66) -> 2054 (HarmonyOS Enter key code)
-            if keycode == "KEYCODE_ENTER" or keycode == "66":
-                _run_hdc_command(
-                    hdc_prefix + ["shell", "uitest", "uiInput", "keyEvent", "2054"],
-                    capture_output=True,
-                    text=True,
-                )
-            else:
-                # For other keys, try to use the numeric code directly
-                # If keycode is a string like "KEYCODE_ENTER", convert it
-                try:
-                    # Try to extract numeric code from string or use as-is
-                    if keycode.startswith("KEYCODE_"):
-                        # For now, only handle ENTER, other keys may need mapping
-                        if "ENTER" in keycode:
-                            _run_hdc_command(
-                                hdc_prefix + ["shell", "uitest", "uiInput", "keyEvent", "2054"],
-                                capture_output=True,
-                                text=True,
-                            )
-                        else:
-                            # Fallback to ADB-style command for unsupported keys
-                            subprocess.run(
-                                hdc_prefix + ["shell", "input", "keyevent", keycode],
-                                capture_output=True,
-                                text=True,
-                            )
-                    else:
-                        # Assume it's a numeric code
-                        _run_hdc_command(
-                            hdc_prefix + ["shell", "uitest", "uiInput", "keyEvent", str(keycode)],
-                            capture_output=True,
-                            text=True,
-                        )
-                except Exception:
-                    # Fallback to ADB-style command
-                    subprocess.run(
-                        hdc_prefix + ["shell", "input", "keyevent", keycode],
-                        capture_output=True,
-                        text=True,
-                    )
+        # Map common keycodes to HarmonyOS equivalents
+        if keycode in ("KEYCODE_ENTER", "66", "ENTER"):
+            mapped = "2054"  # HarmonyOS Enter
         else:
-            # ADB devices use standard input keyevent command
-            cmd_prefix = ["adb", "-s", self.device_id] if self.device_id else ["adb"]
+            mapped = str(keycode)
+
+        try:
+            _run_hdc_command(
+                hdc_prefix + ["shell", "uitest", "uiInput", "keyEvent", mapped],
+                capture_output=True,
+                text=True,
+            )
+        except Exception:
+            # Fallback to input keyevent for any edge cases
             subprocess.run(
-                cmd_prefix + ["shell", "input", "keyevent", keycode],
+                hdc_prefix + ["shell", "input", "keyevent", mapped],
                 capture_output=True,
                 text=True,
             )
