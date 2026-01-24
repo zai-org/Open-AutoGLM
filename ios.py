@@ -84,20 +84,28 @@ def check_system_requirements(wda_url: str = "http://localhost:8100") -> bool:
         print("❌ System check failed. Please fix the issues above.")
         return False
 
-    # Check 2: iOS Device connected
+    # Check 2: iOS Device connected (USB) OR reachable via WiFi (WDA URL)
+    #
+    # In WiFi mode, `idevice_id -ln` may return nothing even though WDA is reachable.
+    # In that case, we allow the check to pass as long as WDA responds.
     print("2. Checking connected iOS devices...", end=" ")
     try:
         devices = list_devices()
 
         if not devices:
-            print("❌ FAILED")
-            print("   Error: No iOS devices connected.")
-            print("   Solution:")
-            print("     1. Connect your iOS device via USB")
-            print("     2. Unlock the device and tap 'Trust This Computer'")
-            print("     3. Verify connection: idevice_id -l")
-            print("     4. Or connect via WiFi using device IP")
-            all_passed = False
+            # Fallback: allow WiFi-only setups if WDA is reachable.
+            conn = XCTestConnection(wda_url=wda_url)
+            if conn.is_wda_ready():
+                print("✅ OK (WiFi mode)")
+            else:
+                print("❌ FAILED")
+                print("   Error: No iOS devices connected.")
+                print("   Solution:")
+                print("     1. Connect your iOS device via USB")
+                print("     2. Unlock the device and tap 'Trust This Computer'")
+                print("     3. Verify connection: idevice_id -l")
+                print("     4. Or connect via WiFi using device IP")
+                all_passed = False
         else:
             device_names = [
                 d.device_name or d.device_id[:8] + "..." for d in devices
@@ -108,7 +116,7 @@ def check_system_requirements(wda_url: str = "http://localhost:8100") -> bool:
         print(f"   Error: {e}")
         all_passed = False
 
-    # If no device connected, skip WebDriverAgent check
+    # If no device connected and WiFi fallback didn't pass, skip WebDriverAgent check
     if not all_passed:
         print("-" * 50)
         print("❌ System check failed. Please fix the issues above.")
