@@ -358,6 +358,8 @@ def parse_action(response: str) -> dict[str, Any]:
                 response = response.replace('\n', '\\n')
                 response = response.replace('\r', '\\r')
                 response = response.replace('\t', '\\t')
+                response = response.replace("</answer>", "")
+                response = response.replace("<answer>", "")
 
                 tree = ast.parse(response, mode="eval")
                 if not isinstance(tree.body, ast.Call):
