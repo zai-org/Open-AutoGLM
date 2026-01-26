@@ -45,7 +45,7 @@ Midscene.js already supports AutoGLM; see the [Midscene.js integration guide](ht
 
 ### 1. Python Environment
 
-Python 3.10 or higher is recommended.
+Python from 3.10 to 3.12 is recommended.
 
 ### 2. Device Debug Tools
 
