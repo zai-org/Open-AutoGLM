@@ -10,6 +10,14 @@ from phone_agent.config.timing import TIMING_CONFIG
 from phone_agent.hdc.connection import _run_hdc_command
 import re
 
+# Store last tap per device to support inputText fallback
+_LAST_TAP: dict[str | None, tuple[int, int]] = {}
+
+
+def get_last_tap(device_id: str | None = None) -> tuple[int, int] | None:
+    """Get the last tap coordinates for a device (if any)."""
+    return _LAST_TAP.get(device_id)
+
 def get_current_app(device_id: str | None = None) -> str:
     """
     Get the currently focused app name.
@@ -99,6 +107,7 @@ def tap(
         hdc_prefix + ["shell", "uitest", "uiInput", "click", str(x), str(y)],
         capture_output=True
     )
+    _LAST_TAP[device_id] = (x, y)
     time.sleep(delay)
 
 

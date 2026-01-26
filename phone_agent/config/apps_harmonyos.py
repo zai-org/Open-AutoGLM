@@ -78,9 +78,7 @@ APP_PACKAGES: dict[str, str] = {
     "美团": "com.sankuai.hmeituan",
     "美团外卖": "com.meituan.takeaway",
     "大众点评": "com.sankuai.dianping",
-    # "肯德基": "com.yek.android.kfc.activitys",  # 未在 hdc 列表中找到
     # Travel
-    # "携程": "ctrip.android.view",  # 未在 hdc 列表中找到
     "铁路12306": "com.chinarailway.ticketingHM",
     "12306": "com.chinarailway.ticketingHM",
     # "去哪儿": "com.Qunar",  # 未在 hdc 列表中找到
@@ -106,7 +104,6 @@ APP_PACKAGES: dict[str, str] = {
     # "七猫免费小说": "com.kmxs.reader",  # 未在 hdc 列表中找到
     # Productivity
     "飞书": "com.ss.feishu",
-    # "QQ邮箱": "com.tencent.androidqqmail",  # 未在 hdc 列表中找到
     # AI & Tools
     "豆包": "com.larus.nova.hm",
     # Health & Fitness
@@ -117,9 +114,7 @@ APP_PACKAGES: dict[str, str] = {
     "今日头条": "com.ss.hm.article.news",
     # Real Estate
     # "贝壳找房": "com.lianjia.beike",  # 未在 hdc 列表中找到
-    # "安居客": "com.anjuke.android.app",  # 未在 hdc 列表中找到
     # Finance
-    # "同花顺": "com.hexin.plat.android",  # 未在 hdc 列表中找到
     # Games
     # "星穹铁道": "com.miHoYo.hkrpg",  # 未在 hdc 列表中找到
     # "崩坏：星穹铁道": "com.miHoYo.hkrpg",  # 未在 hdc 列表中找到
@@ -186,10 +181,6 @@ APP_PACKAGES: dict[str, str] = {
     # HarmonyOS 系统应用 - 设置类
     "设置": "com.huawei.hmos.settings",
     "系统设置": "com.huawei.hmos.settings",
-    "AndroidSystemSettings": "com.huawei.hmos.settings",
-    "Android System Settings": "com.huawei.hmos.settings",
-    "Android  System Settings": "com.huawei.hmos.settings",
-    "Android-System-Settings": "com.huawei.hmos.settings",
     "Settings": "com.huawei.hmos.settings",
     
     # HarmonyOS 系统应用 - 生活服务
