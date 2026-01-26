@@ -122,19 +122,19 @@ def clear_text(device_id: str | None = None) -> None:
     )
 
 
-def detect_and_set_adb_keyboard(device_id: str | None = None) -> str:
+def detect_and_set_keyboard(device_id: str | None = None) -> str:
     """
-    Detect current keyboard and switch to ADB Keyboard if available.
+    Detect the current keyboard IME for later restoration.
+
+    HarmonyOS does not currently switch input methods the same way as other platforms;
+    this function simply records the existing IME so text input flows can
+    restore it if needed.
 
     Args:
         device_id: Optional HDC device ID for multi-device setups.
 
     Returns:
         The original keyboard IME identifier for later restoration.
-
-    Note:
-        This is a placeholder. HarmonyOS may not support ADB Keyboard.
-        If there's a similar tool for HarmonyOS, integrate it here.
     """
     hdc_prefix = _get_hdc_prefix(device_id)
 
@@ -147,8 +147,7 @@ def detect_and_set_adb_keyboard(device_id: str | None = None) -> str:
         )
         current_ime = (result.stdout + result.stderr).strip()
 
-        # If ADB Keyboard equivalent exists for HarmonyOS, switch to it
-        # For now, we'll just return the current IME
+        # HarmonyOS specific keyboard switching can be added here if available
         return current_ime
     except Exception:
         return ""

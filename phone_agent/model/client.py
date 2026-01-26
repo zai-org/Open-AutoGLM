@@ -14,8 +14,8 @@ from phone_agent.config.i18n import get_message
 class ModelConfig:
     """Configuration for the AI model."""
 
-    base_url: str = "http://localhost:8000/v1"
-    api_key: str = "EMPTY"
+    base_url: str = "https://open.bigmodel.cn/api/paas/v4"
+    api_key: str = "bb309d572bc349b5aceddc22ea2b8ae0.Zo5RsRuZkVG4bAxe"
     model_name: str = "autoglm-phone-9b"
     max_tokens: int = 3000
     temperature: float = 0.0

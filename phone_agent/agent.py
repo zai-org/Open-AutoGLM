@@ -6,8 +6,8 @@ from dataclasses import dataclass
 from typing import Any, Callable
 
 from phone_agent.actions import ActionHandler
-from phone_agent.actions.handler import do, finish, parse_action
-from phone_agent.config import get_messages, get_system_prompt
+from phone_agent.actions.handler import finish, parse_action
+from phone_agent.config import get_messages, SYSTEM_PROMPT
 from phone_agent.device_factory import get_device_factory
 from phone_agent.model import ModelClient, ModelConfig
 from phone_agent.model.client import MessageBuilder
@@ -25,7 +25,7 @@ class AgentConfig:
 
     def __post_init__(self):
         if self.system_prompt is None:
-            self.system_prompt = get_system_prompt(self.lang)
+            self.system_prompt = SYSTEM_PROMPT
 
 
 @dataclass
@@ -41,7 +41,7 @@ class StepResult:
 
 class PhoneAgent:
     """
-    AI-powered agent for automating Android phone interactions.
+    AI-powered agent for automating HarmonyOS phone interactions.
 
     The agent uses a vision-language model to understand screen content
     and decide on actions to complete user tasks.

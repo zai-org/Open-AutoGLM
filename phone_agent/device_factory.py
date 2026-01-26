@@ -1,4 +1,4 @@
-"""Device factory for selecting ADB or HDC based on device type."""
+"""Device factory for HarmonyOS (HDC) devices."""
 
 from enum import Enum
 from typing import Any
@@ -7,19 +7,17 @@ from typing import Any
 class DeviceType(Enum):
     """Type of device connection tool."""
 
-    ADB = "adb"
     HDC = "hdc"
-    IOS = "ios"
 
 
 class DeviceFactory:
     """
     Factory class for getting device-specific implementations.
 
-    This allows the system to work with both Android (ADB) and HarmonyOS (HDC) devices.
+    This keeps a single control surface for HarmonyOS (HDC) devices.
     """
 
-    def __init__(self, device_type: DeviceType = DeviceType.ADB):
+    def __init__(self, device_type: DeviceType = DeviceType.HDC):
         """
         Initialize the device factory.
 
@@ -31,13 +29,9 @@ class DeviceFactory:
 
     @property
     def module(self):
-        """Get the appropriate device module (adb or hdc)."""
+        """Get the appropriate device module (currently only hdc)."""
         if self._module is None:
-            if self.device_type == DeviceType.ADB:
-                from phone_agent import adb
-
-                self._module = adb
-            elif self.device_type == DeviceType.HDC:
+            if self.device_type == DeviceType.HDC:
                 from phone_agent import hdc
 
                 self._module = hdc
@@ -113,9 +107,9 @@ class DeviceFactory:
         """Clear text."""
         return self.module.clear_text(device_id)
 
-    def detect_and_set_adb_keyboard(self, device_id: str | None = None) -> str:
-        """Detect and set keyboard."""
-        return self.module.detect_and_set_adb_keyboard(device_id)
+    def detect_and_set_keyboard(self, device_id: str | None = None) -> str:
+        """Detect and set keyboard if supported."""
+        return self.module.detect_and_set_keyboard(device_id)
 
     def restore_keyboard(self, ime: str, device_id: str | None = None):
         """Restore keyboard."""
@@ -126,17 +120,12 @@ class DeviceFactory:
         return self.module.list_devices()
 
     def get_connection_class(self):
-        """Get the connection class (ADBConnection or HDCConnection)."""
-        if self.device_type == DeviceType.ADB:
-            from phone_agent.adb import ADBConnection
-
-            return ADBConnection
-        elif self.device_type == DeviceType.HDC:
+        """Get the connection class (HDCConnection)."""
+        if self.device_type == DeviceType.HDC:
             from phone_agent.hdc import HDCConnection
 
             return HDCConnection
-        else:
-            raise ValueError(f"Unknown device type: {self.device_type}")
+        raise ValueError(f"Unknown device type: {self.device_type}")
 
 
 # Global device factory instance
@@ -148,7 +137,7 @@ def set_device_type(device_type: DeviceType):
     Set the global device type.
 
     Args:
-        device_type: The device type to use (ADB or HDC).
+        device_type: The device type to use (HDC).
     """
     global _device_factory
     _device_factory = DeviceFactory(device_type)
@@ -163,5 +152,5 @@ def get_device_factory() -> DeviceFactory:
     """
     global _device_factory
     if _device_factory is None:
-        _device_factory = DeviceFactory(DeviceType.ADB)  # Default to ADB
+        _device_factory = DeviceFactory(DeviceType.HDC)  # Default to HDC
     return _device_factory
