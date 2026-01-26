@@ -1,0 +1,23 @@
+[versions]
+androidGradlePlugin = "8.6.1"
+kotlin = "2.0.21"
+coroutines = "1.9.0"
+coreKtx = "1.15.0"
+okhttp = "4.12.0"
+xr = "1.0.0-alpha01"
+serializationJson = "1.7.3"
+websocket = "1.5.6"
+
+[plugins]
+android.library = { id = "com.android.library", version.ref = "androidGradlePlugin" }
+kotlin.android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+
+[libraries]
+androidx.core.ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
+kotlin.stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
+coroutines.android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
+xr.core = { module = "androidx.xr:xr-core", version.ref = "xr" }
+xr.compose = { module = "androidx.xr:xr-compose", version.ref = "xr" }
+java.websocket = { module = "org.java-websocket:Java-WebSocket", version.ref = "websocket" }
+okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
+serialization.json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serializationJson" }
