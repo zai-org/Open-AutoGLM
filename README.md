@@ -108,8 +108,8 @@ ADB 调试能力，可通过 WiFi 或网络连接设备，实现灵活的远程�
 
 如果你使用的是 Android 设备：
 
-下载 [安装包](https://github.com/senzhk/ADBKeyBoard/blob/master/ADBKeyboard.apk) 并在对应的安卓设备中进行安装。
-注意，安装完成后还需要到 `设置-输入法` 或者 `设置-键盘列表` 中启用 `ADB Keyboard` 才能生效(或使用命令`adb shell ime enable com.android.adbkeyboard/.AdbIME`[How-to-use](https://github.com/senzhk/ADBKeyBoard/blob/master/README.md#how-to-use))
+下载 [安装包](https://github.com/senzhk/ADBKeyBoard/blob/master/ADBKeyboard.apk) 并在对应的安卓设备中安装，安装完成后需要到「设置 - 输入法」或「设置 - 键盘列表」中启用 ADB Keyboard 才能生效或使用命令 (adb shell ime enable com.android.adbkeyboard/.AdbIME) [How-to-use]
+(https://github.com/senzhk/ADBKeyBoard/blob/master/README.md#how-to-use)
 
 ## iPhone 环境准备
 
