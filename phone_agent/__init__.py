@@ -1,3 +1,11 @@
-from .adb_commands import check_adb_permissions, execute_adb_command
+from .adb_manager import ADBManager
 
-__all__ = ['check_adb_permissions', 'execute_adb_command']
+# Other imports...
+
+class PhoneAgent:
+    def __init__(self, device):
+        self.adb_manager = ADBManager(device)
+
+    def setup(self):
+        if not self.adb_manager.check_adb_keyboard():
+            print("Consider using another input method or check ADB permissions.")
