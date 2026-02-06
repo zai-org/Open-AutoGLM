@@ -279,7 +279,6 @@ def launch_app(
 
     # Get the ability name for this bundle
     # Default to "EntryAbility" if not specified in APP_ABILITIES
-    ability = APP_ABILITIES.get(bundle, "EntryAbility")
 
     # HarmonyOS uses 'aa start' command to launch apps
     # Format: aa start -b {bundle} -a {ability}
@@ -287,12 +286,12 @@ def launch_app(
         hdc_prefix
         + [
             "shell",
-            "aa",
-            "start",
+            "wukong",
+            "exec",
             "-b",
             bundle,
-            "-a",
-            ability,
+            "-c",
+            "1",
         ],
         capture_output=True,
     )
