@@ -6,7 +6,27 @@ from typing import Optional
 
 from phone_agent.config.apps_ios import APP_PACKAGES_IOS as APP_PACKAGES
 
-SCALE_FACTOR = 3 # 3 for most modern iPhone 
+# WDA expects coordinates in "points" while our higher-level code
+# mostly works in screenshot pixel coordinates.
+# This factor converts pixels -> points.
+_SCALE_FACTOR: float = 3.0  # default for many modern iPhones
+
+
+def set_scale_factor(scale: float) -> None:
+    """Set the global pixel->point scale factor used for coordinate conversion."""
+    global _SCALE_FACTOR
+    try:
+        scale_f = float(scale)
+        if scale_f > 0:
+            _SCALE_FACTOR = scale_f
+    except Exception:
+        # Keep previous value on invalid input
+        return
+
+
+def get_scale_factor() -> float:
+    """Get the global pixel->point scale factor used for coordinate conversion."""
+    return float(_SCALE_FACTOR)
 
 def _get_wda_session_url(wda_url: str, session_id: str | None, endpoint: str) -> str:
     """
@@ -95,6 +115,7 @@ def tap(
         url = _get_wda_session_url(wda_url, session_id, "actions")
 
         # W3C WebDriver Actions API for tap/click
+        scale = get_scale_factor()
         actions = {
             "actions": [
                 {
@@ -102,7 +123,7 @@ def tap(
                     "id": "finger1",
                     "parameters": {"pointerType": "touch"},
                     "actions": [
-                        {"type": "pointerMove", "duration": 0, "x": x / SCALE_FACTOR, "y": y / SCALE_FACTOR},
+                        {"type": "pointerMove", "duration": 0, "x": x / scale, "y": y / scale},
                         {"type": "pointerDown", "button": 0},
                         {"type": "pause", "duration": 0.1},
                         {"type": "pointerUp", "button": 0},
@@ -143,6 +164,8 @@ def double_tap(
 
         url = _get_wda_session_url(wda_url, session_id, "actions")
 
+        scale = get_scale_factor()
+
         # W3C WebDriver Actions API for double tap
         actions = {
             "actions": [
@@ -151,11 +174,12 @@ def double_tap(
                     "id": "finger1",
                     "parameters": {"pointerType": "touch"},
                     "actions": [
-                        {"type": "pointerMove", "duration": 0, "x": x / SCALE_FACTOR, "y": y / SCALE_FACTOR},
+                        {"type": "pointerMove", "duration": 0, "x": x / scale, "y": y / scale},
                         {"type": "pointerDown", "button": 0},
                         {"type": "pause", "duration": 100},
                         {"type": "pointerUp", "button": 0},
                         {"type": "pause", "duration": 100},
+                        {"type": "pointerMove", "duration": 0, "x": x / scale, "y": y / scale},
                         {"type": "pointerDown", "button": 0},
                         {"type": "pause", "duration": 100},
                         {"type": "pointerUp", "button": 0},
@@ -202,6 +226,7 @@ def long_press(
         # Convert duration to milliseconds
         duration_ms = int(duration * 1000)
 
+        scale = get_scale_factor()
         actions = {
             "actions": [
                 {
@@ -209,7 +234,7 @@ def long_press(
                     "id": "finger1",
                     "parameters": {"pointerType": "touch"},
                     "actions": [
-                        {"type": "pointerMove", "duration": 0, "x": x / SCALE_FACTOR, "y": y / SCALE_FACTOR},
+                        {"type": "pointerMove", "duration": 0, "x": x / scale, "y": y / scale},
                         {"type": "pointerDown", "button": 0},
                         {"type": "pause", "duration": duration_ms},
                         {"type": "pointerUp", "button": 0},
@@ -262,12 +287,14 @@ def swipe(
 
         url = _get_wda_session_url(wda_url, session_id, "wda/dragfromtoforduration")
 
+        scale = get_scale_factor()
+
         # WDA dragfromtoforduration API payload
         payload = {
-            "fromX": start_x / SCALE_FACTOR,
-            "fromY": start_y / SCALE_FACTOR,
-            "toX": end_x / SCALE_FACTOR,
-            "toY": end_y / SCALE_FACTOR,
+            "fromX": start_x / scale,
+            "fromY": start_y / scale,
+            "toX": end_x / scale,
+            "toY": end_y / scale,
             "duration": duration,
         }
 
@@ -303,12 +330,14 @@ def back(
 
         url = _get_wda_session_url(wda_url, session_id, "wda/dragfromtoforduration")
 
+        scale = get_scale_factor()
+
         # Swipe from left edge to simulate back gesture
         payload = {
-            "fromX": 0,
-            "fromY": 640,
-            "toX": 400,
-            "toY": 640,
+            "fromX": 0 / scale,
+            "fromY": 640 / scale,
+            "toX": 400 / scale,
+            "toY": 640 / scale,
             "duration": 0.3,
         }
 
