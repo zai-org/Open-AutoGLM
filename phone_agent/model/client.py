@@ -81,9 +81,20 @@ class ModelClient:
 
         raw_content = ""
         buffer = ""  # Buffer to hold content that might be part of a marker
-        action_markers = ["finish(message=", "do(action="]
+
+        # Action markers that signal the end of the thinking process
+        action_markers = ["<answer>", "finish(message=", "do(action="]
+        # Tags to hide from the output stream
+        hide_tags = ["<think>", "</think>"]
+
         in_action_phase = False  # Track if we've entered the action phase
         first_token_received = False
+        lang = self.config.lang
+
+        # Print thinking header
+        print("\n" + "=" * 50)
+        print(f"💭 {get_message('thinking', lang)}:")
+        print("-" * 50)
 
         for chunk in stream:
             if len(chunk.choices) == 0:
@@ -103,7 +114,12 @@ class ModelClient:
 
                 buffer += content
 
-                # Check if any marker is fully present in buffer
+                # Hide tags from stream
+                for tag in hide_tags:
+                    if tag in buffer:
+                        buffer = buffer.replace(tag, "")
+
+                # Check if any action marker is fully present in buffer
                 marker_found = False
                 for marker in action_markers:
                     if marker in buffer:
@@ -123,10 +139,10 @@ class ModelClient:
                 if marker_found:
                     continue  # Continue to collect remaining content
 
-                # Check if buffer ends with a prefix of any marker
+                # Check if buffer ends with a prefix of any marker or tag
                 # If so, don't print yet (wait for more content)
                 is_potential_marker = False
-                for marker in action_markers:
+                for marker in action_markers + hide_tags:
                     for i in range(1, len(marker)):
                         if buffer.endswith(marker[:i]):
                             is_potential_marker = True
@@ -147,7 +163,6 @@ class ModelClient:
 
         # Print performance metrics
         lang = self.config.lang
-        print()
         print("=" * 50)
         print(f"⏱️  {get_message('performance_metrics', lang)}:")
         print("-" * 50)
@@ -178,11 +193,11 @@ class ModelClient:
         Parse the model response into thinking and action parts.
 
         Parsing rules:
-        1. If content contains 'finish(message=', everything before is thinking,
+        1. If content contains XML tags <think> and <answer>, use them.
+        2. If content contains 'finish(message=', everything before is thinking,
            everything from 'finish(message=' onwards is action.
-        2. If rule 1 doesn't apply but content contains 'do(action=',
-           everything before is thinking, everything from 'do(action=' onwards is action.
-        3. Fallback: If content contains '<answer>', use legacy parsing with XML tags.
+        3. If content contains 'do(action=', everything before is thinking,
+           everything from 'do(action=' onwards is action.
         4. Otherwise, return empty thinking and full content as action.
 
         Args:
@@ -191,25 +206,45 @@ class ModelClient:
         Returns:
             Tuple of (thinking, action).
         """
-        # Rule 1: Check for finish(message=
+        # Rule 1: XML tag parsing (highest priority if tags exist)
+        if "<answer>" in content:
+            thinking = ""
+            if "<think>" in content and "</think>" in content:
+                thinking_parts = content.split("<think>", 1)[1].split("</think>", 1)
+                thinking = thinking_parts[0].strip()
+            elif "<think>" in content:
+                thinking = (
+                    content.split("<think>", 1)[1].split("<answer>", 1)[0].strip()
+                )
+            else:
+                thinking = content.split("<answer>", 1)[0].strip()
+
+            action_part = content.split("<answer>", 1)[1]
+            if "</answer>" in action_part:
+                action = action_part.split("</answer>", 1)[0].strip()
+            else:
+                action = action_part.strip()
+
+            return thinking, action
+
+        # Rule 2: Check for finish(message=
         if "finish(message=" in content:
             parts = content.split("finish(message=", 1)
             thinking = parts[0].strip()
             action = "finish(message=" + parts[1]
+            # Clean up trailing tags if any
+            if "</answer>" in action:
+                action = action.split("</answer>", 1)[0].strip()
             return thinking, action
 
-        # Rule 2: Check for do(action=
+        # Rule 3: Check for do(action=
         if "do(action=" in content:
             parts = content.split("do(action=", 1)
             thinking = parts[0].strip()
             action = "do(action=" + parts[1]
-            return thinking, action
-
-        # Rule 3: Fallback to legacy XML tag parsing
-        if "<answer>" in content:
-            parts = content.split("<answer>", 1)
-            thinking = parts[0].replace("<think>", "").replace("</think>", "").strip()
-            action = parts[1].replace("</answer>", "").strip()
+            # Clean up trailing tags if any
+            if "</answer>" in action:
+                action = action.split("</answer>", 1)[0].strip()
             return thinking, action
 
         # Rule 4: No markers found, return content as action

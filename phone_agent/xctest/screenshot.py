@@ -33,7 +33,7 @@ def get_screenshot(
     Args:
         wda_url: WebDriverAgent URL.
         session_id: Optional WDA session ID.
-        device_id: Optional device UDID (for idevicescreenshot fallback).
+        device_id: Optional device UUID (for idevicescreenshot fallback).
         timeout: Timeout in seconds for screenshot operations.
 
     Returns:
@@ -103,14 +103,12 @@ def _get_screenshot_wda(
     return None
 
 
-def _get_screenshot_idevice(
-    device_id: str | None, timeout: int
-) -> Screenshot | None:
+def _get_screenshot_idevice(device_id: str | None, timeout: int) -> Screenshot | None:
     """
     Capture screenshot using idevicescreenshot (libimobiledevice).
 
     Args:
-        device_id: Optional device UDID.
+        device_id: Optional device UUID.
         timeout: Timeout in seconds.
 
     Returns:
@@ -126,9 +124,7 @@ def _get_screenshot_idevice(
             cmd.extend(["-u", device_id])
         cmd.append(temp_path)
 
-        result = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=timeout
-        )
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
 
         if result.returncode == 0 and os.path.exists(temp_path):
             # Read and encode image
@@ -217,7 +213,7 @@ def get_screenshot_png(
     Args:
         wda_url: WebDriverAgent URL.
         session_id: Optional WDA session ID.
-        device_id: Optional device UDID.
+        device_id: Optional device UUID.
 
     Returns:
         PNG bytes or None if failed.

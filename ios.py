@@ -10,7 +10,7 @@ Environment Variables:
     PHONE_AGENT_MODEL: Model name (default: autoglm-phone-9b)
     PHONE_AGENT_MAX_STEPS: Maximum steps per task (default: 100)
     PHONE_AGENT_WDA_URL: WebDriverAgent URL (default: http://localhost:8100)
-    PHONE_AGENT_DEVICE_ID: iOS device UDID for multi-device setups
+    PHONE_AGENT_DEVICE_ID: iOS device UUID for multi-device setups
 """
 
 import argparse
@@ -99,9 +99,7 @@ def check_system_requirements(wda_url: str = "http://localhost:8100") -> bool:
             print("     4. Or connect via WiFi using device IP")
             all_passed = False
         else:
-            device_names = [
-                d.device_name or d.device_id[:8] + "..." for d in devices
-            ]
+            device_names = [d.device_name or d.device_id[:8] + "..." for d in devices]
             print(f"✅ OK ({len(devices)} device(s): {', '.join(device_names)})")
     except Exception as e:
         print("❌ FAILED")
@@ -261,7 +259,7 @@ Examples:
     python ios.py --base-url http://localhost:8000/v1
 
     # Run with specific device
-    python ios.py --device-id <UDID>
+    python ios.py --device-id <UUID>
 
     # Use WiFi connection
     python ios.py --wda-url http://192.168.1.100:8100
@@ -315,7 +313,7 @@ Examples:
         "-d",
         type=str,
         default=os.getenv("PHONE_AGENT_DEVICE_ID"),
-        help="iOS device UDID",
+        help="iOS device UUID",
     )
 
     parser.add_argument(
@@ -326,7 +324,9 @@ Examples:
     )
 
     parser.add_argument(
-        "--list-devices", action="store_true", help="List connected iOS devices and exit"
+        "--list-devices",
+        action="store_true",
+        help="List connected iOS devices and exit",
     )
 
     parser.add_argument(
@@ -396,7 +396,7 @@ def handle_device_commands(args) -> bool:
                 name_info = device.device_name or "Unnamed"
 
                 print(f"  ✓ {name_info}")
-                print(f"    UDID: {device.device_id}")
+                print(f"    UUID: {device.device_id}")
                 print(f"    Model: {model_info}")
                 print(f"    OS: {ios_info}")
                 print(f"    Connection: {conn_type}")
@@ -474,9 +474,7 @@ def main():
 
     # Create configurations
     model_config = ModelConfig(
-        base_url=args.base_url,
-        model_name=args.model,
-        api_key=args.api_key
+        base_url=args.base_url, model_name=args.model, api_key=args.api_key
     )
 
     agent_config = IOSAgentConfig(
