@@ -195,15 +195,24 @@ def check_system_requirements(
     if device_type == DeviceType.ADB:
         print("3. Checking ADB Keyboard...", end=" ")
         try:
-            result = subprocess.run(
+            ADB_IME_ID = "com.android.adbkeyboard/.AdbIME"
+            ime_ok = (ADB_IME_ID in subprocess.run(
                 ["adb", "shell", "ime", "list", "-s"],
                 capture_output=True,
                 text=True,
                 timeout=10,
-            )
-            ime_list = result.stdout.strip()
-
-            if "com.android.adbkeyboard/.AdbIME" in ime_list:
+            ).stdout or ADB_IME_ID in subprocess.run(
+                ["adb", "shell", "dumpsys", "input_method"],
+                capture_output=True,
+                text=True,
+                timeout=3,
+            ).stdout or ADB_IME_ID in subprocess.run(
+                ["adb", "shell", "settings", "get", "secure", "enabled_input_methods"],
+                capture_output=True,
+                text=True,
+                timeout=3,
+            ).stdout)
+            if ime_ok:
                 print("✅ OK")
             else:
                 print("❌ FAILED")
@@ -330,8 +339,8 @@ def check_model_api(base_url: str, model_name: str, api_key: str = "EMPTY") -> b
             print("     1. Check your network connection")
             print("     2. Verify the server is responding")
         elif (
-            "Name or service not known" in error_msg
-            or "nodename nor servname" in error_msg
+                "Name or service not known" in error_msg
+                or "nodename nor servname" in error_msg
         ):
             print(f"   Error: Cannot resolve hostname")
             print("   Solution:")
