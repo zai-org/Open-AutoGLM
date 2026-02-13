@@ -3,7 +3,7 @@
 from datetime import datetime
 
 today = datetime.today()
-formatted_date = today.strftime("%Y年%m月%d日")
+formatted_date = f"{today.year}年{today.month:02d}月{today.day:02d}日"
 
 SYSTEM_PROMPT = (
     "今天的日期是: "
