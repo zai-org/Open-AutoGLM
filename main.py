@@ -19,6 +19,7 @@ import shutil
 import subprocess
 import sys
 from urllib.parse import urlparse
+sys.stdout.reconfigure(encoding='utf-8')
 
 from openai import OpenAI
 
@@ -98,7 +99,7 @@ def check_system_requirements(
                 version_cmd = [tool_cmd, "-ln"]
 
             result = subprocess.run(
-                version_cmd, capture_output=True, text=True, timeout=10
+                version_cmd, capture_output=True, text=True, encoding='utf-8', errors='ignore', timeout=10
             )
             if result.returncode == 0:
                 version_line = result.stdout.strip().split("\n")[0]
@@ -127,7 +128,7 @@ def check_system_requirements(
     try:
         if device_type == DeviceType.ADB:
             result = subprocess.run(
-                ["adb", "devices"], capture_output=True, text=True, timeout=10
+                ["adb", "devices"], capture_output=True, text=True, encoding='utf-8', errors='ignore', timeout=10
             )
             lines = result.stdout.strip().split("\n")
             # Filter out header and empty lines, look for 'device' status
@@ -136,7 +137,7 @@ def check_system_requirements(
             ]
         elif device_type == DeviceType.HDC:
             result = subprocess.run(
-                ["hdc", "list", "targets"], capture_output=True, text=True, timeout=10
+                ["hdc", "list", "targets"], capture_output=True, text=True, encoding='utf-8', errors='ignore', timeout=10
             )
             lines = result.stdout.strip().split("\n")
             devices = [line for line in lines if line.strip()]
@@ -195,37 +196,72 @@ def check_system_requirements(
     if device_type == DeviceType.ADB:
         print("3. Checking ADB Keyboard...", end=" ")
         try:
-            result = subprocess.run(
-                ["adb", "shell", "ime", "list", "-s"],
-                capture_output=True,
-                text=True,
-                timeout=10,
-            )
-            ime_list = result.stdout.strip()
+            ADB_IME_ID = "com.android.adbkeyboard/.AdbIME"
+            ime_ok = False
 
-            if "com.android.adbkeyboard/.AdbIME" in ime_list:
+            # Check 1: ime list -s
+            try:
+                result = subprocess.run(
+                    ["adb", "shell", "ime", "list", "-s"],
+                    capture_output=True,
+                    text=True,
+                    encoding='utf-8',
+                    errors='ignore',
+                    timeout=10,
+                )
+                if result.stdout and ADB_IME_ID in result.stdout:
+                    ime_ok = True
+            except subprocess.TimeoutExpired:
+                pass
+            except Exception:
+                pass
+
+            # Check 2: dumpsys input_method
+            if not ime_ok:
+                try:
+                    result = subprocess.run(
+                        ["adb", "shell", "dumpsys", "input_method"],
+                        capture_output=True,
+                        text=True,
+                        encoding='utf-8',
+                        errors='ignore',
+                        timeout=3,
+                    )
+                    if result.stdout and ADB_IME_ID in result.stdout:
+                        ime_ok = True
+                except subprocess.TimeoutExpired:
+                    pass
+                except Exception:
+                    pass
+
+            # Check 3: settings get secure enabled_input_methods
+            if not ime_ok:
+                try:
+                    result = subprocess.run(
+                        ["adb", "shell", "settings", "get", "secure", "enabled_input_methods"],
+                        capture_output=True,
+                        text=True,
+                        encoding='utf-8',
+                        errors='ignore',
+                        timeout=3,
+                    )
+                    if result.stdout and ADB_IME_ID in result.stdout:
+                        ime_ok = True
+                except subprocess.TimeoutExpired:
+                    pass
+                except Exception:
+                    pass
+
+            if ime_ok:
                 print("✅ OK")
             else:
-                print("❌ FAILED")
-                print("   Error: ADB Keyboard is not installed on the device.")
-                print("   Solution:")
-                print("     1. Download ADB Keyboard APK from:")
-                print(
-                    "        https://github.com/senzhk/ADBKeyBoard/blob/master/ADBKeyboard.apk"
-                )
-                print("     2. Install it on your device: adb install ADBKeyboard.apk")
-                print(
-                    "     3. Enable it in Settings > System > Languages & Input > Virtual Keyboard"
-                )
-                all_passed = False
-        except subprocess.TimeoutExpired:
-            print("❌ FAILED")
-            print("   Error: ADB command timed out.")
-            all_passed = False
+                print("⚠️ Warning: Could not verify ADB Keyboard installation.")
+                print("   Continuing anyway as requested (Bypassed).")
+                # We do NOT set all_passed = False here, to bypass the check.
         except Exception as e:
-            print("❌ FAILED")
-            print(f"   Error: {e}")
-            all_passed = False
+            print(f"⚠️ Warning: Error checking ADB Keyboard: {e}")
+            print("   Continuing anyway as requested (Bypassed).")
+            # We do NOT set all_passed = False here, to bypass the check.
     elif device_type == DeviceType.HDC:
         # For HDC, skip keyboard check as it uses different input method
         print("3. Skipping keyboard check for HarmonyOS...", end=" ")
