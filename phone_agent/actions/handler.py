@@ -9,6 +9,7 @@ from typing import Any, Callable
 
 from phone_agent.config.timing import TIMING_CONFIG
 from phone_agent.device_factory import get_device_factory
+from phone_agent.utils import regex_util
 
 
 @dataclass
@@ -358,7 +359,7 @@ def parse_action(response: str) -> dict[str, Any]:
                 response = response.replace('\n', '\\n')
                 response = response.replace('\r', '\\r')
                 response = response.replace('\t', '\\t')
-
+                response = regex_util.escape_inner_quotes(response)
                 tree = ast.parse(response, mode="eval")
                 if not isinstance(tree.body, ast.Call):
                     raise ValueError("Expected a function call")
