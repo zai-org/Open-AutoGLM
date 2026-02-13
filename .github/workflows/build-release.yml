@@ -1,0 +1,466 @@
+# GitHub Actions Workflow: Cross-platform Build and Auto-release
+# Automatically build standalone executables using PyInstaller and publish to GitHub Releases
+#
+# Trigger methods:
+#   - workflow_dispatch: Manual trigger
+#   - schedule: Daily scheduled check (optional)
+#   - push: Triggered on push to main branch (suitable for Fork sync scenarios)
+
+name: Build and Release
+
+on:
+  # Manual trigger with custom version number support
+  workflow_dispatch:
+    inputs:
+      version_suffix:
+        description: 'Optional version suffix (leave empty for auto-generation)'
+        required: false
+        default: ''
+      pre_release:
+        description: 'Mark as pre-release version'
+        required: false
+        type: boolean
+        default: false
+
+  # Scheduled trigger (daily at 00:00 UTC, 08:00 Beijing time)
+  # Uncomment the schedule below to enable scheduled builds
+  # schedule:
+  #   - cron: '0 0 * * *'
+
+  # Triggered on push to main branch (suitable for auto-build after upstream sync)
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '*.md'
+      - 'docs/**'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/PULL_REQUEST_TEMPLATE.md'
+      - '.github/copilot-instructions.md'
+
+# Ensure only one build task runs at a time
+concurrency:
+  group: build-release-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: '3.11'
+  PROJECT_NAME: 'phone-agent'
+
+jobs:
+  # Preparation stage: Generate version number
+  prepare:
+    name: Prepare Build
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      should_build: ${{ steps.check.outputs.should_build }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check if build is needed
+        id: check
+        run: |
+          # For workflow_dispatch and schedule, always build
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]] || [[ "${{ github.event_name }}" == "schedule" ]]; then
+            echo "should_build=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          # For push events, check if there are substantial changes
+          CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "")
+          if [[ -n "$CHANGED_FILES" ]]; then
+            # Exclude pure documentation changes
+            CODE_CHANGES=$(echo "$CHANGED_FILES" | grep -v -E '\.md$|^docs/|^\.github/(ISSUE_TEMPLATE|PULL_REQUEST_TEMPLATE|copilot)' || true)
+            if [[ -n "$CODE_CHANGES" ]]; then
+              echo "should_build=true" >> $GITHUB_OUTPUT
+            else
+              echo "should_build=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "should_build=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate version number
+        id: version
+        run: |
+          # Format: vYYYYMMDD-HHMM
+          VERSION="v$(date -u +'%Y%m%d-%H%M')"
+          
+          # Append custom suffix if provided
+          if [[ -n "${{ github.event.inputs.version_suffix }}" ]]; then
+            VERSION="${VERSION}-${{ github.event.inputs.version_suffix }}"
+          fi
+          
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "📦 Build version: ${VERSION}"
+
+  # Build stage: Multi-platform matrix build
+  build:
+    name: Build on ${{ matrix.os }} (${{ matrix.arch }})
+    needs: prepare
+    if: needs.prepare.outputs.should_build == 'true'
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # macOS x64
+          - os: macos
+            arch: x64
+            runner: macos-15-intel
+            artifact_name: phone-agent-macos-x64
+            executable_ext: ''
+          
+          # macOS ARM64 (Apple Silicon)
+          - os: macos
+            arch: arm64
+            runner: macos-15
+            artifact_name: phone-agent-macos-arm64
+            executable_ext: ''
+          
+          # Linux x64
+          - os: linux
+            arch: x64
+            runner: ubuntu-22.04
+            artifact_name: phone-agent-linux-x64
+            executable_ext: ''
+          
+          # Linux ARM64
+          - os: linux
+            arch: arm64
+            runner: ubuntu-22.04-arm
+            artifact_name: phone-agent-linux-arm64
+            executable_ext: ''
+          
+          # Windows x64
+          - os: windows
+            arch: x64
+            runner: windows-2025
+            artifact_name: phone-agent-windows-x64
+            executable_ext: '.exe'
+          
+          # Windows ARM64
+          - os: windows
+            arch: arm64
+            runner: windows-11-arm
+            artifact_name: phone-agent-windows-arm64
+            executable_ext: '.exe'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/Library/Caches/pip
+            ~/AppData/Local/pip/Cache
+          key: ${{ runner.os }}-${{ matrix.arch }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.arch }}-pip-
+
+      - name: Install dependencies (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          # Create virtual environment and install project dependencies
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e .
+          
+          # Install PyInstaller in the virtual environment
+          pip install pyinstaller
+
+      - name: Install dependencies (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          PYTHONUTF8: '1'
+          PYTHONIOENCODING: 'utf-8'
+        run: |
+          # Create virtual environment and install project dependencies
+          python -m venv .venv
+          .\.venv\Scripts\Activate.ps1
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e .
+          
+          # Install PyInstaller in the virtual environment
+          pip install pyinstaller
+
+      - name: Build with PyInstaller (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          source .venv/bin/activate
+          
+          # Build with PyInstaller
+          pyinstaller \
+            --name="${{ env.PROJECT_NAME }}" \
+            --onefile \
+            --clean \
+            --noconfirm \
+            --add-data="phone_agent:phone_agent" \
+            --add-data="resources:resources" \
+            --hidden-import="phone_agent" \
+            --hidden-import="phone_agent.agent" \
+            --hidden-import="phone_agent.model" \
+            --hidden-import="phone_agent.model.client" \
+            --hidden-import="phone_agent.adb" \
+            --hidden-import="phone_agent.adb.connection" \
+            --hidden-import="phone_agent.adb.device" \
+            --hidden-import="phone_agent.adb.input" \
+            --hidden-import="phone_agent.adb.screenshot" \
+            --hidden-import="phone_agent.actions" \
+            --hidden-import="phone_agent.actions.handler" \
+            --hidden-import="phone_agent.config" \
+            --hidden-import="phone_agent.config.apps" \
+            --hidden-import="phone_agent.config.i18n" \
+            --hidden-import="phone_agent.config.prompts" \
+            --hidden-import="phone_agent.config.prompts_en" \
+            --hidden-import="phone_agent.config.prompts_zh" \
+            --hidden-import="PIL" \
+            --hidden-import="openai" \
+            --collect-all="phone_agent" \
+            main.py
+          
+          # Verify build artifacts
+          ls -la dist/
+          ./dist/${{ env.PROJECT_NAME }} --help || echo "Help command executed"
+
+      - name: Build with PyInstaller (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          PYTHONUTF8: '1'
+          PYTHONIOENCODING: 'utf-8'
+        run: |
+          .\.venv\Scripts\Activate.ps1
+          
+          # Build with PyInstaller
+          pyinstaller `
+            --name="${{ env.PROJECT_NAME }}" `
+            --onefile `
+            --clean `
+            --noconfirm `
+            --add-data="phone_agent;phone_agent" `
+            --add-data="resources;resources" `
+            --hidden-import="phone_agent" `
+            --hidden-import="phone_agent.agent" `
+            --hidden-import="phone_agent.model" `
+            --hidden-import="phone_agent.model.client" `
+            --hidden-import="phone_agent.adb" `
+            --hidden-import="phone_agent.adb.connection" `
+            --hidden-import="phone_agent.adb.device" `
+            --hidden-import="phone_agent.adb.input" `
+            --hidden-import="phone_agent.adb.screenshot" `
+            --hidden-import="phone_agent.actions" `
+            --hidden-import="phone_agent.actions.handler" `
+            --hidden-import="phone_agent.config" `
+            --hidden-import="phone_agent.config.apps" `
+            --hidden-import="phone_agent.config.i18n" `
+            --hidden-import="phone_agent.config.prompts" `
+            --hidden-import="phone_agent.config.prompts_en" `
+            --hidden-import="phone_agent.config.prompts_zh" `
+            --hidden-import="PIL" `
+            --hidden-import="openai" `
+            --collect-all="phone_agent" `
+            main.py
+          
+          # Verify build artifacts
+          Get-ChildItem dist/
+          .\dist\${{ env.PROJECT_NAME }}.exe --help
+
+      - name: Prepare artifact
+        shell: bash
+        run: |
+          mkdir -p artifact
+          
+          # Copy executable file
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            cp "dist/${{ env.PROJECT_NAME }}${{ matrix.executable_ext }}" "artifact/${{ matrix.artifact_name }}${{ matrix.executable_ext }}"
+          else
+            cp "dist/${{ env.PROJECT_NAME }}" "artifact/${{ matrix.artifact_name }}"
+            chmod +x "artifact/${{ matrix.artifact_name }}"
+          fi
+          
+          # Copy necessary resource files
+          cp README.md artifact/ || true
+          cp LICENSE artifact/ || true
+          
+          # Display artifact information
+          ls -la artifact/
+
+      - name: Create archive (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          cd artifact
+          tar -czvf "../${{ matrix.artifact_name }}.tar.gz" .
+          cd ..
+          ls -la *.tar.gz
+
+      - name: Create archive (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Compress-Archive -Path artifact\* -DestinationPath "${{ matrix.artifact_name }}.zip"
+          Get-ChildItem *.zip
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: |
+            ${{ matrix.artifact_name }}.tar.gz
+            ${{ matrix.artifact_name }}.zip
+          if-no-files-found: error
+          retention-days: 7
+
+  # Release stage: Create GitHub Release
+  release:
+    name: Create Release
+    needs: [prepare, build]
+    if: needs.prepare.outputs.should_build == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Prepare release assets
+        run: |
+          mkdir -p release-assets
+          
+          # Move all build artifacts to release-assets directory
+          find artifacts -type f \( -name "*.tar.gz" -o -name "*.zip" \) -exec mv {} release-assets/ \;
+          
+          # Generate checksums
+          cd release-assets
+          sha256sum * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+          cd ..
+          
+          # Display all release assets
+          echo "📦 Release assets:"
+          ls -la release-assets/
+
+      - name: Generate release notes
+        id: release_notes
+        run: |
+          VERSION="${{ needs.prepare.outputs.version }}"
+          
+          cat << EOF > release_notes.md
+          ## 🚀 Phone Agent ${VERSION}
+          
+          ### 📦 Download
+          
+          | Platform | Architecture | Download Link |
+          |----------|--------------|---------------|
+          | macOS | x64 (Intel) | \`phone-agent-macos-x64.tar.gz\` |
+          | macOS | ARM64 (Apple Silicon) | \`phone-agent-macos-arm64.tar.gz\` |
+          | Linux | x64 | \`phone-agent-linux-x64.tar.gz\` |
+          | Linux | ARM64 | \`phone-agent-linux-arm64.tar.gz\` |
+          | Windows | x64 | \`phone-agent-windows-x64.zip\` |
+          | Windows | ARM64 | \`phone-agent-windows-arm64.zip\` |
+          
+          ### 📋 Installation Instructions
+          
+          #### macOS / Linux
+          \`\`\`bash
+          # Extract
+          tar -xzf phone-agent-<platform>-<arch>.tar.gz
+          
+          # Add execute permission (if needed)
+          chmod +x phone-agent-<platform>-<arch>
+          
+          # Run
+          ./phone-agent-<platform>-<arch> --help
+          \`\`\`
+          
+          #### Windows
+          \`\`\`powershell
+          # Extract zip file
+          Expand-Archive phone-agent-windows-<arch>.zip -DestinationPath .
+          
+          # Run
+          .\phone-agent-windows-<arch>.exe --help
+          \`\`\`
+          
+          ### ⚠️ Prerequisites
+          
+          - Ensure ADB tools are installed and in PATH
+          - Ensure Android device is connected via USB or WiFi
+          - Ensure ADB Keyboard is installed and enabled on the device
+          
+          ### 🔗 Related Links
+          
+          - [Documentation](https://github.com/${{ github.repository }}/blob/main/README.md)
+          - [Issue Tracker](https://github.com/${{ github.repository }}/issues)
+          
+          ---
+          
+          **Build Information**
+          - Build Time: $(date -u +'%Y-%m-%d %H:%M:%S UTC')
+          - Trigger: ${{ github.event_name }}
+          - Commit: ${{ github.sha }}
+          EOF
+          
+          echo "Release notes generated."
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.prepare.outputs.version }}
+          name: Phone Agent ${{ needs.prepare.outputs.version }}
+          body_path: release_notes.md
+          draft: false
+          prerelease: ${{ github.event.inputs.pre_release == 'true' }}
+          files: release-assets/*
+          fail_on_unmatched_files: false
+          generate_release_notes: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Summary
+        run: |
+          echo "## 🎉 Release Created Successfully!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ needs.prepare.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Assets:**" >> $GITHUB_STEP_SUMMARY
+          ls -1 release-assets/ | while read file; do
+            echo "- \`${file}\`" >> $GITHUB_STEP_SUMMARY
+          done
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 [View Release](https://github.com/${{ github.repository }}/releases/tag/${{ needs.prepare.outputs.version }})" >> $GITHUB_STEP_SUMMARY
+
+  # Cleanup stage: Delete expired artifacts
+  cleanup:
+    name: Cleanup
+    needs: [release]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Delete workflow artifacts
+        uses: geekyeggo/delete-artifact@v5
+        with:
+          name: |
+            phone-agent-*
+          failOnError: false
