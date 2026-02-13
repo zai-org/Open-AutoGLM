@@ -1,12 +1,11 @@
-"""
-Phone Agent - An AI-powered phone automation framework.
+from .adb_manager import ADBManager
 
-This package provides tools for automating Android and iOS phone interactions
-using AI models for visual understanding and decision making.
-"""
+# Other imports...
 
-from phone_agent.agent import PhoneAgent
-from phone_agent.agent_ios import IOSPhoneAgent
+class PhoneAgent:
+    def __init__(self, device):
+        self.adb_manager = ADBManager(device)
 
-__version__ = "0.1.0"
-__all__ = ["PhoneAgent", "IOSPhoneAgent"]
+    def setup(self):
+        if not self.adb_manager.check_adb_keyboard():
+            print("Consider using another input method or check ADB permissions.")
