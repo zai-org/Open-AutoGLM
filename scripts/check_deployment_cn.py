@@ -63,7 +63,7 @@ if __name__ == "__main__":
         print(f"错误: 消息文件 {args.messages_file} 不存在")
         exit(1)
 
-    with open(args.messages_file) as f:
+    with open(args.messages_file, encoding="utf-8") as f:
         messages = json.load(f)
 
     base_url = args.base_url
