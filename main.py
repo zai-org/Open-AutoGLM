@@ -515,6 +515,25 @@ Examples:
     )
 
     parser.add_argument(
+        "--output",
+        "-o",
+        type=str,
+        help="Output file path to save result (e.g., results/result.json)",
+    )
+
+    parser.add_argument(
+        "--all",
+        action="store_true",
+        help="Save all intermediate step results to the output file, not just the final result",
+    )
+
+    parser.add_argument(
+        "--allow-all-apps",
+        action="store_true",
+        help="Allow launching any app, not limited to the configured app list",
+    )
+
+    parser.add_argument(
         "task",
         nargs="?",
         type=str,
@@ -681,9 +700,8 @@ def handle_device_commands(args) -> bool:
     return False
 
 
-def main():
-    """Main entry point."""
-    args = parse_args()
+def _run_main(args):
+    """Internal function to run main logic with args object."""
 
     # Set device type globally based on args
     if args.device_type == "adb":
@@ -760,6 +778,7 @@ def main():
             device_id=args.device_id,
             verbose=not args.quiet,
             lang=args.lang,
+            allow_all_apps=args.allow_all_apps,
         )
 
         agent = IOSPhoneAgent(
@@ -773,6 +792,7 @@ def main():
             device_id=args.device_id,
             verbose=not args.quiet,
             lang=args.lang,
+            allow_all_apps=args.allow_all_apps,
         )
 
         agent = PhoneAgent(
@@ -822,6 +842,30 @@ def main():
         print(f"\nTask: {args.task}\n")
         result = agent.run(args.task)
         print(f"\nResult: {result}")
+        
+        # Save result to file if output is specified
+        if args.output:
+            try:
+                import json
+                # Create parent directory if it doesn't exist
+                output_dir = os.path.dirname(args.output)
+                if output_dir:
+                    os.makedirs(output_dir, exist_ok=True)
+                
+                # Prepare data to save
+                if getattr(args, "all", False):
+                    # Save all steps
+                    save_data = [res.message or res.thinking for res in agent.history]
+                else:
+                    # Save only final result
+                    save_data = [result]
+                
+                # Save to the specified output file
+                with open(args.output, "w", encoding="utf-8") as f:
+                    json.dump(save_data, f, ensure_ascii=False, indent=4)
+                print(f"\nresult保存到{args.output}文件")
+            except Exception as e:
+                print(f"\n保存结果到文件失败: {e}")
     else:
         # Interactive mode
         print("\nEntering interactive mode. Type 'quit' to exit.\n")
@@ -840,6 +884,31 @@ def main():
                 print()
                 result = agent.run(task)
                 print(f"\nResult: {result}\n")
+                
+                # Save result to file if output is specified
+                if args.output:
+                    try:
+                        import json
+                        # Create parent directory if it doesn't exist
+                        output_dir = os.path.dirname(args.output)
+                        if output_dir:
+                            os.makedirs(output_dir, exist_ok=True)
+                        
+                        # Prepare data to save
+                        if getattr(args, "all", False):
+                            # Save all steps
+                            save_data = [res.message or res.thinking for res in agent.history]
+                        else:
+                            # Save only final result
+                            save_data = [result]
+                            
+                        # Save to the specified output file
+                        with open(args.output, "w", encoding="utf-8") as f:
+                            json.dump(save_data, f, ensure_ascii=False, indent=4)
+                        print(f"result保存到{args.output}文件\n")
+                    except Exception as e:
+                        print(f"保存结果到文件失败: {e}\n")
+                
                 agent.reset()
 
             except KeyboardInterrupt:
@@ -847,6 +916,90 @@ def main():
                 break
             except Exception as e:
                 print(f"\nError: {e}\n")
+
+
+def main():
+    """Main entry point."""
+    args = parse_args()
+    _run_main(args)
+
+
+def main_params(
+    base_url: str = None,
+    model: str = None,
+    apikey: str = None,
+    max_steps: int = None,
+    device_id: str = None,
+    connect: str = None,
+    disconnect: str = None,
+    list_devices: bool = False,
+    enable_tcpip: int = None,
+    wda_url: str = None,
+    pair: bool = False,
+    wda_status: bool = False,
+    quiet: bool = False,
+    list_apps: bool = False,
+    lang: str = None,
+    device_type: str = None,
+    output: str = None,
+    task: str = None,
+    allow_all_apps: bool = False,
+    save_all: bool = False,
+):
+    """
+    Main entry point with parameters.
+    
+    Args:
+        base_url: Model API base URL
+        model: Model name
+        apikey: API key for model authentication
+        max_steps: Maximum steps per task
+        device_id: Device ID
+        connect: Connect to remote device (e.g., "192.168.1.100:5555")
+        disconnect: Disconnect from remote device (or "all" to disconnect all)
+        list_devices: List connected devices and exit
+        enable_tcpip: Enable TCP/IP debugging on USB device (port number)
+        wda_url: WebDriverAgent URL for iOS
+        pair: Pair with iOS device
+        wda_status: Show WebDriverAgent status and exit (iOS only)
+        quiet: Suppress verbose output
+        list_apps: List supported apps and exit
+        lang: Language for system prompt (cn or en)
+        device_type: Device type (adb, hdc, or ios)
+        output: Output file path to save result (e.g., results/result.json)
+        task: Task to execute
+        allow_all_apps: Allow launching any app, not limited to the configured app list
+        save_all: Save all intermediate step results to the output file, not just the final result
+    """
+    # Create a namespace object similar to argparse.Namespace
+    class Args:
+        pass
+    
+    args = Args()
+    
+    # Set default values from environment or defaults
+    args.base_url = base_url if base_url is not None else os.getenv("PHONE_AGENT_BASE_URL", "http://localhost:8000/v1")
+    args.model = model if model is not None else os.getenv("PHONE_AGENT_MODEL", "autoglm-phone-9b")
+    args.apikey = apikey if apikey is not None else os.getenv("PHONE_AGENT_API_KEY", "EMPTY")
+    args.max_steps = max_steps if max_steps is not None else int(os.getenv("PHONE_AGENT_MAX_STEPS", "100"))
+    args.device_id = device_id if device_id is not None else os.getenv("PHONE_AGENT_DEVICE_ID")
+    args.connect = connect
+    args.disconnect = disconnect
+    args.list_devices = list_devices
+    args.enable_tcpip = enable_tcpip
+    args.wda_url = wda_url if wda_url is not None else os.getenv("PHONE_AGENT_WDA_URL", "http://localhost:8100")
+    args.pair = pair
+    args.wda_status = wda_status
+    args.quiet = quiet
+    args.list_apps = list_apps
+    args.lang = lang if lang is not None else os.getenv("PHONE_AGENT_LANG", "cn")
+    args.device_type = device_type if device_type is not None else os.getenv("PHONE_AGENT_DEVICE_TYPE", "adb")
+    args.output = output
+    args.task = task
+    args.allow_all_apps = allow_all_apps
+    args.all = save_all
+    
+    _run_main(args)
 
 
 if __name__ == "__main__":

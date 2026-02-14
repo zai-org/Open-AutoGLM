@@ -206,15 +206,16 @@ def home(device_id: str | None = None, delay: float | None = None) -> None:
 
 
 def launch_app(
-    app_name: str, device_id: str | None = None, delay: float | None = None
+    app_name: str, device_id: str | None = None, delay: float | None = None, allow_all_apps: bool = False
 ) -> bool:
     """
     Launch an app by name.
 
     Args:
-        app_name: The app name (must be in APP_PACKAGES).
+        app_name: The app name (must be in APP_PACKAGES if allow_all_apps is False).
         device_id: Optional ADB device ID.
         delay: Delay in seconds after launching. If None, uses configured default.
+        allow_all_apps: If True, allow launching any app by package name, not limited to APP_PACKAGES.
 
     Returns:
         True if app was launched, False if app not found.
@@ -222,11 +223,16 @@ def launch_app(
     if delay is None:
         delay = TIMING_CONFIG.device.default_launch_delay
 
-    if app_name not in APP_PACKAGES:
-        return False
-
     adb_prefix = _get_adb_prefix(device_id)
-    package = APP_PACKAGES[app_name]
+    
+    # If allow_all_apps is True, use app_name directly as package name
+    # Otherwise, check if app_name is in APP_PACKAGES
+    if allow_all_apps:
+        package = app_name  # Use app_name directly as package name
+    else:
+        if app_name not in APP_PACKAGES:
+            return False
+        package = APP_PACKAGES[app_name]
 
     subprocess.run(
         adb_prefix

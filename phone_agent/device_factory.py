@@ -100,10 +100,10 @@ class DeviceFactory:
         return self.module.home(device_id, delay)
 
     def launch_app(
-        self, app_name: str, device_id: str | None = None, delay: float | None = None
+        self, app_name: str, device_id: str | None = None, delay: float | None = None, allow_all_apps: bool = False
     ) -> bool:
         """Launch an app."""
-        return self.module.launch_app(app_name, device_id, delay)
+        return self.module.launch_app(app_name, device_id, delay, allow_all_apps)
 
     def type_text(self, text: str, device_id: str | None = None):
         """Type text."""
