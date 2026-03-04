@@ -552,7 +552,7 @@ def handle_ios_device_commands(args) -> bool:
                 name_info = device.device_name or "Unnamed"
 
                 print(f"  ✓ {name_info}")
-                print(f"    UUID: {device.device_id}")
+                print(f"    UDID: {device.device_id}")
                 print(f"    Model: {model_info}")
                 print(f"    OS: {ios_info}")
                 print(f"    Connection: {conn_type}")

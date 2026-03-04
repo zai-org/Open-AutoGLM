@@ -10,11 +10,11 @@ setup(
     name="phone-agent",
     version="0.1.0",
     author="Zhipu AI",
-    author_email="",
+    author_email="zhipu.ai@example.com",
     description="AI-powered phone automation framework",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/yourusername/phone-agent",
+    url="https://github.com/zai-org/Open-AutoGLM",
     packages=find_packages(),
     classifiers=[
         "Development Status :: 3 - Alpha",
