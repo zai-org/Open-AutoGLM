@@ -35,8 +35,10 @@ from phone_agent.xctest import list_devices as list_ios_devices
 
 
 def check_system_requirements(
-    device_type: DeviceType = DeviceType.ADB, wda_url: str = "http://localhost:8100"
-) -> bool:
+    device_type: DeviceType = DeviceType.ADB,
+    wda_url: str = "http://localhost:8100",
+    device_id: str | None = None,
+) -> tuple[bool, str | None]:
     """
     Check system requirements before running the agent.
 
@@ -49,14 +51,18 @@ def check_system_requirements(
     Args:
         device_type: Type of device tool (ADB, HDC, or IOS).
         wda_url: WebDriverAgent URL (for iOS only).
+        device_id: Specific device ID to use. If None and multiple devices are
+            connected, the user will be prompted to select one.
 
     Returns:
-        True if all checks pass, False otherwise.
+        Tuple of (success, selected_device_id). success is False if any check
+        fails. selected_device_id is the device that will be used.
     """
     print("🔍 Checking system requirements...")
     print("-" * 50)
 
     all_passed = True
+    selected_device_id: str | None = device_id
 
     # Determine tool name and command
     if device_type == DeviceType.IOS:
@@ -120,7 +126,7 @@ def check_system_requirements(
     if not all_passed:
         print("-" * 50)
         print("❌ System check failed. Please fix the issues above.")
-        return False
+        return False, None
 
     # Check 2: Device connected
     print("2. Checking connected devices...", end=" ")
@@ -176,6 +182,44 @@ def check_system_requirements(
             print(
                 f"✅ OK ({len(devices)} device(s): {', '.join(device_ids[:2])}{'...' if len(device_ids) > 2 else ''})"
             )
+
+            # Multiple devices: prompt user to select one
+            if len(device_ids) > 1 and selected_device_id is None:
+                # Fetch model name for each device
+                def get_device_model(dev_id: str) -> str:
+                    try:
+                        for prop in ["ro.product.marketname", "ro.product.model"]:
+                            r = subprocess.run(
+                                ["adb", "-s", dev_id, "shell", "getprop", prop],
+                                capture_output=True, text=True, timeout=5,
+                            )
+                            name = r.stdout.strip()
+                            if r.returncode == 0 and name:
+                                return name
+                        return "Unknown"
+                    except Exception:
+                        return "Unknown"
+
+                print()
+                print("   ⚠️  Multiple devices detected. This tool supports only one device at a time.")
+                print("   Please select a device to use:")
+                for i, dev_id in enumerate(device_ids):
+                    model = get_device_model(dev_id)
+                    print(f"     [{i + 1}] {dev_id}  ({model})")
+                while True:
+                    try:
+                        choice = input(f"   Enter number (1-{len(device_ids)}): ").strip()
+                        idx = int(choice) - 1
+                        if 0 <= idx < len(device_ids):
+                            selected_device_id = device_ids[idx]
+                            print(f"   Selected: {selected_device_id}")
+                            break
+                        else:
+                            print(f"   Invalid choice, please enter a number between 1 and {len(device_ids)}.")
+                    except (ValueError, EOFError):
+                        print(f"   Invalid input, please enter a number between 1 and {len(device_ids)}.")
+            elif selected_device_id is None:
+                selected_device_id = device_ids[0]
     except subprocess.TimeoutExpired:
         print("❌ FAILED")
         print(f"   Error: {tool_name} command timed out.")
@@ -189,25 +233,27 @@ def check_system_requirements(
     if not all_passed:
         print("-" * 50)
         print("❌ System check failed. Please fix the issues above.")
-        return False
+        return False, None
 
     # Check 3: ADB Keyboard installed (only for ADB) or WebDriverAgent (for iOS)
     if device_type == DeviceType.ADB:
         print("3. Checking ADB Keyboard...", end=" ")
         try:
             result = subprocess.run(
-                ["adb", "shell", "ime", "list", "-s"],
+                ["adb", "-s", selected_device_id, "shell", "ime", "list", "-s"],
                 capture_output=True,
                 text=True,
                 timeout=10,
             )
-            ime_list = result.stdout.strip()
-
-            if "com.android.adbkeyboard/.AdbIME" in ime_list:
-                print("✅ OK")
-            else:
+            if result.returncode != 0:
                 print("❌ FAILED")
-                print("   Error: ADB Keyboard is not installed on the device.")
+                print(f"   Error: Could not query device {selected_device_id} (unauthorized or offline).")
+                all_passed = False
+            elif "com.android.adbkeyboard/.AdbIME" not in result.stdout:
+                print("❌ FAILED")
+                print(
+                    f"   Error: ADB Keyboard is not installed on the device: {selected_device_id}"
+                )
                 print("   Solution:")
                 print("     1. Download ADB Keyboard APK from:")
                 print(
@@ -218,6 +264,8 @@ def check_system_requirements(
                     "     3. Enable it in Settings > System > Languages & Input > Virtual Keyboard"
                 )
                 all_passed = False
+            else:
+                print("✅ OK")
         except subprocess.TimeoutExpired:
             print("❌ FAILED")
             print("   Error: ADB command timed out.")
@@ -266,7 +314,7 @@ def check_system_requirements(
     else:
         print("❌ System check failed. Please fix the issues above.")
 
-    return all_passed
+    return all_passed, selected_device_id
 
 
 def check_model_api(base_url: str, model_name: str, api_key: str = "EMPTY") -> bool:
@@ -732,13 +780,19 @@ def main():
         return
 
     # Run system requirements check before proceeding
-    if not check_system_requirements(
+    passed, selected_device_id = check_system_requirements(
         device_type,
         wda_url=args.wda_url
         if device_type == DeviceType.IOS
         else "http://localhost:8100",
-    ):
+        device_id=args.device_id,
+    )
+    if not passed:
         sys.exit(1)
+
+    # Use the device selected during system check (may have been chosen interactively)
+    if selected_device_id:
+        args.device_id = selected_device_id
 
     # Check model API connectivity and model availability
     if not check_model_api(args.base_url, args.model, args.apikey):
