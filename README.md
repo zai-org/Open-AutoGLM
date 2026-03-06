@@ -255,7 +255,7 @@ python3 -m sglang.launch_server --model-path  zai-org/AutoGLM-Phone-9B \
         --port 8000
 ```
 
-- 该模型结构与 `GLM-4.1V-9B-Thinking` 相同, 关于模型部署的详细内容，你也以查看 [GLM-V](https://github.com/zai-org/GLM-V)
+- 该模型结构与 `GLM-4.1V-9B-Thinking` 相同, 关于模型部署的详细内容，你也可以查看 [GLM-V](https://github.com/zai-org/GLM-V)
   获取模型部署和使用指南。
 
 - 运行成功后，将可以通过 `http://localhost:8000/v1` 访问模型服务。 如果您在远程服务器部署模型, 使用该服务器的IP访问模型.
