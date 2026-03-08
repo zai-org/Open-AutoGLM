@@ -30,9 +30,51 @@ https://raw.githubusercontent.com/zai-org/Open-AutoGLM/refs/heads/main/README.md
 ## 项目介绍
 
 Phone Agent 是一个基于 AutoGLM 构建的手机端智能助理框架，它能够以多模态方式理解手机屏幕内容，并通过自动化操作帮助用户完成任务。系统通过
-ADB(Android Debug Bridge)来控制设备，以视觉语言模型进行屏幕感知，再结合智能规划能力生成并执行操作流程。用户只需用自然语言描述需求，如“打开小红书搜索美食”，Phone
+ADB(Android Debug Bridge)来控制设备，以视觉语言模型进行屏幕感知，再结合智能规划能力生成并执行操作流程。用户只需用自然语言描述需求，如"打开小红书搜索美食"，Phone
 Agent 即可自动解析意图、理解当前界面、规划下一步动作并完成整个流程。系统还内置敏感操作确认机制，并支持在登录或验证码场景下进行人工接管。同时，它提供远程
 ADB 调试能力，可通过 WiFi 或网络连接设备，实现灵活的远程控制与开发。
+
+## MCP 服务（AI Agent 集成）
+
+Phone Agent 提供 MCP (Model Context Protocol) 服务，可让 AI Agent（如 Cursor、Claude Desktop 等）直接控制手机。
+
+### 启动 MCP 服务
+
+```bash
+# 安装依赖后启动
+pip install fastmcp
+python -m mcp_server.phone_mcp
+# 服务运行在 http://localhost:8009
+```
+
+### 在 Cursor 中配置
+
+在 Cursor 设置中添加 MCP 服务器配置（`~/.cursor/mcp.json`）：
+
+```json
+{
+  "mcpServers": {
+    "phone": {
+      "url": "http://localhost:8009/mcp"
+    }
+  }
+}
+```
+
+### 可用工具
+
+| 工具 | 说明 |
+|------|------|
+| `get_screenshot` | 获取屏幕截图 |
+| `get_ui_elements` | 获取 UI 元素列表 ⭐推荐 |
+| `tap_element` | 通过索引/文本点击元素 ⭐推荐 |
+| `tap` / `swipe` / `long_press` | 坐标操作 |
+| `type_text` / `clear_text` | 文本输入 |
+| `press_back` / `press_home` | 系统按键 |
+| `launch_app` | 启动应用 |
+| `list_devices` / `connect_device` | 设备管理 |
+
+配置完成后，AI Agent 可直接通过自然语言控制手机，如"打开微信发消息给文件传输助手"。
 
 > ⚠️
 > 本项目仅供研究和学习使用。严禁用于非法获取信息、干扰系统或任何违法活动。请仔细审阅 [使用条款](resources/privacy_policy.txt)。
