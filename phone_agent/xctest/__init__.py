@@ -11,6 +11,7 @@ from phone_agent.xctest.device import (
     back,
     double_tap,
     get_current_app,
+    get_scale_factor,
     home,
     launch_app,
     long_press,
@@ -38,6 +39,7 @@ __all__ = [
     "double_tap",
     "long_press",
     "launch_app",
+    "get_scale_factor",
     # Connection management
     "XCTestConnection",
     "DeviceInfo",

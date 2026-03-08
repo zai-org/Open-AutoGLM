@@ -6,7 +6,83 @@ from typing import Optional
 
 from phone_agent.config.apps_ios import APP_PACKAGES_IOS as APP_PACKAGES
 
-SCALE_FACTOR = 3 # 3 for most modern iPhone 
+# Default scale factor for modern iPhones (3x Retina).
+# Used as fallback when dynamic detection fails.
+_DEFAULT_SCALE_FACTOR = 3
+
+# Cache for the detected scale factor per WDA URL to avoid repeated queries.
+_scale_factor_cache: dict[str, float] = {}
+
+
+def _detect_scale_factor(wda_url: str, session_id: str | None = None) -> float:
+    """
+    Detect the device's screen scale factor by comparing the screenshot pixel
+    dimensions against the WDA-reported window size in points.
+
+    Falls back to _DEFAULT_SCALE_FACTOR if detection fails.
+
+    Args:
+        wda_url: WebDriverAgent URL.
+        session_id: Optional WDA session ID.
+
+    Returns:
+        Scale factor (e.g. 2.0 for @2x, 3.0 for @3x).
+    """
+    cache_key = wda_url
+    if cache_key in _scale_factor_cache:
+        return _scale_factor_cache[cache_key]
+
+    try:
+        import requests
+
+        # Get window size in points from WDA
+        url = _get_wda_session_url(wda_url, session_id, "window/size")
+        response = requests.get(url, timeout=5, verify=False)
+        if response.status_code == 200:
+            data = response.json()
+            value = data.get("value", {})
+            point_width = value.get("width", 0)
+            if point_width > 0:
+                # Get screenshot to determine pixel width
+                resp = requests.get(
+                    f"{wda_url.rstrip('/')}/screenshot", timeout=10, verify=False
+                )
+                if resp.status_code == 200:
+                    import base64
+                    from io import BytesIO
+
+                    from PIL import Image
+
+                    b64 = resp.json().get("value", "")
+                    if b64:
+                        img = Image.open(BytesIO(base64.b64decode(b64)))
+                        pixel_width = img.size[0]
+                        factor = round(pixel_width / point_width, 1)
+                        # Sanity-check: must be a known iOS scale factor
+                        if factor in (1.0, 2.0, 3.0):
+                            _scale_factor_cache[cache_key] = factor
+                            return factor
+    except Exception:
+        pass  # Fall through to default
+
+    _scale_factor_cache[cache_key] = _DEFAULT_SCALE_FACTOR
+    return _DEFAULT_SCALE_FACTOR
+
+
+def get_scale_factor(
+    wda_url: str = "http://localhost:8100", session_id: str | None = None
+) -> float:
+    """
+    Public accessor for the device scale factor.
+
+    Args:
+        wda_url: WebDriverAgent URL.
+        session_id: Optional WDA session ID.
+
+    Returns:
+        Scale factor (e.g. 2.0 or 3.0).
+    """
+    return _detect_scale_factor(wda_url, session_id)
 
 def _get_wda_session_url(wda_url: str, session_id: str | None, endpoint: str) -> str:
     """
@@ -93,6 +169,7 @@ def tap(
         import requests
 
         url = _get_wda_session_url(wda_url, session_id, "actions")
+        scale = _detect_scale_factor(wda_url, session_id)
 
         # W3C WebDriver Actions API for tap/click
         actions = {
@@ -102,7 +179,7 @@ def tap(
                     "id": "finger1",
                     "parameters": {"pointerType": "touch"},
                     "actions": [
-                        {"type": "pointerMove", "duration": 0, "x": x / SCALE_FACTOR, "y": y / SCALE_FACTOR},
+                        {"type": "pointerMove", "duration": 0, "x": x / scale, "y": y / scale},
                         {"type": "pointerDown", "button": 0},
                         {"type": "pause", "duration": 0.1},
                         {"type": "pointerUp", "button": 0},
@@ -142,6 +219,7 @@ def double_tap(
         import requests
 
         url = _get_wda_session_url(wda_url, session_id, "actions")
+        scale = _detect_scale_factor(wda_url, session_id)
 
         # W3C WebDriver Actions API for double tap
         actions = {
@@ -151,7 +229,7 @@ def double_tap(
                     "id": "finger1",
                     "parameters": {"pointerType": "touch"},
                     "actions": [
-                        {"type": "pointerMove", "duration": 0, "x": x / SCALE_FACTOR, "y": y / SCALE_FACTOR},
+                        {"type": "pointerMove", "duration": 0, "x": x / scale, "y": y / scale},
                         {"type": "pointerDown", "button": 0},
                         {"type": "pause", "duration": 100},
                         {"type": "pointerUp", "button": 0},
@@ -197,6 +275,7 @@ def long_press(
         import requests
 
         url = _get_wda_session_url(wda_url, session_id, "actions")
+        scale = _detect_scale_factor(wda_url, session_id)
 
         # W3C WebDriver Actions API for long press
         # Convert duration to milliseconds
@@ -209,7 +288,7 @@ def long_press(
                     "id": "finger1",
                     "parameters": {"pointerType": "touch"},
                     "actions": [
-                        {"type": "pointerMove", "duration": 0, "x": x / SCALE_FACTOR, "y": y / SCALE_FACTOR},
+                        {"type": "pointerMove", "duration": 0, "x": x / scale, "y": y / scale},
                         {"type": "pointerDown", "button": 0},
                         {"type": "pause", "duration": duration_ms},
                         {"type": "pointerUp", "button": 0},
@@ -262,12 +341,14 @@ def swipe(
 
         url = _get_wda_session_url(wda_url, session_id, "wda/dragfromtoforduration")
 
+        scale = _detect_scale_factor(wda_url, session_id)
+
         # WDA dragfromtoforduration API payload
         payload = {
-            "fromX": start_x / SCALE_FACTOR,
-            "fromY": start_y / SCALE_FACTOR,
-            "toX": end_x / SCALE_FACTOR,
-            "toY": end_y / SCALE_FACTOR,
+            "fromX": start_x / scale,
+            "fromY": start_y / scale,
+            "toX": end_x / scale,
+            "toY": end_y / scale,
             "duration": duration,
         }
 
