@@ -35,7 +35,9 @@ from phone_agent.xctest import list_devices as list_ios_devices
 
 
 def check_system_requirements(
-    device_type: DeviceType = DeviceType.ADB, wda_url: str = "http://localhost:8100"
+    device_type: DeviceType = DeviceType.ADB,
+    wda_url: str = "http://localhost:8100",
+    device_id: str | None = None,
 ) -> bool:
     """
     Check system requirements before running the agent.
@@ -195,8 +197,11 @@ def check_system_requirements(
     if device_type == DeviceType.ADB:
         print("3. Checking ADB Keyboard...", end=" ")
         try:
+            adb_cmd = ["adb"]
+            if device_id:
+                adb_cmd.extend(["-s", device_id])
             result = subprocess.run(
-                ["adb", "shell", "ime", "list", "-s"],
+                adb_cmd + ["shell", "ime", "list", "-s"],
                 capture_output=True,
                 text=True,
                 timeout=10,
@@ -267,6 +272,24 @@ def check_system_requirements(
         print("❌ System check failed. Please fix the issues above.")
 
     return all_passed
+
+
+def auto_select_adb_device_id() -> str | None:
+    """Auto-select the first healthy ADB device."""
+    try:
+        result = subprocess.run(
+            ["adb", "devices"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=5,
+        )
+        for line in result.stdout.splitlines()[1:]:
+            if "\tdevice" in line:
+                return line.split("\t", 1)[0].strip()
+    except Exception:
+        return None
+    return None
 
 
 def check_model_api(base_url: str, model_name: str, api_key: str = "EMPTY") -> bool:
@@ -731,12 +754,20 @@ def main():
     if handle_device_commands(args):
         return
 
+    # Auto-select a healthy ADB device if not explicitly specified.
+    if device_type == DeviceType.ADB and not args.device_id:
+        auto_device_id = auto_select_adb_device_id()
+        if auto_device_id:
+            args.device_id = auto_device_id
+            print(f"Auto-selected ADB device: {args.device_id}")
+
     # Run system requirements check before proceeding
     if not check_system_requirements(
         device_type,
         wda_url=args.wda_url
         if device_type == DeviceType.IOS
         else "http://localhost:8100",
+        device_id=args.device_id if device_type == DeviceType.ADB else None,
     ):
         sys.exit(1)
 

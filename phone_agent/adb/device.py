@@ -21,21 +21,60 @@ def get_current_app(device_id: str | None = None) -> str:
     """
     adb_prefix = _get_adb_prefix(device_id)
 
-    result = subprocess.run(
-        adb_prefix + ["shell", "dumpsys", "window"], capture_output=True, text=True, encoding="utf-8"
+    # Different Android builds expose focus info in different dumpsys subcommands.
+    focus_commands = [
+        ["shell", "dumpsys", "window", "displays"],
+        ["shell", "dumpsys", "window", "windows"],
+        ["shell", "dumpsys", "window"],
+        ["shell", "dumpsys", "activity", "activities"],
+        ["shell", "dumpsys", "activity", "top"],
+    ]
+    focus_markers = (
+        "mCurrentFocus",
+        "mFocusedApp",
+        "mResumedActivity",
+        "topResumedActivity",
     )
-    output = result.stdout
-    if not output:
-        raise ValueError("No output from dumpsys window")
 
-    # Parse window focus info
-    for line in output.split("\n"):
-        if "mCurrentFocus" in line or "mFocusedApp" in line:
-            for app_name, package in APP_PACKAGES.items():
-                if package in line:
-                    return app_name
+    diagnostics: list[str] = []
+    has_any_output = False
 
-    return "System Home"
+    for cmd in focus_commands:
+        result = subprocess.run(
+            adb_prefix + cmd,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+        )
+        stdout = result.stdout or ""
+        stderr = (result.stderr or "").strip()
+
+        if not stdout.strip():
+            if result.returncode != 0 or stderr:
+                diagnostics.append(
+                    f"{' '.join(cmd)} failed (code={result.returncode}): {stderr or 'no stderr'}"
+                )
+            continue
+
+        has_any_output = True
+
+        # Prefer lines that explicitly contain focus markers.
+        for line in stdout.splitlines():
+            if any(marker in line for marker in focus_markers):
+                for app_name, package in APP_PACKAGES.items():
+                    if package in line:
+                        return app_name
+
+        # Fallback: match package anywhere in command output.
+        for app_name, package in APP_PACKAGES.items():
+            if package in stdout:
+                return app_name
+
+    if has_any_output:
+        return "System Home"
+
+    summary = "; ".join(diagnostics[:3]) if diagnostics else "all dumpsys commands returned empty output"
+    raise ValueError(f"Unable to get current app: {summary}")
 
 
 def tap(
@@ -249,4 +288,25 @@ def _get_adb_prefix(device_id: str | None) -> list:
     """Get ADB command prefix with optional device specifier."""
     if device_id:
         return ["adb", "-s", device_id]
+    auto_device_id = _auto_select_device_id()
+    if auto_device_id:
+        return ["adb", "-s", auto_device_id]
     return ["adb"]
+
+
+def _auto_select_device_id() -> str | None:
+    """Select the first healthy ADB device when device_id is not provided."""
+    try:
+        result = subprocess.run(
+            ["adb", "devices"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=5,
+        )
+        for line in result.stdout.splitlines()[1:]:
+            if "\tdevice" in line:
+                return line.split("\t", 1)[0].strip()
+    except Exception:
+        return None
+    return None

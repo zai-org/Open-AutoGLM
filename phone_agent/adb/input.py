@@ -106,4 +106,25 @@ def _get_adb_prefix(device_id: str | None) -> list:
     """Get ADB command prefix with optional device specifier."""
     if device_id:
         return ["adb", "-s", device_id]
+    auto_device_id = _auto_select_device_id()
+    if auto_device_id:
+        return ["adb", "-s", auto_device_id]
     return ["adb"]
+
+
+def _auto_select_device_id() -> str | None:
+    """Select the first healthy ADB device when device_id is not provided."""
+    try:
+        result = subprocess.run(
+            ["adb", "devices"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=5,
+        )
+        for line in result.stdout.splitlines()[1:]:
+            if "\tdevice" in line:
+                return line.split("\t", 1)[0].strip()
+    except Exception:
+        return None
+    return None
