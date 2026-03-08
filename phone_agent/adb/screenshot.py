@@ -49,9 +49,19 @@ def get_screenshot(device_id: str | None = None, timeout: int = 10) -> Screensho
             timeout=timeout,
         )
 
-        # Check for screenshot failure (sensitive screen)
+        # Check for screenshot failure due to sensitive/secure screens.
+        # Generic command failures (e.g., transport/device selection issues)
+        # should not be treated as sensitive screens.
         output = result.stdout + result.stderr
-        if "Status: -1" in output or "Failed" in output:
+        output_lower = output.lower()
+        if result.returncode != 0:
+            return _create_fallback_screenshot(is_sensitive=False)
+        if (
+            "status: -1" in output_lower
+            or "sensitive screen" in output_lower
+            or "secure screen" in output_lower
+            or "security" in output_lower
+        ):
             return _create_fallback_screenshot(is_sensitive=True)
 
         # Pull screenshot to local temp path
@@ -89,7 +99,28 @@ def _get_adb_prefix(device_id: str | None) -> list:
     """Get ADB command prefix with optional device specifier."""
     if device_id:
         return ["adb", "-s", device_id]
+    auto_device_id = _auto_select_device_id()
+    if auto_device_id:
+        return ["adb", "-s", auto_device_id]
     return ["adb"]
+
+
+def _auto_select_device_id() -> str | None:
+    """Select the first healthy ADB device when device_id is not provided."""
+    try:
+        result = subprocess.run(
+            ["adb", "devices"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=5,
+        )
+        for line in result.stdout.splitlines()[1:]:
+            if "\tdevice" in line:
+                return line.split("\t", 1)[0].strip()
+    except Exception:
+        return None
+    return None
 
 
 def _create_fallback_screenshot(is_sensitive: bool) -> Screenshot:
