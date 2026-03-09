@@ -184,14 +184,15 @@ def swipe(
 
     hdc_prefix = _get_hdc_prefix(device_id)
 
+    # Calculate duration_ms if not provided, then convert to swipeVelocityPps_
+    import math
+    distance = math.sqrt((start_x - end_x) ** 2 + (start_y - end_y) ** 2)
     if duration_ms is None:
-        # Calculate duration based on distance
-        dist_sq = (start_x - end_x) ** 2 + (start_y - end_y) ** 2
-        duration_ms = int(dist_sq / 1000)
-        duration_ms = max(500, min(duration_ms, 1000))  # Clamp between 500-1000ms
+        duration_ms = int(distance ** 2 / 1000)
+    duration_ms = max(500, min(duration_ms, 1000))  # Clamp between 500-1000ms
+    swipeVelocityPps_ = int((distance / duration_ms) * 1000)
+    swipeVelocityPps_ = max(500, min(swipeVelocityPps_, 40000)) # Clamp between 500-40000 pps
 
-    # HarmonyOS uses uitest uiInput swipe
-    # Format: swipe startX startY endX endY duration
     _run_hdc_command(
         hdc_prefix
         + [
@@ -203,7 +204,7 @@ def swipe(
             str(start_y),
             str(end_x),
             str(end_y),
-            str(duration_ms),
+            str(swipeVelocityPps_),
         ],
         capture_output=True,
     )
