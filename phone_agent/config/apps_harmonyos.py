@@ -21,7 +21,6 @@ APP_ABILITIES: dict[str, str] = {
     "com.tencent.videohm": "AppAbility",
     "com.ximalaya.ting.xmharmony": "MainBundleAbility",
     "com.zhihu.hmos": "PhoneAbility",
-
     # Huawei system apps
     "com.huawei.hmos.browser": "MainAbility",
     "com.huawei.hmos.calculator": "com.huawei.hmos.calculator.CalculatorAbility",
@@ -40,7 +39,6 @@ APP_ABILITIES: dict[str, str] = {
     "com.huawei.hmos.soundrecorder": "MainAbility",
     "com.huawei.hmos.vassistant": "AiCaptionServiceExtAbility",
     "com.huawei.hmos.wallet": "MainAbility",
-
     # Huawei services
     "com.huawei.hmsapp.appgallery": "MainAbility",
     "com.huawei.hmsapp.books": "MainAbility",
@@ -49,7 +47,6 @@ APP_ABILITIES: dict[str, str] = {
     "com.huawei.hmsapp.music": "MainAbility",
     "com.huawei.hmsapp.thememanager": "MainAbility",
     "com.huawei.hmsapp.totemweather": "com.huawei.hmsapp.totemweather.MainAbility",
-
     # OHOS system apps
     "com.ohos.callui": "com.ohos.callui.ServiceAbility",
     "com.ohos.contacts": "com.ohos.contacts.MainAbility",
@@ -85,7 +82,7 @@ APP_PACKAGES: dict[str, str] = {
     "12306": "com.chinarailway.ticketingHM",
     # "去哪儿": "com.Qunar",  # 未在 hdc 列表中找到
     # "去哪儿旅行": "com.Qunar",  # 未在 hdc 列表中找到
-    "滴滴出行": "com.sdu.didi.hmos.psnger",
+    "滴滴出行": "com.sdu.did.hmos.psnger",
     # Video & Entertainment
     "bilibili": "yylx.danmaku.bili",
     "抖音": "com.ss.hm.ugc.aweme",
@@ -124,7 +121,6 @@ APP_PACKAGES: dict[str, str] = {
     # "星穹铁道": "com.miHoYo.hkrpg",  # 未在 hdc 列表中找到
     # "崩坏：星穹铁道": "com.miHoYo.hkrpg",  # 未在 hdc 列表中找到
     # "恋与深空": "com.papegames.lysk.cn",  # 未在 hdc 列表中找到
-    
     # HarmonyOS 第三方应用
     "百度": "com.baidu.baiduapp",
     "阿里巴巴": "com.alibaba.wireless_hmos",
@@ -149,7 +145,6 @@ APP_PACKAGES: dict[str, str] = {
     "国家税务总局": "cn.gov.chinatax.gt4.hm",
     "建设银行": "com.ccb.mobilebank.hm",
     "快手极速版": "com.kuaishou.hmnebula",
-    
     # HarmonyOS 系统应用 - 工具类
     "浏览器": "com.huawei.hmos.browser",
     "计算器": "com.huawei.hmos.calculator",
@@ -169,12 +164,10 @@ APP_PACKAGES: dict[str, str] = {
     "截屏": "com.huawei.hmos.screenshot",
     "笔记": "com.huawei.hmos.notepad",
     "备忘录": "com.huawei.hmos.notepad",
-    
     # HarmonyOS 系统应用 - 媒体类
     "相册": "com.huawei.hmos.photos",
     "图库": "com.huawei.hmos.photos",
     # "视频": "com.huawei.hmos.mediaplayer",  # 未在 hdc 列表中找到，但有 com.huawei.hmsapp.himovie
-    
     # HarmonyOS 系统应用 - 通讯类
     "联系人": "com.ohos.contacts",
     "通讯录": "com.ohos.contacts",
@@ -182,7 +175,6 @@ APP_PACKAGES: dict[str, str] = {
     "信息": "com.ohos.mms",
     "电话": "com.ohos.callui",
     "拨号": "com.ohos.callui",
-    
     # HarmonyOS 系统应用 - 设置类
     "设置": "com.huawei.hmos.settings",
     "系统设置": "com.huawei.hmos.settings",
@@ -191,7 +183,6 @@ APP_PACKAGES: dict[str, str] = {
     "Android  System Settings": "com.huawei.hmos.settings",
     "Android-System-Settings": "com.huawei.hmos.settings",
     "Settings": "com.huawei.hmos.settings",
-    
     # HarmonyOS 系统应用 - 生活服务
     "健康": "com.huawei.hmos.health",
     "运动健康": "com.huawei.hmos.health",
@@ -202,7 +193,6 @@ APP_PACKAGES: dict[str, str] = {
     "智慧生活": "com.huawei.hmos.ailife",
     "智能助手": "com.huawei.hmos.vassistant",
     "小艺": "com.huawei.hmos.vassistant",
-    
     # HarmonyOS 服务
     "应用市场": "com.huawei.hmsapp.appgallery",
     "华为应用市场": "com.huawei.hmsapp.appgallery",

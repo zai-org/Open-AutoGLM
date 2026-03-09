@@ -9,7 +9,6 @@ from typing import Optional
 
 from phone_agent.config.timing import TIMING_CONFIG
 
-
 # Global flag to control HDC command output
 _HDC_VERBOSE = os.getenv("HDC_VERBOSE", "false").lower() in ("true", "1", "yes")
 
@@ -32,7 +31,7 @@ def _run_hdc_command(cmd: list, **kwargs) -> subprocess.CompletedProcess:
 
     if _HDC_VERBOSE and result.returncode != 0:
         print(f"[HDC] Command failed with return code {result.returncode}")
-        if hasattr(result, 'stderr') and result.stderr:
+        if hasattr(result, "stderr") and result.stderr:
             print(f"[HDC] Error: {result.stderr}")
 
     return result
@@ -150,11 +149,13 @@ class HDCConnection:
                             [self.hdc_path, "tdisconn", device.device_id],
                             capture_output=True,
                             text=True,
-                            timeout=5
+                            timeout=5,
                         )
                 return True, "Disconnected all remote devices"
 
-            result = _run_hdc_command(cmd, capture_output=True, text=True, encoding="utf-8", timeout=5)
+            result = _run_hdc_command(
+                cmd, capture_output=True, text=True, encoding="utf-8", timeout=5
+            )
 
             output = result.stdout + result.stderr
             return True, output.strip() or "Disconnected"
@@ -278,7 +279,9 @@ class HDCConnection:
                 cmd.extend(["-t", device_id])
             cmd.extend(["tmode", "port", str(port)])
 
-            result = _run_hdc_command(cmd, capture_output=True, text=True, encoding="utf-8", timeout=10)
+            result = _run_hdc_command(
+                cmd, capture_output=True, text=True, encoding="utf-8", timeout=10
+            )
 
             output = result.stdout + result.stderr
 
@@ -307,7 +310,9 @@ class HDCConnection:
                 cmd.extend(["-t", device_id])
             cmd.extend(["shell", "ifconfig"])
 
-            result = _run_hdc_command(cmd, capture_output=True, text=True, encoding="utf-8", timeout=5)
+            result = _run_hdc_command(
+                cmd, capture_output=True, text=True, encoding="utf-8", timeout=5
+            )
 
             # Parse IP from ifconfig output
             for line in result.stdout.split("\n"):
@@ -339,9 +344,7 @@ class HDCConnection:
         """
         try:
             # Kill server
-            _run_hdc_command(
-                [self.hdc_path, "kill"], capture_output=True, timeout=5
-            )
+            _run_hdc_command([self.hdc_path, "kill"], capture_output=True, timeout=5)
 
             time.sleep(TIMING_CONFIG.connection.server_restart_delay)
 

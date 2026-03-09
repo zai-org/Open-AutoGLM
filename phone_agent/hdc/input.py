@@ -25,8 +25,8 @@ def type_text(text: str, device_id: str | None = None) -> None:
     hdc_prefix = _get_hdc_prefix(device_id)
 
     # Handle multi-line text by splitting on newlines
-    if '\n' in text:
-        lines = text.split('\n')
+    if "\n" in text:
+        lines = text.split("\n")
         for i, line in enumerate(lines):
             if line:  # Only process non-empty lines
                 # Escape special characters for shell
