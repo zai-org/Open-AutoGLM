@@ -75,7 +75,7 @@ Usage examples:
         print(f"Error: Message file {args.messages_file} does not exist")
         exit(1)
 
-    with open(args.messages_file) as f:
+    with open(args.messages_file, encoding="utf-8") as f:
         messages = json.load(f)
 
     base_url = args.base_url
