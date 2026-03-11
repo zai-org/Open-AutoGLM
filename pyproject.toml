@@ -1,0 +1,24 @@
+[project]
+name = "phone-agent"
+version = "0.1.0"
+description = "AI-powered phone automation framework"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "openai>=2.9.0",
+    "Pillow>=12.0.0",
+    "requests>=2.31.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "black>=23.0.0",
+    "mypy>=1.0.0",
+    "ruff>=0.1.0",
+    "pre-commit>=4.5.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
