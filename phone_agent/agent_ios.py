@@ -24,6 +24,7 @@ class IOSAgentConfig:
     lang: str = "cn"
     system_prompt: str | None = None
     verbose: bool = True
+    allow_all_apps: bool = False
 
     def __post_init__(self):
         if self.system_prompt is None:
@@ -94,10 +95,12 @@ class IOSPhoneAgent:
             session_id=self.agent_config.session_id,
             confirmation_callback=confirmation_callback,
             takeover_callback=takeover_callback,
+            allow_all_apps=self.agent_config.allow_all_apps,
         )
 
         self._context: list[dict[str, Any]] = []
         self._step_count = 0
+        self.history: list[StepResult] = []
 
     def run(self, task: str) -> str:
         """
@@ -111,9 +114,11 @@ class IOSPhoneAgent:
         """
         self._context = []
         self._step_count = 0
+        self.history = []
 
         # First step with user prompt
         result = self._execute_step(task, is_first=True)
+        self.history.append(result)
 
         if result.finished:
             return result.message or "Task completed"
@@ -121,6 +126,7 @@ class IOSPhoneAgent:
         # Continue until finished or max steps reached
         while self._step_count < self.agent_config.max_steps:
             result = self._execute_step(is_first=False)
+            self.history.append(result)
 
             if result.finished:
                 return result.message or "Task completed"

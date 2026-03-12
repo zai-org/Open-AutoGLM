@@ -44,11 +44,13 @@ class IOSActionHandler:
         session_id: str | None = None,
         confirmation_callback: Callable[[str], bool] | None = None,
         takeover_callback: Callable[[str], None] | None = None,
+        allow_all_apps: bool = False,
     ):
         self.wda_url = wda_url
         self.session_id = session_id
         self.confirmation_callback = confirmation_callback or self._default_confirmation
         self.takeover_callback = takeover_callback or self._default_takeover
+        self.allow_all_apps = allow_all_apps
 
     def execute(
         self, action: dict[str, Any], screen_width: int, screen_height: int
@@ -130,7 +132,7 @@ class IOSActionHandler:
             return ActionResult(False, False, "No app name specified")
 
         success = launch_app(
-            app_name, wda_url=self.wda_url, session_id=self.session_id
+            app_name, wda_url=self.wda_url, session_id=self.session_id, allow_all_apps=self.allow_all_apps
         )
         if success:
             return ActionResult(True, False)
