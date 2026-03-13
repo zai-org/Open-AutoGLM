@@ -7,22 +7,28 @@ from typing import Optional
 from phone_agent.hdc.connection import _run_hdc_command
 
 
-def type_text(text: str, device_id: str | None = None) -> None:
+def type_text(text: str, device_id: str | None = None, x: int | None = None, y: int | None = None) -> None:
     """
     Type text into the currently focused input field.
 
     Args:
         text: The text to type. Supports multi-line text with newline characters.
         device_id: Optional HDC device ID for multi-device setups.
+        x: Optional X coordinate of the input field (recommended for HarmonyOS).
+        y: Optional Y coordinate of the input field (recommended for HarmonyOS).
 
     Note:
-        HarmonyOS uses: hdc shell uitest uiInput text "文本内容"
-        This command works without coordinates when input field is focused.
+        HarmonyOS command format:
+        - With coordinates: hdc shell uitest uiInput inputText X Y "文本内容"
+        - Without coordinates: hdc shell uitest uiInput text "文本内容" (may not work reliably)
         For multi-line text, the function splits by newlines and sends ENTER keyEvents.
         ENTER key code in HarmonyOS: 2054
-        Recommendation: Click on the input field first to focus it, then use this function.
+        Recommendation: Click on the input field first to focus it, then use this function with coordinates.
     """
     hdc_prefix = _get_hdc_prefix(device_id)
+
+    # Determine which command to use
+    use_input_text = x is not None and y is not None
 
     # Handle multi-line text by splitting on newlines
     if '\n' in text:
@@ -32,11 +38,18 @@ def type_text(text: str, device_id: str | None = None) -> None:
                 # Escape special characters for shell
                 escaped_line = line.replace('"', '\\"').replace("$", "\\$")
 
-                _run_hdc_command(
-                    hdc_prefix + ["shell", "uitest", "uiInput", "text", escaped_line],
-                    capture_output=True,
-                    text=True,
-                )
+                if use_input_text:
+                    _run_hdc_command(
+                        hdc_prefix + ["shell", "uitest", "uiInput", "inputText", str(x), str(y), escaped_line],
+                        capture_output=True,
+                        text=True,
+                    )
+                else:
+                    _run_hdc_command(
+                        hdc_prefix + ["shell", "uitest", "uiInput", "text", escaped_line],
+                        capture_output=True,
+                        text=True,
+                    )
 
             # Send ENTER key event after each line except the last one
             if i < len(lines) - 1:
@@ -49,18 +62,26 @@ def type_text(text: str, device_id: str | None = None) -> None:
                 except Exception as e:
                     print(f"[HDC] ENTER keyEvent failed: {e}")
     else:
-        # Single line text - original logic
+        # Single line text
         # Escape special characters for shell (keep quotes for proper text handling)
-        # The text will be wrapped in quotes in the command
         escaped_text = text.replace('"', '\\"').replace("$", "\\$")
 
-        # HarmonyOS uitest uiInput text command
-        # Format: hdc shell uitest uiInput text "文本内容"
-        _run_hdc_command(
-            hdc_prefix + ["shell", "uitest", "uiInput", "text", escaped_text],
-            capture_output=True,
-            text=True,
-        )
+        if use_input_text:
+            # HarmonyOS uitest uiInput inputText command with coordinates
+            # Format: hdc shell uitest uiInput inputText X Y "文本内容"
+            _run_hdc_command(
+                hdc_prefix + ["shell", "uitest", "uiInput", "inputText", str(x), str(y), escaped_text],
+                capture_output=True,
+                text=True,
+            )
+        else:
+            # HarmonyOS uitest uiInput text command (fallback)
+            # Format: hdc shell uitest uiInput text "文本内容"
+            _run_hdc_command(
+                hdc_prefix + ["shell", "uitest", "uiInput", "text", escaped_text],
+                capture_output=True,
+                text=True,
+            )
 
 
 def clear_text(device_id: str | None = None) -> None:

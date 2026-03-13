@@ -41,6 +41,8 @@ class ActionHandler:
         self.device_id = device_id
         self.confirmation_callback = confirmation_callback or self._default_confirmation
         self.takeover_callback = takeover_callback or self._default_takeover
+        # Track last tap coordinates for passing to type_text (used by HDC)
+        self._last_tap_coords: tuple[int, int] | None = None
 
     def execute(
         self, action: dict[str, Any], screen_width: int, screen_height: int
@@ -135,6 +137,9 @@ class ActionHandler:
 
         x, y = self._convert_relative_to_absolute(element, width, height)
 
+        # Store tap coordinates for potential use in subsequent Type action
+        self._last_tap_coords = (x, y)
+
         # Check for sensitive operation
         if "message" in action:
             if not self.confirmation_callback(action["message"]):
@@ -162,8 +167,12 @@ class ActionHandler:
         device_factory.clear_text(self.device_id)
         time.sleep(TIMING_CONFIG.action.text_clear_delay)
 
-        # Handle multiline text by splitting on newlines
-        device_factory.type_text(text, self.device_id)
+        # Type text with last tap coordinates if available (for HDC)
+        if self._last_tap_coords:
+            x, y = self._last_tap_coords
+            device_factory.type_text(text, self.device_id, x, y)
+        else:
+            device_factory.type_text(text, self.device_id)
         time.sleep(TIMING_CONFIG.action.text_input_delay)
 
         # Restore original keyboard
