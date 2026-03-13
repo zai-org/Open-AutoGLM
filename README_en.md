@@ -1,6 +1,6 @@
 # Open-AutoGLM
 
-[中文阅读.](./README.md)
+[中文阅读.](./README.md) | [日本語](./README_ja.md)
 
 <div align="center">
 <img src=resources/logo.svg width="20%"/>

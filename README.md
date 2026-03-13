@@ -1,6 +1,6 @@
 # Open-AutoGLM
 
-[Readme in English](README_en.md)
+[Readme in English](README_en.md) | [日本語](./README_ja.md)
 
 <div align="center">
 <img src=resources/logo.svg width="20%"/>
