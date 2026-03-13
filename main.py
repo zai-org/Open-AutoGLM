@@ -30,7 +30,7 @@ from phone_agent.config.apps_harmonyos import list_supported_apps as list_harmon
 from phone_agent.config.apps_ios import list_supported_apps as list_ios_apps
 from phone_agent.device_factory import DeviceType, get_device_factory, set_device_type
 from phone_agent.model import ModelConfig
-from phone_agent.xctest import XCTestConnection
+from phone_agent.xctest import XCTestConnection, set_scale_factor
 from phone_agent.xctest import list_devices as list_ios_devices
 
 
@@ -753,6 +753,26 @@ def main():
     )
 
     if device_type == DeviceType.IOS:
+        # Auto-detect iOS WDA scale factor (pixels -> points) instead of hard-coding 3.
+        # You can override it with env PHONE_AGENT_IOS_SCALE (float).
+        detected_scale: float | None = None
+        try:
+            env_scale = os.getenv("PHONE_AGENT_IOS_SCALE")
+            if env_scale:
+                detected_scale = float(env_scale)
+            else:
+                detected_scale = XCTestConnection(wda_url=args.wda_url).detect_screen_scale(
+                    session_id=None,
+                    device_id=args.device_id,
+                    default=3.0,
+                )
+
+            if detected_scale and detected_scale > 0:
+                set_scale_factor(detected_scale)
+        except Exception:
+            # Fall back to default scale in xctest.device
+            pass
+
         # Create iOS agent
         agent_config = IOSAgentConfig(
             max_steps=args.max_steps,
