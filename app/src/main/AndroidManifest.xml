@@ -1,0 +1,16 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-feature
+        android:name="android.software.xr.api.openxr"
+        android:version="0x00010001"
+        android:required="true" />
+
+    <application
+        android:name=".XrPhoneApp"
+        android:allowBackup="false"
+        android:supportsRtl="true">
+        <!-- Native OpenXR loader is provided by Android XR platform -->
+        <uses-native-library
+            android:name="libopenxr_google.so"
+            android:required="true" />
+    </application>
+</manifest>
