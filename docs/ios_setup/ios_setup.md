@@ -28,7 +28,7 @@ cd WebDriverAgent
 
 1. 在 Xcode 中选中 `WebDriverAgent`，出现General、Signing&Capabilities等选项。
 2. 进入 `Signing & Capabilities` 选项卡
-3.   勾选 `Automatically manage signing`。在Team中选择自己的开发者账号
+3. 勾选 `Automatically manage signing`。在Team中选择自己的开发者账号
 4. 将 Bundle ID 改为唯一标识符，例如：`com.yourname.WebDriverAgentRunner`
 ![设置签名1](resources/ios0_WebDriverAgent0.png)
 
@@ -43,7 +43,7 @@ Mac和iPhone有USB和WiFi两种连接方式，建议通过USB方式，成功率�
 #### 通过 WiFi 连接
 
 需要满足以下条件：
-1.  通过USB连接。在Finder中选中连接的IPhone，在“通用”中勾选"在 WiFi 中显示这台 iPhone"
+1. 通过USB连接。在Finder中选中连接的IPhone，在“通用”中勾选"在 WiFi 中显示这台 iPhone"
 2. Mac 与 iPhone 处于同一 WiFi 网络之下
 
 #### 具体步骤
@@ -105,13 +105,19 @@ ServerURLHere->http://[设备IP]:8100<-ServerURLHere
 同时，观察到手机上安装好了WebDriverAgentRunner，屏幕显示Automation Running字样。
 其中，**http://[设备IP]:8100**为WiFi所需的WDA_URL。
 
+可以在浏览器打开这个地址 http://[设备IP]:8100/status ,查看是否返回如下类似信息(如果不能,可以尝试使用USB连接后，执行下面的iproxy)
+
+![alt text](resources/ios0_WebDriverAgent_valid.png)
+
 ## 使用 AutoGLM
 
-以上配置完成后，先打开一个新终端，在后台建立端口映射（使用WiFi连接则不需要）：
+以上配置完成后，先打开一个新终端，在后台建立端口映射（通常是 USB 连接时没有手机 IP 可直连，所以用 iproxy 把手机端口转到本机；而 Wi‑Fi 连接时可以直接用 http://<设备IP>:8100）：
 
 ```bash
  iproxy 8100 8100
 ```
+
+验证: 可以在浏览器打开这个地址 http://127.0.0.1:8100/status 查看是否正常返回
 
 之后，打开一个新终端，通过以下命令使用AutoGLM（WiFi则使用上述获得的WDA_URL）：
 
