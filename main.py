@@ -35,7 +35,9 @@ from phone_agent.xctest import list_devices as list_ios_devices
 
 
 def check_system_requirements(
-    device_type: DeviceType = DeviceType.ADB, wda_url: str = "http://localhost:8100"
+    device_type: DeviceType = DeviceType.ADB,
+    wda_url: str = "http://localhost:8100",
+    adb_device_id: str | None = None,
 ) -> bool:
     """
     Check system requirements before running the agent.
@@ -49,6 +51,7 @@ def check_system_requirements(
     Args:
         device_type: Type of device tool (ADB, HDC, or IOS).
         wda_url: WebDriverAgent URL (for iOS only).
+        adb_device_id: Optional device ID for multi-device ADB checks.
 
     Returns:
         True if all checks pass, False otherwise.
@@ -176,6 +179,10 @@ def check_system_requirements(
             print(
                 f"✅ OK ({len(devices)} device(s): {', '.join(device_ids[:2])}{'...' if len(device_ids) > 2 else ''})"
             )
+            if device_type == DeviceType.ADB and adb_device_id and adb_device_id not in device_ids:
+                print("❌ FAILED")
+                print(f"   Error: Target adb device '{adb_device_id}' is not connected.")
+                all_passed = False
     except subprocess.TimeoutExpired:
         print("❌ FAILED")
         print(f"   Error: {tool_name} command timed out.")
@@ -194,9 +201,10 @@ def check_system_requirements(
     # Check 3: ADB Keyboard installed (only for ADB) or WebDriverAgent (for iOS)
     if device_type == DeviceType.ADB:
         print("3. Checking ADB Keyboard...", end=" ")
+        adb_cmd = ["adb", "-s", adb_device_id] if adb_device_id else ["adb"]
         try:
             result = subprocess.run(
-                ["adb", "shell", "ime", "list", "-s"],
+                adb_cmd + ["shell", "ime", "list", "-s"],
                 capture_output=True,
                 text=True,
                 timeout=10,
@@ -737,6 +745,7 @@ def main():
         wda_url=args.wda_url
         if device_type == DeviceType.IOS
         else "http://localhost:8100",
+        adb_device_id=args.device_id,
     ):
         sys.exit(1)
 
