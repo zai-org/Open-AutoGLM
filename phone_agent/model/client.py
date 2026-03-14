@@ -143,7 +143,8 @@ class ModelClient:
         total_time = time.time() - start_time
 
         # Parse thinking and action from response
-        thinking, action = self._parse_response(raw_content)
+        thinking, action = parse_response(raw_content)
+        print(f"{thinking=}, {action=}")
 
         # Print performance metrics
         lang = self.config.lang
@@ -173,47 +174,48 @@ class ModelClient:
             total_time=total_time,
         )
 
-    def _parse_response(self, content: str) -> tuple[str, str]:
-        """
-        Parse the model response into thinking and action parts.
 
-        Parsing rules:
-        1. If content contains 'finish(message=', everything before is thinking,
-           everything from 'finish(message=' onwards is action.
-        2. If rule 1 doesn't apply but content contains 'do(action=',
-           everything before is thinking, everything from 'do(action=' onwards is action.
-        3. Fallback: If content contains '<answer>', use legacy parsing with XML tags.
-        4. Otherwise, return empty thinking and full content as action.
+def parse_response(content: str) -> tuple[str, str]:
+    """
+    Parse the model response into thinking and action parts.
 
-        Args:
-            content: Raw response content.
+    Parsing rules:
+    1. If content contains '<answer>', parse by XML-like tags first.
+    2. If rule 1 doesn't apply but content contains 'finish(message=',
+        everything before is thinking, everything from 'finish(message=' onwards is action.
+    3. If rule 2 doesn't apply but content contains 'do(action=',
+        everything before is thinking, everything from 'do(action=' onwards is action.
+    4. Otherwise, return empty thinking and full content as action.
 
-        Returns:
-            Tuple of (thinking, action).
-        """
-        # Rule 1: Check for finish(message=
-        if "finish(message=" in content:
-            parts = content.split("finish(message=", 1)
-            thinking = parts[0].strip()
-            action = "finish(message=" + parts[1]
-            return thinking, action
+    Args:
+        content: Raw response content.
 
-        # Rule 2: Check for do(action=
-        if "do(action=" in content:
-            parts = content.split("do(action=", 1)
-            thinking = parts[0].strip()
-            action = "do(action=" + parts[1]
-            return thinking, action
+    Returns:
+        Tuple of (thinking, action).
+    """
+    # Rule 1: Prefer XML-like tag parsing when answer tags are present.
+    if "<answer>" in content and "</answer>" in content:
+        parts = content.split("<answer>", 1)
+        thinking = parts[0].replace("<think>", "").replace("</think>", "").strip()
+        action = parts[1].split("</answer>", 1)[0].strip()
+        return thinking, action
 
-        # Rule 3: Fallback to legacy XML tag parsing
-        if "<answer>" in content:
-            parts = content.split("<answer>", 1)
-            thinking = parts[0].replace("<think>", "").replace("</think>", "").strip()
-            action = parts[1].replace("</answer>", "").strip()
-            return thinking, action
+    # Rule 2: Check for finish(message=
+    if "finish(message=" in content:
+        parts = content.split("finish(message=", 1)
+        thinking = parts[0].strip()
+        action = "finish(message=" + parts[1]
+        return thinking, action
 
-        # Rule 4: No markers found, return content as action
-        return "", content
+    # Rule 3: Check for do(action=
+    if "do(action=" in content:
+        parts = content.split("do(action=", 1)
+        thinking = parts[0].strip()
+        action = "do(action=" + parts[1]
+        return thinking, action
+
+    # Rule 4: No markers found, return content as action
+    return "", content
 
 
 class MessageBuilder:
