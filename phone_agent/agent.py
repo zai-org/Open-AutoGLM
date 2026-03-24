@@ -11,6 +11,11 @@ from phone_agent.config import get_messages, get_system_prompt
 from phone_agent.device_factory import get_device_factory
 from phone_agent.model import ModelClient, ModelConfig
 from phone_agent.model.client import MessageBuilder
+from phone_agent.trajectory import (
+    TrajectoryRecorder,
+    DummyTrajectoryRecorder,
+    TrajectorySummary,
+)
 
 
 @dataclass
@@ -22,6 +27,12 @@ class AgentConfig:
     lang: str = "cn"
     system_prompt: str | None = None
     verbose: bool = True
+    # Trajectory recording options
+    record_trajectory: bool = False
+    trajectory_output_dir: str = "trajectories"
+    trajectory_save_screenshots: bool = True
+    trajectory_save_context: bool = True
+    trajectory_max_sessions: int | None = None
 
     def __post_init__(self):
         if self.system_prompt is None:
@@ -67,6 +78,7 @@ class PhoneAgent:
         agent_config: AgentConfig | None = None,
         confirmation_callback: Callable[[str], bool] | None = None,
         takeover_callback: Callable[[str], None] | None = None,
+        trajectory_recorder: TrajectoryRecorder | None = None,
     ):
         self.model_config = model_config or ModelConfig()
         self.agent_config = agent_config or AgentConfig()
@@ -81,6 +93,21 @@ class PhoneAgent:
         self._context: list[dict[str, Any]] = []
         self._step_count = 0
 
+        # Initialize trajectory recorder
+        if trajectory_recorder is not None:
+            self.trajectory_recorder = trajectory_recorder
+        elif self.agent_config.record_trajectory:
+            self.trajectory_recorder = TrajectoryRecorder(
+                output_dir=self.agent_config.trajectory_output_dir,
+                save_screenshots=self.agent_config.trajectory_save_screenshots,
+                save_context=self.agent_config.trajectory_save_context,
+                max_trajectories=self.agent_config.trajectory_max_sessions,
+            )
+        else:
+            self.trajectory_recorder = DummyTrajectoryRecorder()
+
+        self._trajectory_summary: TrajectorySummary | None = None
+
     def run(self, task: str) -> str:
         """
         Run the agent to complete a task.
@@ -93,21 +120,44 @@ class PhoneAgent:
         """
         self._context = []
         self._step_count = 0
+        final_message = "Max steps reached"
+        success = False
 
-        # First step with user prompt
-        result = self._execute_step(task, is_first=True)
+        # Start trajectory recording
+        self.trajectory_recorder.start_session(task)
 
-        if result.finished:
-            return result.message or "Task completed"
-
-        # Continue until finished or max steps reached
-        while self._step_count < self.agent_config.max_steps:
-            result = self._execute_step(is_first=False)
+        try:
+            # First step with user prompt
+            result = self._execute_step(task, is_first=True)
 
             if result.finished:
-                return result.message or "Task completed"
+                final_message = result.message or "Task completed"
+                success = result.success
+                self._trajectory_summary = self.trajectory_recorder.end_session(
+                    success=success, final_message=final_message
+                )
+                return final_message
 
-        return "Max steps reached"
+            # Continue until finished or max steps reached
+            while self._step_count < self.agent_config.max_steps:
+                result = self._execute_step(is_first=False)
+
+                if result.finished:
+                    final_message = result.message or "Task completed"
+                    success = result.success
+                    break
+
+            self._trajectory_summary = self.trajectory_recorder.end_session(
+                success=success, final_message=final_message
+            )
+            return final_message
+
+        except Exception as e:
+            error_msg = f"Error during execution: {e}"
+            self._trajectory_summary = self.trajectory_recorder.end_session(
+                success=False, final_message=error_msg
+            )
+            raise
 
     def step(self, task: str | None = None) -> StepResult:
         """
@@ -132,6 +182,7 @@ class PhoneAgent:
         """Reset the agent state for a new task."""
         self._context = []
         self._step_count = 0
+        self._trajectory_summary = None
 
     def _execute_step(
         self, user_prompt: str | None = None, is_first: bool = False
@@ -178,13 +229,26 @@ class PhoneAgent:
         except Exception as e:
             if self.agent_config.verbose:
                 traceback.print_exc()
-            return StepResult(
+            step_result = StepResult(
                 success=False,
                 finished=True,
                 action=None,
                 thinking="",
                 message=f"Model error: {e}",
             )
+            # Record failed step
+            self.trajectory_recorder.record_step(
+                screenshot_base64=screenshot.base64_data,
+                action=None,
+                thinking="",
+                current_app=current_app,
+                screen_width=screenshot.width,
+                screen_height=screenshot.height,
+                context=self._context.copy(),
+                message=step_result.message,
+                success=False,
+            )
+            return step_result
 
         # Parse action from response
         try:
@@ -202,6 +266,7 @@ class PhoneAgent:
             print("=" * 50 + "\n")
 
         # Remove image from context to save space
+        context_without_image = self._context.copy()
         self._context[-1] = MessageBuilder.remove_images_from_message(self._context[-1])
 
         # Execute action
@@ -234,13 +299,28 @@ class PhoneAgent:
             )
             print("=" * 50 + "\n")
 
-        return StepResult(
+        step_result = StepResult(
             success=result.success,
             finished=finished,
             action=action,
             thinking=response.thinking,
             message=result.message or action.get("message"),
         )
+
+        # Record this step in trajectory
+        self.trajectory_recorder.record_step(
+            screenshot_base64=screenshot.base64_data,
+            action=action,
+            thinking=response.thinking,
+            current_app=current_app,
+            screen_width=screenshot.width,
+            screen_height=screenshot.height,
+            context=context_without_image,
+            message=step_result.message,
+            success=result.success,
+        )
+
+        return step_result
 
     @property
     def context(self) -> list[dict[str, Any]]:
@@ -251,3 +331,13 @@ class PhoneAgent:
     def step_count(self) -> int:
         """Get the current step count."""
         return self._step_count
+
+    @property
+    def trajectory_summary(self) -> TrajectorySummary | None:
+        """Get the trajectory summary of the last run."""
+        return self._trajectory_summary
+
+    @property
+    def trajectory_dir(self) -> str | None:
+        """Get the directory where trajectory is saved."""
+        return self.trajectory_recorder.get_record_dir()

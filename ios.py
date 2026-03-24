@@ -277,6 +277,17 @@ Examples:
 
     # Run a specific task
     python ios.py "Open Safari and search for iPhone tips"
+
+    # Record agent trajectory (screenshots, actions, context)
+    python ios.py --record-trajectory "Open Safari and search for iPhone tips"
+
+    # Record trajectory without screenshots or context to save space
+    python ios.py --record-trajectory --no-save-screenshots --no-save-context
+
+Environment Variables:
+    PHONE_AGENT_RECORD_TRAJECTORY: Set to "true" to enable trajectory recording by default
+    PHONE_AGENT_TRAJECTORY_DIR: Default directory for trajectory recordings
+    PHONE_AGENT_TRAJECTORY_MAX: Maximum number of trajectory sessions to keep
         """,
     )
 
@@ -356,6 +367,41 @@ Examples:
         choices=["cn", "en"],
         default=os.getenv("PHONE_AGENT_LANG", "cn"),
         help="Language for system prompt (cn or en, default: cn)",
+    )
+
+    # Trajectory recording options
+    parser.add_argument(
+        "--record-trajectory",
+        "-r",
+        action="store_true",
+        default=os.getenv("PHONE_AGENT_RECORD_TRAJECTORY", "false").lower() == "true",
+        help="Record agent trajectory (screenshots, actions, context)",
+    )
+
+    parser.add_argument(
+        "--trajectory-dir",
+        type=str,
+        default=os.getenv("PHONE_AGENT_TRAJECTORY_DIR", "trajectories"),
+        help="Directory to save trajectory recordings (default: trajectories)",
+    )
+
+    parser.add_argument(
+        "--no-save-screenshots",
+        action="store_true",
+        help="Don't save screenshots in trajectory (saves space)",
+    )
+
+    parser.add_argument(
+        "--no-save-context",
+        action="store_true",
+        help="Don't save full context in trajectory (saves space)",
+    )
+
+    parser.add_argument(
+        "--trajectory-max-sessions",
+        type=int,
+        default=int(os.getenv("PHONE_AGENT_TRAJECTORY_MAX", "10")) if os.getenv("PHONE_AGENT_TRAJECTORY_MAX") else None,
+        help="Maximum number of trajectory sessions to keep (oldest removed)",
     )
 
     parser.add_argument(
@@ -485,6 +531,12 @@ def main():
         device_id=args.device_id,
         verbose=not args.quiet,
         lang=args.lang,
+        # Trajectory recording options
+        record_trajectory=args.record_trajectory,
+        trajectory_output_dir=args.trajectory_dir,
+        trajectory_save_screenshots=not args.no_save_screenshots,
+        trajectory_save_context=not args.no_save_context,
+        trajectory_max_sessions=args.trajectory_max_sessions,
     )
 
     # Create iOS agent
@@ -503,6 +555,17 @@ def main():
     print(f"Max Steps: {agent_config.max_steps}")
     print(f"Language: {agent_config.lang}")
 
+    # Show trajectory recording status
+    if args.record_trajectory:
+        print(f"📝 Trajectory Recording: ON")
+        print(f"   Directory: {args.trajectory_dir}")
+        print(f"   Save screenshots: {not args.no_save_screenshots}")
+        print(f"   Save context: {not args.no_save_context}")
+        if args.trajectory_max_sessions:
+            print(f"   Max sessions: {args.trajectory_max_sessions}")
+    else:
+        print(f"📝 Trajectory Recording: OFF (use --record-trajectory to enable)")
+
     # Show device info
     devices = list_devices()
     if agent_config.device_id:
@@ -519,9 +582,15 @@ def main():
         print(f"\nTask: {args.task}\n")
         result = agent.run(args.task)
         print(f"\nResult: {result}")
+
+        # Show trajectory location if recording was enabled
+        if args.record_trajectory and agent.trajectory_dir:
+            print(f"\n📁 Trajectory saved to: {agent.trajectory_dir}")
     else:
         # Interactive mode
         print("\nEntering interactive mode. Type 'quit' to exit.\n")
+        if args.record_trajectory:
+            print("📝 Trajectory recording is enabled for each task.\n")
 
         while True:
             try:
@@ -536,7 +605,13 @@ def main():
 
                 print()
                 result = agent.run(task)
-                print(f"\nResult: {result}\n")
+                print(f"\nResult: {result}")
+
+                # Show trajectory location for this task
+                if args.record_trajectory and agent.trajectory_dir:
+                    print(f"\n📁 Trajectory saved to: {agent.trajectory_dir}")
+
+                print()
                 agent.reset()
 
             except KeyboardInterrupt:
