@@ -203,7 +203,31 @@ def check_system_requirements(
             )
             ime_list = result.stdout.strip()
 
-            if "com.android.adbkeyboard/.AdbIME" in ime_list:
+            # Check if permission denied (Android 13+)
+            if "SecurityException" in result.stderr or "Permission" in result.stderr:
+                # Fallback: check if package is installed
+                pkg_result = subprocess.run(
+                    [
+                        "adb",
+                        "shell",
+                        "pm",
+                        "list",
+                        "packages",
+                        "com.android.adbkeyboard",
+                    ],
+                    capture_output=True,
+                    text=True,
+                    timeout=10,
+                )
+                if "com.android.adbkeyboard" in pkg_result.stdout:
+                    print(
+                        "✅ OK (package installed, please ensure enabled in settings)"
+                    )
+                else:
+                    print("❌ FAILED")
+                    print("   Error: ADB Keyboard is not installed on the device.")
+                    all_passed = False
+            elif "com.android.adbkeyboard/.AdbIME" in ime_list:
                 print("✅ OK")
             else:
                 print("❌ FAILED")
