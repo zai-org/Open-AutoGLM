@@ -71,7 +71,7 @@ def detect_and_set_adb_keyboard(device_id: str | None = None) -> str:
         capture_output=True,
         text=True,
     )
-    current_ime = (result.stdout + result.stderr).strip()
+    current_ime = result.stdout.strip() if result.returncode == 0 else ""
 
     # Switch to ADB Keyboard if not already set
     if "com.android.adbkeyboard/.AdbIME" not in current_ime:
