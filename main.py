@@ -11,6 +11,8 @@ Environment Variables:
     PHONE_AGENT_API_KEY: API key for model authentication (default: EMPTY)
     PHONE_AGENT_MAX_STEPS: Maximum steps per task (default: 100)
     PHONE_AGENT_DEVICE_ID: ADB device ID for multi-device setups
+    PHONE_AGENT_SYSTEM_PROMPT: Override system prompt text
+    PHONE_AGENT_SYSTEM_PROMPT_FILE: Path to UTF-8 system prompt file
 """
 
 import argparse
@@ -368,6 +370,9 @@ Examples:
     # Use API key for authentication
     python main.py --apikey sk-xxxxx
 
+    # Use a custom system prompt
+    python main.py --system-prompt-file ./prompt.txt "Open the Android launcher"
+
     # Run with specific device
     python main.py --device-id emulator-5554
 
@@ -428,6 +433,20 @@ Examples:
         type=int,
         default=int(os.getenv("PHONE_AGENT_MAX_STEPS", "100")),
         help="Maximum steps per task",
+    )
+
+    parser.add_argument(
+        "--system-prompt",
+        type=str,
+        default=os.getenv("PHONE_AGENT_SYSTEM_PROMPT"),
+        help="Override system prompt text",
+    )
+
+    parser.add_argument(
+        "--system-prompt-file",
+        type=str,
+        default=os.getenv("PHONE_AGENT_SYSTEM_PROMPT_FILE"),
+        help="Path to a UTF-8 file containing the system prompt override",
     )
 
     # Device options
@@ -522,6 +541,22 @@ Examples:
     )
 
     return parser.parse_args()
+
+
+def resolve_system_prompt(
+    system_prompt: str | None, system_prompt_file: str | None
+) -> str | None:
+    """Resolve an optional system prompt override from text or a UTF-8 file."""
+    if system_prompt and system_prompt_file:
+        raise ValueError(
+            "--system-prompt and --system-prompt-file cannot be used together"
+        )
+
+    if system_prompt_file:
+        with open(system_prompt_file, encoding="utf-8") as f:
+            return f.read()
+
+    return system_prompt
 
 
 def handle_ios_device_commands(args) -> bool:
@@ -684,6 +719,13 @@ def handle_device_commands(args) -> bool:
 def main():
     """Main entry point."""
     args = parse_args()
+    try:
+        system_prompt = resolve_system_prompt(
+            args.system_prompt, args.system_prompt_file
+        )
+    except (OSError, ValueError) as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
 
     # Set device type globally based on args
     if args.device_type == "adb":
@@ -760,6 +802,7 @@ def main():
             device_id=args.device_id,
             verbose=not args.quiet,
             lang=args.lang,
+            system_prompt=system_prompt,
         )
 
         agent = IOSPhoneAgent(
@@ -773,6 +816,7 @@ def main():
             device_id=args.device_id,
             verbose=not args.quiet,
             lang=args.lang,
+            system_prompt=system_prompt,
         )
 
         agent = PhoneAgent(
