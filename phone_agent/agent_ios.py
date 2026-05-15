@@ -20,7 +20,7 @@ class IOSAgentConfig:
     max_steps: int = 100
     wda_url: str = "http://localhost:8100"
     session_id: str | None = None
-    device_id: str | None = None  # iOS device UDID
+    device_id: str | None = None  # iOS device identifier
     lang: str = "cn"
     system_prompt: str | None = None
     verbose: bool = True
@@ -208,10 +208,16 @@ class IOSPhoneAgent:
         # Parse action from response
         try:
             action = parse_action(response.action)
-        except ValueError:
+        except ValueError as e:
             if self.agent_config.verbose:
                 traceback.print_exc()
-            action = finish(message=response.action)
+            return StepResult(
+                success=False,
+                finished=True,
+                action=None,
+                thinking=response.thinking,
+                message=f"Failed to parse action: {response.action}. Error: {e}",
+            )
 
         if self.agent_config.verbose:
             # Print thinking process
