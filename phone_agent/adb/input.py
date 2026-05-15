@@ -4,6 +4,8 @@ import base64
 import subprocess
 from typing import Optional
 
+ADB_KEYBOARD_PACKAGE = "com.android.adbkeyboard"
+
 
 def type_text(text: str, device_id: str | None = None) -> None:
     """
@@ -31,6 +33,8 @@ def type_text(text: str, device_id: str | None = None) -> None:
             "--es",
             "msg",
             encoded_text,
+            "-p",
+            ADB_KEYBOARD_PACKAGE,
         ],
         capture_output=True,
         text=True,
@@ -47,7 +51,16 @@ def clear_text(device_id: str | None = None) -> None:
     adb_prefix = _get_adb_prefix(device_id)
 
     subprocess.run(
-        adb_prefix + ["shell", "am", "broadcast", "-a", "ADB_CLEAR_TEXT"],
+        adb_prefix
+        + [
+            "shell",
+            "am",
+            "broadcast",
+            "-a",
+            "ADB_CLEAR_TEXT",
+            "-p",
+            ADB_KEYBOARD_PACKAGE,
+        ],
         capture_output=True,
         text=True,
     )
