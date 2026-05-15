@@ -7,9 +7,10 @@ import tempfile
 import uuid
 from dataclasses import dataclass
 from io import BytesIO
-from typing import Tuple
 
 from PIL import Image
+
+MAX_MODEL_IMAGE_DIMENSION = 2048
 
 
 @dataclass
@@ -67,6 +68,7 @@ def get_screenshot(device_id: str | None = None, timeout: int = 10) -> Screensho
 
         # Read and encode image
         img = Image.open(temp_path)
+        img = _resize_image_to_model_limit(img)
         width, height = img.size
 
         buffered = BytesIO()
@@ -92,18 +94,37 @@ def _get_adb_prefix(device_id: str | None) -> list:
     return ["adb"]
 
 
+def _resize_image_to_model_limit(
+    img: Image.Image, max_dimension: int = MAX_MODEL_IMAGE_DIMENSION
+) -> Image.Image:
+    """Resize an image so neither dimension exceeds the model input limit."""
+    width, height = img.size
+    largest_dimension = max(width, height)
+    if largest_dimension <= max_dimension:
+        return img
+
+    scale = max_dimension / largest_dimension
+    resized_size = (
+        max(1, int(width * scale)),
+        max(1, int(height * scale)),
+    )
+    return img.resize(resized_size, Image.Resampling.LANCZOS)
+
+
 def _create_fallback_screenshot(is_sensitive: bool) -> Screenshot:
     """Create a black fallback image when screenshot fails."""
     default_width, default_height = 1080, 2400
 
     black_img = Image.new("RGB", (default_width, default_height), color="black")
+    black_img = _resize_image_to_model_limit(black_img)
+    width, height = black_img.size
     buffered = BytesIO()
     black_img.save(buffered, format="PNG")
     base64_data = base64.b64encode(buffered.getvalue()).decode("utf-8")
 
     return Screenshot(
         base64_data=base64_data,
-        width=default_width,
-        height=default_height,
+        width=width,
+        height=height,
         is_sensitive=is_sensitive,
     )
