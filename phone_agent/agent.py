@@ -189,10 +189,16 @@ class PhoneAgent:
         # Parse action from response
         try:
             action = parse_action(response.action)
-        except ValueError:
+        except ValueError as e:
             if self.agent_config.verbose:
                 traceback.print_exc()
-            action = finish(message=response.action)
+            return StepResult(
+                success=False,
+                finished=True,
+                action=None,
+                thinking=response.thinking,
+                message=f"Failed to parse action: {response.action}. Error: {e}",
+            )
 
         if self.agent_config.verbose:
             # Print thinking process
