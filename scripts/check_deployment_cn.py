@@ -94,6 +94,8 @@ if __name__ == "__main__":
 
         print("\n模型推理结果:")
         print("=" * 80)
+        if not response.choices or response.choices[0].message is None:
+            raise ValueError("LLM returned empty or filtered response")
         print(response.choices[0].message.content)
         print("=" * 80)
 

@@ -106,6 +106,8 @@ Usage examples:
 
         print("\nModel inference result:")
         print("=" * 80)
+        if not response.choices or response.choices[0].message is None:
+            raise ValueError("LLM returned empty or filtered response")
         print(response.choices[0].message.content)
         print("=" * 80)
 
