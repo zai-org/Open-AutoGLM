@@ -6,7 +6,10 @@
 <img src=resources/logo.svg width="20%"/>
 </div>
 <p align="center">
-    👋 Join our <a href="resources/WECHAT.md" target="_blank">WeChat</a> or <a href="https://discord.gg/QR7SARHRxK" target="_blank">Discord</a> communities
+    👋 Join our<a href="resources/WECHAT.md" target="_blank"> Wechat</a> or <a href="https://discord.gg/HvT5BaPg3H" target="_blank">Discord</a> community.
+</p>
+<p align="center">
+    👋 Follow AutoGLM Autotyper <a href="https://x.com/Autotyper_Agent?s=20" target="_blank">X</a> account
 </p>
 
 ## Quick Start
@@ -23,6 +26,14 @@ https://raw.githubusercontent.com/zai-org/Open-AutoGLM/refs/heads/main/README_en
 Phone Agent is a mobile intelligent assistant framework built on AutoGLM. It understands phone screen content in a multimodal manner and helps users complete tasks through automated operations. The system controls devices via ADB (Android Debug Bridge), perceives screens using vision-language models, and generates and executes operation workflows through intelligent planning. Users simply describe their needs in natural language, such as "Open eBay and search for wireless earphones." and Phone Agent will automatically parse the intent, understand the current interface, plan the next action, and complete the entire workflow. The system also includes a sensitive operation confirmation mechanism and supports manual takeover during login or verification code scenarios. Additionally, it provides remote ADB debugging capabilities, allowing device connection via WiFi or network for flexible remote control and development.
 
 > ⚠️ This project is for research and learning purposes only. It is strictly prohibited to use for illegal information acquisition, system interference, or any illegal activities. Please carefully review the [Terms of Use](resources/privacy_policy_en.txt).
+
+## Integration with Other Automation Tools
+
+### Midscene.js
+
+[Midscene.js](https://midscenejs.com/en/index.html) is an open-source, vision-model-driven UI automation SDK that supports JavaScript or YAML flow syntax for cross-platform automation.
+
+Midscene.js already supports AutoGLM; see the [Midscene.js integration guide](https://midscenejs.com/model-common-config.html#auto-glm) to quickly try AutoGLM automation on both iOS and Android devices.
 
 ## Model Download Links
 
