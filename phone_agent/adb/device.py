@@ -1,6 +1,7 @@
 """Device control utilities for Android automation."""
 
 import os
+import re
 import subprocess
 import time
 from typing import List, Optional, Tuple
@@ -31,9 +32,22 @@ def get_current_app(device_id: str | None = None) -> str:
     # Parse window focus info
     for line in output.split("\n"):
         if "mCurrentFocus" in line or "mFocusedApp" in line:
-            for app_name, package in APP_PACKAGES.items():
-                if package in line:
-                    return app_name
+            # Extract the package name from the window focus line.
+            # Format: Window{... u0 com.example.app/com.example.MainActivity}
+            # Using regex avoids false substring matches (e.g.,
+            # "com.google.android.apps.docs" incorrectly matching
+            # "com.google.android.apps.docs.editors.docs").
+            match = re.search(r"\s(\w+)\s+([\w.]+)/", line)
+            if match:
+                pkg = match.group(2)
+                for app_name, package in APP_PACKAGES.items():
+                    if package == pkg:
+                        return app_name
+            else:
+                # Fallback for unusual dumpsys formats
+                for app_name, package in APP_PACKAGES.items():
+                    if package in line:
+                        return app_name
 
     return "System Home"
 
