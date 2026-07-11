@@ -178,11 +178,18 @@ class ModelClient:
         Parse the model response into thinking and action parts.
 
         Parsing rules:
-        1. If content contains 'finish(message=', everything before is thinking,
-           everything from 'finish(message=' onwards is action.
-        2. If rule 1 doesn't apply but content contains 'do(action=',
-           everything before is thinking, everything from 'do(action=' onwards is action.
-        3. Fallback: If content contains '<answer>', use legacy parsing with XML tags.
+        1. If content contains '<answer>' (the format requested by the system
+           prompt), extract the thinking from the '<think>' tag and the action
+           from the '<answer>' tag. This is checked first because the answer
+           itself normally contains a 'do(action=' or 'finish(message=' call,
+           and matching those markers before stripping the tags would leave a
+           trailing '</answer>' inside the action string.
+        2. If no answer tag is present but content contains 'finish(message=',
+           everything before is thinking, everything from 'finish(message='
+           onwards is action.
+        3. If rule 2 doesn't apply but content contains 'do(action=',
+           everything before is thinking, everything from 'do(action=' onwards
+           is action.
         4. Otherwise, return empty thinking and full content as action.
 
         Args:
@@ -191,25 +198,28 @@ class ModelClient:
         Returns:
             Tuple of (thinking, action).
         """
-        # Rule 1: Check for finish(message=
+        # Rule 1: Prefer the XML tag format requested by the system prompt.
+        # The '<answer>' block usually wraps a do()/finish() call, so it must
+        # be handled before the marker checks below; otherwise the trailing
+        # '</answer>' would be captured as part of the action.
+        if "<answer>" in content:
+            parts = content.split("<answer>", 1)
+            thinking = parts[0].replace("<think>", "").replace("</think>", "").strip()
+            action = parts[1].replace("</answer>", "").strip()
+            return thinking, action
+
+        # Rule 2: Check for finish(message=
         if "finish(message=" in content:
             parts = content.split("finish(message=", 1)
             thinking = parts[0].strip()
             action = "finish(message=" + parts[1]
             return thinking, action
 
-        # Rule 2: Check for do(action=
+        # Rule 3: Check for do(action=
         if "do(action=" in content:
             parts = content.split("do(action=", 1)
             thinking = parts[0].strip()
             action = "do(action=" + parts[1]
-            return thinking, action
-
-        # Rule 3: Fallback to legacy XML tag parsing
-        if "<answer>" in content:
-            parts = content.split("<answer>", 1)
-            thinking = parts[0].replace("<think>", "").replace("</think>", "").strip()
-            action = parts[1].replace("</answer>", "").strip()
             return thinking, action
 
         # Rule 4: No markers found, return content as action
