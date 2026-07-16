@@ -1,6 +1,7 @@
 """Action handler for processing AI model outputs."""
 
 import ast
+import math
 import re
 import subprocess
 import time
@@ -223,10 +224,24 @@ class ActionHandler:
 
     def _handle_wait(self, action: dict, width: int, height: int) -> ActionResult:
         """Handle wait action."""
-        duration_str = action.get("duration", "1 seconds")
+        duration_raw = action.get("duration", "1 seconds")
         try:
-            duration = float(duration_str.replace("seconds", "").strip())
-        except ValueError:
+            # The model normally emits a string such as "3 seconds", but some
+            # models (or non-standard prompts) return a bare int/float instead.
+            # Calling ``.replace`` on a number raises ``AttributeError``, which
+            # the previous ``except ValueError`` did not catch, so the wait
+            # silently failed. Handle both forms explicitly.
+            if isinstance(duration_raw, (int, float)):
+                duration = float(duration_raw)
+            else:
+                duration = float(str(duration_raw).replace("seconds", "").strip())
+        except (ValueError, TypeError):
+            duration = 1.0
+
+        # ``time.sleep`` accepts ``float('nan')`` and ``float('inf')`` as valid
+        # arguments, but neither is useful here: NaN produces no wait and inf
+        # would hang the agent. Clamp non-finite values to the default.
+        if duration < 0 or not math.isfinite(duration):
             duration = 1.0
 
         time.sleep(duration)
