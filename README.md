@@ -58,7 +58,9 @@ python main.py \
 也可以设置 `PHONE_AGENT_PROFILE=mobileforge`。`mobile_use` 动作会被转换为
 AutoGLM 动作后交给所选设备后端执行。模型权重不包含在本仓库中，需要从
 [MobileForge 模型集合](https://huggingface.co/collections/lgy0404/mobileforge-models)
-单独下载和部署。
+单独下载和部署。使用 MobileForge 数据对 Qwen3-VL-4B 进行 LoRA SFT
+以及部署合并模型的可复现示例见
+[`examples/mobileforge/`](examples/mobileforge/README.md)。
 
 ### Midscene.js
 

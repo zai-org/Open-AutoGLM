@@ -1,0 +1,5 @@
+accelerate>=1.10
+Pillow>=10.0
+peft>=0.19
+torch>=2.6
+transformers>=4.57

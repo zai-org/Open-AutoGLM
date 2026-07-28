@@ -50,6 +50,8 @@ the model's `mobile_use` calls into AutoGLM actions and sends them to the
 selected device backend. Model weights are not included; download and serve
 them separately from the
 [MobileForge model collection](https://huggingface.co/collections/lgy0404/mobileforge-models).
+See [`examples/mobileforge/`](examples/mobileforge/README.md) for a reproducible
+Qwen3-VL-4B LoRA SFT and merged-model serving example.
 
 ### Midscene.js
 
