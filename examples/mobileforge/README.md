@@ -83,3 +83,15 @@ python main.py \
   --model qwen3-vl-4b-mobileforge-sft \
   "Open Settings and show the current system version"
 ```
+
+## HarmonyOS device traces
+
+Treat HDC screenshots, model responses, prompts, and runtime logs as private
+artifacts. They can contain account details, messages, locations, device
+identifiers, and private network addresses. Do not attach raw traces to an
+issue or pull request.
+
+The protocol tests include only sanitized action shapes observed during
+HarmonyOS 6 validation: click, swipe, type, wait, Home, and terminate. When
+sharing a failure, reduce it to a synthetic protocol response and remove
+screenshots, task text, coordinates, identifiers, paths, and network details.

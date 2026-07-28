@@ -54,6 +54,30 @@ class MobileForgeProtocolTest(unittest.TestCase):
             "finish",
         )
 
+    def test_sanitized_harmonyos_hdc_trace_shapes(self):
+        """Keep the action shapes observed in device runs without trace data."""
+        trace = [
+            ({"action": "click", "coordinate": [500, 500]}, "Tap"),
+            (
+                {
+                    "action": "swipe",
+                    "coordinate": [500, 750],
+                    "coordinate2": [500, 250],
+                },
+                "Swipe",
+            ),
+            ({"action": "type", "text": "sample text"}, "Type"),
+            ({"action": "wait", "time": 2}, "Wait"),
+            ({"action": "system_button", "button": "Home"}, "Home"),
+        ]
+        for arguments, expected_action in trace:
+            with self.subTest(action=arguments["action"]):
+                parsed = self.parse(arguments)[2]
+                self.assertEqual(parsed["action"], expected_action)
+
+        terminal = self.parse({"action": "terminate", "status": "success"})[2]
+        self.assertEqual(terminal["_metadata"], "finish")
+
     def test_rejects_unknown_action(self):
         with self.assertRaisesRegex(ValueError, "Unsupported MobileForge action"):
             self.parse({"action": "key", "text": "volume_up"})
