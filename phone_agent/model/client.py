@@ -23,6 +23,7 @@ class ModelConfig:
     frequency_penalty: float = 0.2
     extra_body: dict[str, Any] = field(default_factory=dict)
     lang: str = "cn"  # Language for UI messages: 'cn' or 'en'
+    response_format: str = "autoglm"  # autoglm or mobileforge
 
 
 @dataclass
@@ -191,6 +192,11 @@ class ModelClient:
         Returns:
             Tuple of (thinking, action).
         """
+        if self.config.response_format == "mobileforge":
+            from phone_agent.mobileforge import parse_mobileforge_response
+
+            return parse_mobileforge_response(content)
+
         # Rule 1: Check for finish(message=
         if "finish(message=" in content:
             parts = content.split("finish(message=", 1)

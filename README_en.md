@@ -29,6 +29,28 @@ Phone Agent is a mobile intelligent assistant framework built on AutoGLM. It und
 
 ## Integration with Other Automation Tools
 
+### MobileForge models
+
+Open-AutoGLM can use the ForgeQwen3/ForgeOwl models released by
+[MobileForge](https://github.com/kwai/MobileForge) as its decision layer while
+reusing the ADB or HDC device runtime. First serve the model through an
+OpenAI-compatible endpoint such as vLLM, then run:
+
+```bash
+python main.py \
+  --device-type hdc \
+  --agent-profile mobileforge \
+  --base-url http://localhost:8000/v1 \
+  --model lgy0404/ForgeQwen3-8B \
+  "Open Settings and show the current system version"
+```
+
+Alternatively, set `PHONE_AGENT_PROFILE=mobileforge`. The adapter translates
+the model's `mobile_use` calls into AutoGLM actions and sends them to the
+selected device backend. Model weights are not included; download and serve
+them separately from the
+[MobileForge model collection](https://huggingface.co/collections/lgy0404/mobileforge-models).
+
 ### Midscene.js
 
 [Midscene.js](https://midscenejs.com/en/index.html) is an open-source, vision-model-driven UI automation SDK that supports JavaScript or YAML flow syntax for cross-platform automation.

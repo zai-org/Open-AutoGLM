@@ -265,7 +265,7 @@ class ActionHandler:
         # Handle HDC devices with HarmonyOS-specific keyEvent command
         if device_factory.device_type == DeviceType.HDC:
             hdc_prefix = ["hdc", "-t", self.device_id] if self.device_id else ["hdc"]
-            
+
             # Map common keycodes to HarmonyOS keyEvent codes
             # KEYCODE_ENTER (66) -> 2054 (HarmonyOS Enter key code)
             if keycode == "KEYCODE_ENTER" or keycode == "66":
@@ -283,7 +283,8 @@ class ActionHandler:
                         # For now, only handle ENTER, other keys may need mapping
                         if "ENTER" in keycode:
                             _run_hdc_command(
-                                hdc_prefix + ["shell", "uitest", "uiInput", "keyEvent", "2054"],
+                                hdc_prefix
+                                + ["shell", "uitest", "uiInput", "keyEvent", "2054"],
                                 capture_output=True,
                                 text=True,
                             )
@@ -297,7 +298,8 @@ class ActionHandler:
                     else:
                         # Assume it's a numeric code
                         _run_hdc_command(
-                            hdc_prefix + ["shell", "uitest", "uiInput", "keyEvent", str(keycode)],
+                            hdc_prefix
+                            + ["shell", "uitest", "uiInput", "keyEvent", str(keycode)],
                             capture_output=True,
                             text=True,
                         )
@@ -348,16 +350,22 @@ def parse_action(response: str) -> dict[str, Any]:
         if response.startswith('do(action="Type"') or response.startswith(
             'do(action="Type_Name"'
         ):
-            text = response.split("text=", 1)[1][1:-2]
+            text_expression = response.split("text=", 1)[1][:-1]
+            try:
+                text = ast.literal_eval(text_expression)
+            except (SyntaxError, ValueError):
+                # Preserve compatibility with model output containing raw
+                # newlines or other characters that are not valid literals.
+                text = text_expression[1:-1]
             action = {"_metadata": "do", "action": "Type", "text": text}
             return action
         elif response.startswith("do"):
             # Use AST parsing instead of eval for safety
             try:
                 # Escape special characters (newlines, tabs, etc.) for valid Python syntax
-                response = response.replace('\n', '\\n')
-                response = response.replace('\r', '\\r')
-                response = response.replace('\t', '\\t')
+                response = response.replace("\n", "\\n")
+                response = response.replace("\r", "\\r")
+                response = response.replace("\t", "\\t")
 
                 tree = ast.parse(response, mode="eval")
                 if not isinstance(tree.body, ast.Call):

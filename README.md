@@ -39,6 +39,27 @@ ADB 调试能力，可通过 WiFi 或网络连接设备，实现灵活的远程�
 
 ## 与其他自动化工具集成
 
+### MobileForge 模型
+
+Open-AutoGLM 可以使用
+[MobileForge](https://github.com/kwai/MobileForge) 发布的 ForgeQwen3/ForgeOwl
+模型作为决策层，同时复用 ADB 或 HDC 设备执行层。首先通过 vLLM 等服务部署
+模型的 OpenAI 兼容接口，然后运行：
+
+```bash
+python main.py \
+  --device-type hdc \
+  --agent-profile mobileforge \
+  --base-url http://localhost:8000/v1 \
+  --model lgy0404/ForgeQwen3-8B \
+  "打开设置并查看当前系统版本"
+```
+
+也可以设置 `PHONE_AGENT_PROFILE=mobileforge`。`mobile_use` 动作会被转换为
+AutoGLM 动作后交给所选设备后端执行。模型权重不包含在本仓库中，需要从
+[MobileForge 模型集合](https://huggingface.co/collections/lgy0404/mobileforge-models)
+单独下载和部署。
+
 ### Midscene.js
 
 [Midscene.js](https://midscenejs.com/zh/index.html) 是一款由视觉模型驱动的开源 UI 自动化 SDK，支持通过 JavaScript 或 Yaml 格式的流程语法，实现多平台的自动化。

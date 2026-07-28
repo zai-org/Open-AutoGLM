@@ -417,6 +417,13 @@ Examples:
     )
 
     parser.add_argument(
+        "--agent-profile",
+        choices=["autoglm", "mobileforge"],
+        default=os.getenv("PHONE_AGENT_PROFILE", "autoglm"),
+        help="Model action protocol (use mobileforge for ForgeQwen3/ForgeOwl)",
+    )
+
+    parser.add_argument(
         "--apikey",
         type=str,
         default=os.getenv("PHONE_AGENT_API_KEY", "EMPTY"),
@@ -750,6 +757,7 @@ def main():
         model_name=args.model,
         api_key=args.apikey,
         lang=args.lang,
+        response_format=args.agent_profile,
     )
 
     if device_type == DeviceType.IOS:
@@ -768,11 +776,17 @@ def main():
         )
     else:
         # Create Android/HarmonyOS agent
+        system_prompt = None
+        if args.agent_profile == "mobileforge":
+            from phone_agent.mobileforge import MOBILEFORGE_SYSTEM_PROMPT
+
+            system_prompt = MOBILEFORGE_SYSTEM_PROMPT
         agent_config = AgentConfig(
             max_steps=args.max_steps,
             device_id=args.device_id,
             verbose=not args.quiet,
             lang=args.lang,
+            system_prompt=system_prompt,
         )
 
         agent = PhoneAgent(
@@ -792,6 +806,7 @@ def main():
     print(f"Max Steps: {agent_config.max_steps}")
     print(f"Language: {agent_config.lang}")
     print(f"Device Type: {args.device_type.upper()}")
+    print(f"Agent Profile: {args.agent_profile}")
 
     # Show iOS-specific config
     if device_type == DeviceType.IOS:

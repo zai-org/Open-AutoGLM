@@ -219,7 +219,9 @@ class PhoneAgent:
         # Add assistant response to context
         self._context.append(
             MessageBuilder.create_assistant_message(
-                f"<think>{response.thinking}</think><answer>{response.action}</answer>"
+                response.raw_content
+                if self.model_config.response_format == "mobileforge"
+                else f"<think>{response.thinking}</think><answer>{response.action}</answer>"
             )
         )
 
