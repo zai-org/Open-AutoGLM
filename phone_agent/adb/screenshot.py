@@ -7,7 +7,6 @@ import tempfile
 import uuid
 from dataclasses import dataclass
 from io import BytesIO
-from typing import Tuple
 
 from PIL import Image
 
