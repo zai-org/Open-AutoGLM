@@ -82,22 +82,25 @@ def get_screenshot(device_id: str | None = None, timeout: int = 10) -> Screensho
 
         # Read JPEG image and convert to PNG for model inference
         # PIL automatically detects the image format from file content
-        img = Image.open(temp_path)
-        width, height = img.size
+        try:
+            img = Image.open(temp_path)
+            width, height = img.size
 
-        buffered = BytesIO()
-        img.save(buffered, format="PNG")
-        base64_data = base64.b64encode(buffered.getvalue()).decode("utf-8")
+            buffered = BytesIO()
+            img.save(buffered, format="PNG")
+            base64_data = base64.b64encode(buffered.getvalue()).decode("utf-8")
 
-        # Cleanup
-        os.remove(temp_path)
-
-        return Screenshot(
-            base64_data=base64_data, width=width, height=height, is_sensitive=False
-        )
+            return Screenshot(
+                base64_data=base64_data, width=width, height=height, is_sensitive=False
+            )
+        finally:
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
 
     except Exception as e:
         print(f"Screenshot error: {e}")
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
         return _create_fallback_screenshot(is_sensitive=False)
 
 
