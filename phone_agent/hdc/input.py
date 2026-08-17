@@ -112,7 +112,7 @@ def detect_and_set_adb_keyboard(device_id: str | None = None) -> str:
             capture_output=True,
             text=True,
         )
-        current_ime = (result.stdout + result.stderr).strip()
+        current_ime = result.stdout.strip() if result.returncode == 0 else ""
 
         # If ADB Keyboard equivalent exists for HarmonyOS, switch to it
         # For now, we'll just return the current IME
