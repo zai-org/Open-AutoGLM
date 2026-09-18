@@ -37,13 +37,15 @@ def get_screenshot(device_id: str | None = None, timeout: int = 10) -> Screensho
         If the screenshot fails (e.g., on sensitive screens like payment pages),
         a black fallback image is returned with is_sensitive=True.
     """
-    temp_path = os.path.join(tempfile.gettempdir(), f"screenshot_{uuid.uuid4()}.png")
+    screenshot_id = uuid.uuid4().hex
+    remote_path = f"/sdcard/phone_agent_screenshot_{screenshot_id}.png"
+    temp_path = os.path.join(tempfile.gettempdir(), f"screenshot_{screenshot_id}.png")
     adb_prefix = _get_adb_prefix(device_id)
 
     try:
         # Execute screenshot command
         result = subprocess.run(
-            adb_prefix + ["shell", "screencap", "-p", "/sdcard/tmp.png"],
+            adb_prefix + ["shell", "screencap", "-p", remote_path],
             capture_output=True,
             text=True,
             timeout=timeout,
@@ -56,7 +58,7 @@ def get_screenshot(device_id: str | None = None, timeout: int = 10) -> Screensho
 
         # Pull screenshot to local temp path
         subprocess.run(
-            adb_prefix + ["pull", "/sdcard/tmp.png", temp_path],
+            adb_prefix + ["pull", remote_path, temp_path],
             capture_output=True,
             text=True,
             timeout=5,
@@ -83,6 +85,16 @@ def get_screenshot(device_id: str | None = None, timeout: int = 10) -> Screensho
     except Exception as e:
         print(f"Screenshot error: {e}")
         return _create_fallback_screenshot(is_sensitive=False)
+    finally:
+        # Give every capture its own remote file and remove it on all paths.
+        try:
+            subprocess.run(
+                adb_prefix + ["shell", "rm", "-f", remote_path],
+                capture_output=True,
+                timeout=5,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            pass
 
 
 def _get_adb_prefix(device_id: str | None) -> list:
