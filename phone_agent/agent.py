@@ -13,6 +13,19 @@ from phone_agent.model import ModelClient, ModelConfig
 from phone_agent.model.client import MessageBuilder
 
 
+CALL_API_SYSTEM_PROMPTS = {
+    "cn": (
+        "你是一个内容总结助手。根据用户提供的页面记录完成指令，"
+        "直接返回总结或评论文本，不要输出 do 或 finish 操作指令。"
+    ),
+    "en": (
+        "You are a content summarization assistant. Follow the instruction "
+        "using the recorded page content and return only the summary or "
+        "commentary text, never a do or finish action."
+    ),
+}
+
+
 @dataclass
 class AgentConfig:
     """Configuration for the PhoneAgent."""
@@ -76,10 +89,12 @@ class PhoneAgent:
             device_id=self.agent_config.device_id,
             confirmation_callback=confirmation_callback,
             takeover_callback=takeover_callback,
+            call_api_callback=self._call_api,
         )
 
         self._context: list[dict[str, Any]] = []
         self._step_count = 0
+        self._pending_call_api_result: str | None = None
 
     def run(self, task: str) -> str:
         """
@@ -93,6 +108,8 @@ class PhoneAgent:
         """
         self._context = []
         self._step_count = 0
+        self._pending_call_api_result = None
+        self.action_handler.reset()
 
         # First step with user prompt
         result = self._execute_step(task, is_first=True)
@@ -132,6 +149,8 @@ class PhoneAgent:
         """Reset the agent state for a new task."""
         self._context = []
         self._step_count = 0
+        self._pending_call_api_result = None
+        self.action_handler.reset()
 
     def _execute_step(
         self, user_prompt: str | None = None, is_first: bool = False
@@ -161,6 +180,12 @@ class PhoneAgent:
         else:
             screen_info = MessageBuilder.build_screen_info(current_app)
             text_content = f"** Screen Info **\n\n{screen_info}"
+            if self._pending_call_api_result:
+                text_content += (
+                    "\n\n** Call_API Result **\n\n"
+                    + self._pending_call_api_result
+                )
+            self._pending_call_api_result = None
 
             self._context.append(
                 MessageBuilder.create_user_message(
@@ -216,6 +241,9 @@ class PhoneAgent:
                 finish(message=str(e)), screenshot.width, screenshot.height
             )
 
+        if action.get("action") == "Call_API" and result.success:
+            self._pending_call_api_result = result.message
+
         # Add assistant response to context
         self._context.append(
             MessageBuilder.create_assistant_message(
@@ -241,6 +269,24 @@ class PhoneAgent:
             thinking=response.thinking,
             message=result.message or action.get("message"),
         )
+
+    def _call_api(self, instruction: str, notes: list[str]) -> str:
+        """Run one model request over the content captured by ``Note``."""
+        recorded_content = "\n\n".join(notes) or (
+            "(No page content has been recorded.)"
+        )
+        prompt = f"{instruction}\n\nRecorded page content:\n{recorded_content}"
+        response = self.model_client.request(
+            [
+                MessageBuilder.create_system_message(
+                    CALL_API_SYSTEM_PROMPTS.get(
+                        self.agent_config.lang, CALL_API_SYSTEM_PROMPTS["en"]
+                    )
+                ),
+                MessageBuilder.create_user_message(prompt),
+            ]
+        )
+        return response.raw_content.strip()
 
     @property
     def context(self) -> list[dict[str, Any]]:

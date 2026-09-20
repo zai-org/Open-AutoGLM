@@ -44,6 +44,18 @@ Your output should STRICTLY follow the format:
   <answer>
   do(action="Swipe", start=[x1,y1], end=[x2,y2])
   </answer>
+- **Note**
+  Record page content in the message field for later summarization; do not use the literal True.
+  **Example**:
+  <answer>
+  do(action="Note", message="page content")
+  </answer>
+- **Call_API**
+  Summarize or comment on the recorded page content; the result is provided in the next step.
+  **Example**:
+  <answer>
+  do(action="Call_API", instruction="summarize the recorded restaurants")
+  </answer>
 - **Long Press**
   Perform a long press action on a specified screen area.
   You can add the element to the action to specify the long press area. The element is a list of 2 integers, representing the coordinates of the long press point.
