@@ -37,10 +37,17 @@ class ActionHandler:
         device_id: str | None = None,
         confirmation_callback: Callable[[str], bool] | None = None,
         takeover_callback: Callable[[str], None] | None = None,
+        call_api_callback: Callable[[str, list[str]], str] | None = None,
     ):
         self.device_id = device_id
         self.confirmation_callback = confirmation_callback or self._default_confirmation
         self.takeover_callback = takeover_callback or self._default_takeover
+        self.call_api_callback = call_api_callback
+        self._notes: list[str] = []
+
+    def reset(self) -> None:
+        """Clear notes captured during the current task."""
+        self._notes.clear()
 
     def execute(
         self, action: dict[str, Any], screen_width: int, screen_height: int
@@ -239,16 +246,26 @@ class ActionHandler:
         return ActionResult(True, False)
 
     def _handle_note(self, action: dict, width: int, height: int) -> ActionResult:
-        """Handle note action (placeholder for content recording)."""
-        # This action is typically used for recording page content
-        # Implementation depends on specific requirements
+        """Record page content for a later ``Call_API`` action."""
+        message = action.get("message")
+        if not isinstance(message, str) or not message.strip():
+            return ActionResult(False, False, "No note message specified")
+
+        self._notes.append(message.strip())
         return ActionResult(True, False)
 
     def _handle_call_api(self, action: dict, width: int, height: int) -> ActionResult:
-        """Handle API call action (placeholder for summarization)."""
-        # This action is typically used for content summarization
-        # Implementation depends on specific requirements
-        return ActionResult(True, False)
+        """Summarize recorded page content through the agent callback."""
+        instruction = action.get("instruction")
+        if not isinstance(instruction, str) or not instruction.strip():
+            return ActionResult(False, False, "No Call_API instruction specified")
+        if self.call_api_callback is None:
+            return ActionResult(False, False, "Call_API callback is not configured")
+
+        summary = self.call_api_callback(instruction.strip(), list(self._notes))
+        if not summary.strip():
+            return ActionResult(False, False, "Call_API returned no result")
+        return ActionResult(True, False, message=summary)
 
     def _handle_interact(self, action: dict, width: int, height: int) -> ActionResult:
         """Handle interaction request (user choice needed)."""
