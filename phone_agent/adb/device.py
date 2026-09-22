@@ -22,7 +22,10 @@ def get_current_app(device_id: str | None = None) -> str:
     adb_prefix = _get_adb_prefix(device_id)
 
     result = subprocess.run(
-        adb_prefix + ["shell", "dumpsys", "window"], capture_output=True, text=True, encoding="utf-8"
+        adb_prefix + ["shell", "dumpsys", "window"],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
     )
     output = result.stdout
     if not output:
@@ -228,7 +231,7 @@ def launch_app(
     adb_prefix = _get_adb_prefix(device_id)
     package = APP_PACKAGES[app_name]
 
-    subprocess.run(
+    result = subprocess.run(
         adb_prefix
         + [
             "shell",
@@ -240,7 +243,14 @@ def launch_app(
             "1",
         ],
         capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
     )
+    output = f"{result.stdout}\n{result.stderr}".lower()
+    if result.returncode != 0 or "monkey aborted" in output:
+        return False
+
     time.sleep(delay)
     return True
 
