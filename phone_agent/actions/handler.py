@@ -156,19 +156,29 @@ class ActionHandler:
 
         # Switch to ADB keyboard
         original_ime = device_factory.detect_and_set_adb_keyboard(self.device_id)
-        time.sleep(TIMING_CONFIG.action.keyboard_switch_delay)
+        primary_error = None
+        try:
+            time.sleep(TIMING_CONFIG.action.keyboard_switch_delay)
 
-        # Clear existing text and type new text
-        device_factory.clear_text(self.device_id)
-        time.sleep(TIMING_CONFIG.action.text_clear_delay)
+            # Clear existing text and type new text
+            device_factory.clear_text(self.device_id)
+            time.sleep(TIMING_CONFIG.action.text_clear_delay)
 
-        # Handle multiline text by splitting on newlines
-        device_factory.type_text(text, self.device_id)
-        time.sleep(TIMING_CONFIG.action.text_input_delay)
-
-        # Restore original keyboard
-        device_factory.restore_keyboard(original_ime, self.device_id)
-        time.sleep(TIMING_CONFIG.action.keyboard_restore_delay)
+            # Handle multiline text by splitting on newlines
+            device_factory.type_text(text, self.device_id)
+            time.sleep(TIMING_CONFIG.action.text_input_delay)
+        except BaseException as error:
+            primary_error = error
+            raise
+        finally:
+            # Restore the keyboard even if text input fails or is interrupted.
+            try:
+                device_factory.restore_keyboard(original_ime, self.device_id)
+                time.sleep(TIMING_CONFIG.action.keyboard_restore_delay)
+            except Exception as cleanup_error:
+                if primary_error is not None:
+                    raise primary_error from cleanup_error
+                raise
 
         return ActionResult(True, False)
 
@@ -265,7 +275,7 @@ class ActionHandler:
         # Handle HDC devices with HarmonyOS-specific keyEvent command
         if device_factory.device_type == DeviceType.HDC:
             hdc_prefix = ["hdc", "-t", self.device_id] if self.device_id else ["hdc"]
-            
+
             # Map common keycodes to HarmonyOS keyEvent codes
             # KEYCODE_ENTER (66) -> 2054 (HarmonyOS Enter key code)
             if keycode == "KEYCODE_ENTER" or keycode == "66":
@@ -283,7 +293,8 @@ class ActionHandler:
                         # For now, only handle ENTER, other keys may need mapping
                         if "ENTER" in keycode:
                             _run_hdc_command(
-                                hdc_prefix + ["shell", "uitest", "uiInput", "keyEvent", "2054"],
+                                hdc_prefix
+                                + ["shell", "uitest", "uiInput", "keyEvent", "2054"],
                                 capture_output=True,
                                 text=True,
                             )
@@ -297,7 +308,8 @@ class ActionHandler:
                     else:
                         # Assume it's a numeric code
                         _run_hdc_command(
-                            hdc_prefix + ["shell", "uitest", "uiInput", "keyEvent", str(keycode)],
+                            hdc_prefix
+                            + ["shell", "uitest", "uiInput", "keyEvent", str(keycode)],
                             capture_output=True,
                             text=True,
                         )
@@ -355,9 +367,9 @@ def parse_action(response: str) -> dict[str, Any]:
             # Use AST parsing instead of eval for safety
             try:
                 # Escape special characters (newlines, tabs, etc.) for valid Python syntax
-                response = response.replace('\n', '\\n')
-                response = response.replace('\r', '\\r')
-                response = response.replace('\t', '\\t')
+                response = response.replace("\n", "\\n")
+                response = response.replace("\r", "\\r")
+                response = response.replace("\t", "\\t")
 
                 tree = ast.parse(response, mode="eval")
                 if not isinstance(tree.body, ast.Call):
