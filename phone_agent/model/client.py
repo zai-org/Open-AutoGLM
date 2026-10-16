@@ -85,59 +85,60 @@ class ModelClient:
         in_action_phase = False  # Track if we've entered the action phase
         first_token_received = False
 
-        for chunk in stream:
-            if len(chunk.choices) == 0:
-                continue
-            if chunk.choices[0].delta.content is not None:
-                content = chunk.choices[0].delta.content
-                raw_content += content
-
-                # Record time to first token
-                if not first_token_received:
-                    time_to_first_token = time.time() - start_time
-                    first_token_received = True
-
-                if in_action_phase:
-                    # Already in action phase, just accumulate content without printing
+        with stream:
+            for chunk in stream:
+                if len(chunk.choices) == 0:
                     continue
+                if chunk.choices[0].delta.content is not None:
+                    content = chunk.choices[0].delta.content
+                    raw_content += content
 
-                buffer += content
+                    # Record time to first token
+                    if not first_token_received:
+                        time_to_first_token = time.time() - start_time
+                        first_token_received = True
 
-                # Check if any marker is fully present in buffer
-                marker_found = False
-                for marker in action_markers:
-                    if marker in buffer:
-                        # Marker found, print everything before it
-                        thinking_part = buffer.split(marker, 1)[0]
-                        print(thinking_part, end="", flush=True)
-                        print()  # Print newline after thinking is complete
-                        in_action_phase = True
-                        marker_found = True
+                    if in_action_phase:
+                        # Already in action phase, just accumulate content without printing
+                        continue
 
-                        # Record time to thinking end
-                        if time_to_thinking_end is None:
-                            time_to_thinking_end = time.time() - start_time
+                    buffer += content
 
-                        break
+                    # Check if any marker is fully present in buffer
+                    marker_found = False
+                    for marker in action_markers:
+                        if marker in buffer:
+                            # Marker found, print everything before it
+                            thinking_part = buffer.split(marker, 1)[0]
+                            print(thinking_part, end="", flush=True)
+                            print()  # Print newline after thinking is complete
+                            in_action_phase = True
+                            marker_found = True
 
-                if marker_found:
-                    continue  # Continue to collect remaining content
+                            # Record time to thinking end
+                            if time_to_thinking_end is None:
+                                time_to_thinking_end = time.time() - start_time
 
-                # Check if buffer ends with a prefix of any marker
-                # If so, don't print yet (wait for more content)
-                is_potential_marker = False
-                for marker in action_markers:
-                    for i in range(1, len(marker)):
-                        if buffer.endswith(marker[:i]):
-                            is_potential_marker = True
                             break
-                    if is_potential_marker:
-                        break
 
-                if not is_potential_marker:
-                    # Safe to print the buffer
-                    print(buffer, end="", flush=True)
-                    buffer = ""
+                    if marker_found:
+                        continue  # Continue to collect remaining content
+
+                    # Check if buffer ends with a prefix of any marker
+                    # If so, don't print yet (wait for more content)
+                    is_potential_marker = False
+                    for marker in action_markers:
+                        for i in range(1, len(marker)):
+                            if buffer.endswith(marker[:i]):
+                                is_potential_marker = True
+                                break
+                        if is_potential_marker:
+                            break
+
+                    if not is_potential_marker:
+                        # Safe to print the buffer
+                        print(buffer, end="", flush=True)
+                        buffer = ""
 
         # Calculate total time
         total_time = time.time() - start_time
