@@ -425,6 +425,15 @@ conn.disconnect("192.168.1.100:5555")
 
 ## Configuration
 
+### Web search
+
+The built-in prompts support a `Search` action for current public facts during
+phone tasks, using free, keyless Parallel Search MCP after per-query confirmation.
+Results and source links reach the next planning turn on Android, HarmonyOS, and
+iOS. Pass `--disable-search` to prevent external search, including with a local
+model. See [web search configuration and privacy](docs/web_search.md) for data
+handling, Python settings, and custom prompts.
+
 ### Custom SYSTEM PROMPT
 
 The system provides both Chinese and English prompts, switchable via the `--lang` parameter:

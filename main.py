@@ -30,6 +30,7 @@ from phone_agent.config.apps_harmonyos import list_supported_apps as list_harmon
 from phone_agent.config.apps_ios import list_supported_apps as list_ios_apps
 from phone_agent.device_factory import DeviceType, get_device_factory, set_device_type
 from phone_agent.model import ModelConfig
+from phone_agent.search import SearchConfig
 from phone_agent.xctest import XCTestConnection
 from phone_agent.xctest import list_devices as list_ios_devices
 
@@ -493,6 +494,9 @@ Examples:
     parser.add_argument(
         "--quiet", "-q", action="store_true", help="Suppress verbose output"
     )
+    parser.add_argument(
+        "--disable-search", action="store_true", help="Disable external web search"
+    )
 
     parser.add_argument(
         "--list-apps", action="store_true", help="List supported apps and exit"
@@ -760,6 +764,7 @@ def main():
             device_id=args.device_id,
             verbose=not args.quiet,
             lang=args.lang,
+            search=SearchConfig(enabled=not args.disable_search),
         )
 
         agent = IOSPhoneAgent(
@@ -773,6 +778,7 @@ def main():
             device_id=args.device_id,
             verbose=not args.quiet,
             lang=args.lang,
+            search=SearchConfig(enabled=not args.disable_search),
         )
 
         agent = PhoneAgent(

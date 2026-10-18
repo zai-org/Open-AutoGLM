@@ -1,0 +1,3 @@
+[default.extend-words]
+# Apple names its device identifier UDID.
+UDID = "UDID"

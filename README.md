@@ -485,6 +485,14 @@ conn.disconnect("192.168.1.100:5555")
 
 ## 配置
 
+### 网页搜索
+
+内置提示词支持通过 `Search` 动作查询手机任务所需的公开实时信息。
+默认使用无需账户或 API Key 的 Parallel Search MCP，每次发送查询前都会请求用户确认。
+搜索结果与来源链接会加入 Android、HarmonyOS 和 iOS 智能体的下一轮规划。
+使用本地模型时也可通过 `--disable-search` 禁用外部搜索。
+数据传输说明、Python 配置与自定义提示词用法见[网页搜索说明](docs/web_search.md)。
+
 ### 自定义SYSTEM PROMPT
 
 系统提供中英文两套 prompt，通过 `--lang` 参数切换：

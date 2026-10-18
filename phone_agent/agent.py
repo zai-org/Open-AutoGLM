@@ -2,7 +2,7 @@
 
 import json
 import traceback
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Callable
 
 from phone_agent.actions import ActionHandler
@@ -11,6 +11,7 @@ from phone_agent.config import get_messages, get_system_prompt
 from phone_agent.device_factory import get_device_factory
 from phone_agent.model import ModelClient, ModelConfig
 from phone_agent.model.client import MessageBuilder
+from phone_agent.search import SEARCH_PROMPT, SearchAction, SearchConfig, SearchProvider
 
 
 @dataclass
@@ -22,10 +23,13 @@ class AgentConfig:
     lang: str = "cn"
     system_prompt: str | None = None
     verbose: bool = True
+    search: SearchConfig = field(default_factory=SearchConfig)
 
     def __post_init__(self):
         if self.system_prompt is None:
             self.system_prompt = get_system_prompt(self.lang)
+            if self.search.enabled:
+                self.system_prompt += "\n" + SEARCH_PROMPT
 
 
 @dataclass
@@ -67,6 +71,7 @@ class PhoneAgent:
         agent_config: AgentConfig | None = None,
         confirmation_callback: Callable[[str], bool] | None = None,
         takeover_callback: Callable[[str], None] | None = None,
+        search_provider: SearchProvider | None = None,
     ):
         self.model_config = model_config or ModelConfig()
         self.agent_config = agent_config or AgentConfig()
@@ -78,6 +83,13 @@ class PhoneAgent:
             takeover_callback=takeover_callback,
         )
 
+        self.search_action = SearchAction(
+            self.agent_config.search,
+            self.action_handler.confirmation_callback,
+            search_provider,
+        )
+
+        self._search_observation: str | None = None
         self._context: list[dict[str, Any]] = []
         self._step_count = 0
 
@@ -93,6 +105,8 @@ class PhoneAgent:
         """
         self._context = []
         self._step_count = 0
+        self.search_action.reset()
+        self._search_observation = None
 
         # First step with user prompt
         result = self._execute_step(task, is_first=True)
@@ -132,6 +146,8 @@ class PhoneAgent:
         """Reset the agent state for a new task."""
         self._context = []
         self._step_count = 0
+        self.search_action.reset()
+        self._search_observation = None
 
     def _execute_step(
         self, user_prompt: str | None = None, is_first: bool = False
@@ -161,6 +177,9 @@ class PhoneAgent:
         else:
             screen_info = MessageBuilder.build_screen_info(current_app)
             text_content = f"** Screen Info **\n\n{screen_info}"
+            if self._search_observation is not None:
+                text_content += "\n\n" + self._search_observation
+                self._search_observation = None
 
             self._context.append(
                 MessageBuilder.create_user_message(
@@ -206,9 +225,12 @@ class PhoneAgent:
 
         # Execute action
         try:
-            result = self.action_handler.execute(
-                action, screenshot.width, screenshot.height
-            )
+            if action.get("_metadata") == "do" and action.get("action") == "Search":
+                result = self.search_action.execute(action)
+            else:
+                result = self.action_handler.execute(
+                    action, screenshot.width, screenshot.height
+                )
         except Exception as e:
             if self.agent_config.verbose:
                 traceback.print_exc()
@@ -222,6 +244,10 @@ class PhoneAgent:
                 f"<think>{response.thinking}</think><answer>{response.action}</answer>"
             )
         )
+
+        # Search observations must reach the next planning turn, including errors.
+        if action.get("_metadata") == "do" and action.get("action") == "Search":
+            self._search_observation = SearchAction.observation(result)
 
         # Check if finished
         finished = action.get("_metadata") == "finish" or result.should_finish

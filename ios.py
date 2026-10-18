@@ -25,6 +25,7 @@ from openai import OpenAI
 from phone_agent.agent_ios import IOSAgentConfig, IOSPhoneAgent
 from phone_agent.config.apps_ios import list_supported_apps
 from phone_agent.model import ModelConfig
+from phone_agent.search import SearchConfig
 from phone_agent.xctest import XCTestConnection, list_devices
 
 
@@ -99,9 +100,7 @@ def check_system_requirements(wda_url: str = "http://localhost:8100") -> bool:
             print("     4. Or connect via WiFi using device IP")
             all_passed = False
         else:
-            device_names = [
-                d.device_name or d.device_id[:8] + "..." for d in devices
-            ]
+            device_names = [d.device_name or d.device_id[:8] + "..." for d in devices]
             print(f"✅ OK ({len(devices)} device(s): {', '.join(device_names)})")
     except Exception as e:
         print("❌ FAILED")
@@ -326,7 +325,9 @@ Examples:
     )
 
     parser.add_argument(
-        "--list-devices", action="store_true", help="List connected iOS devices and exit"
+        "--list-devices",
+        action="store_true",
+        help="List connected iOS devices and exit",
     )
 
     parser.add_argument(
@@ -344,6 +345,9 @@ Examples:
     # Other options
     parser.add_argument(
         "--quiet", "-q", action="store_true", help="Suppress verbose output"
+    )
+    parser.add_argument(
+        "--disable-search", action="store_true", help="Disable external web search"
     )
 
     parser.add_argument(
@@ -474,9 +478,7 @@ def main():
 
     # Create configurations
     model_config = ModelConfig(
-        base_url=args.base_url,
-        model_name=args.model,
-        api_key=args.api_key
+        base_url=args.base_url, model_name=args.model, api_key=args.api_key
     )
 
     agent_config = IOSAgentConfig(
@@ -485,6 +487,7 @@ def main():
         device_id=args.device_id,
         verbose=not args.quiet,
         lang=args.lang,
+        search=SearchConfig(enabled=not args.disable_search),
     )
 
     # Create iOS agent
