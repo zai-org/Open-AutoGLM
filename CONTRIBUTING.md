@@ -80,19 +80,19 @@ We welcome documentation improvements! This includes:
 - Improving code docstrings
 
 ### Tests
-We especially need tests! See [Issues tagged with testing needs](https://github.com/zai-org/Open-AutoGLM/issues) for areas that need coverage.
+We especially need tests! Check the [Issues page](https://github.com/zai-org/Open-AutoGLM/issues) for areas that need coverage.
 
 ## Adding Support for New Apps
 
 To add a new app to the agent's supported list:
-1. Add the app configuration in the appropriate platform directory
-2. Add the app to the prompts (both English and Chinese)
+1. Add the app to `phone_agent/config/apps.py` (Android), `phone_agent/config/apps_harmonyos.py` (HarmonyOS), or `phone_agent/config/apps_ios.py` (iOS)
+2. Add the app to both prompt files: `phone_agent/config/prompts_zh.py` and `phone_agent/config/prompts_en.py`
 3. Test with manual verification
 
 ## Adding a New Action Type
 
 1. Add the action definition in `phone_agent/actions/handler.py`
-2. Update both `phone_agent/config/prompts.py` and `phone_agent/config/prompts_en.py`
+2. Update both `phone_agent/config/prompts_zh.py` and `phone_agent/config/prompts_en.py`
 3. Add tests for the new action in `tests/`
 
 ## Community
