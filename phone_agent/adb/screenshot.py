@@ -22,13 +22,18 @@ class Screenshot:
     is_sensitive: bool = False
 
 
-def get_screenshot(device_id: str | None = None, timeout: int = 10) -> Screenshot:
+def get_screenshot(
+    device_id: str | None = None,
+    timeout: int = 10,
+    display_id: str | None = None,
+) -> Screenshot:
     """
     Capture a screenshot from the connected Android device.
 
     Args:
         device_id: Optional ADB device ID for multi-device setups.
         timeout: Timeout in seconds for screenshot operations.
+        display_id: Optional Android display ID to capture.
 
     Returns:
         Screenshot object containing base64 data and dimensions.
@@ -43,7 +48,14 @@ def get_screenshot(device_id: str | None = None, timeout: int = 10) -> Screensho
     try:
         # Execute screenshot command
         result = subprocess.run(
-            adb_prefix + ["shell", "screencap", "-p", "/sdcard/tmp.png"],
+            adb_prefix
+            + [
+                "shell",
+                "screencap",
+                "-p",
+                *(["-d", display_id] if display_id else []),
+                "/sdcard/tmp.png",
+            ],
             capture_output=True,
             text=True,
             timeout=timeout,

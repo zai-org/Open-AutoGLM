@@ -11,6 +11,7 @@ Environment Variables:
     PHONE_AGENT_API_KEY: API key for model authentication (default: EMPTY)
     PHONE_AGENT_MAX_STEPS: Maximum steps per task (default: 100)
     PHONE_AGENT_DEVICE_ID: ADB device ID for multi-device setups
+    PHONE_AGENT_DISPLAY_ID: Android display ID for multi-display devices
 """
 
 import argparse
@@ -440,6 +441,13 @@ Examples:
     )
 
     parser.add_argument(
+        "--display-id",
+        type=str,
+        default=os.getenv("PHONE_AGENT_DISPLAY_ID"),
+        help="Android display ID to capture (optional)",
+    )
+
+    parser.add_argument(
         "--connect",
         "-c",
         type=str,
@@ -771,6 +779,7 @@ def main():
         agent_config = AgentConfig(
             max_steps=args.max_steps,
             device_id=args.device_id,
+            display_id=args.display_id,
             verbose=not args.quiet,
             lang=args.lang,
         )
