@@ -45,8 +45,15 @@ class DeviceFactory:
                 raise ValueError(f"Unknown device type: {self.device_type}")
         return self._module
 
-    def get_screenshot(self, device_id: str | None = None, timeout: int = 10):
+    def get_screenshot(
+        self,
+        device_id: str | None = None,
+        timeout: int = 10,
+        display_id: str | None = None,
+    ):
         """Get screenshot from device."""
+        if self.device_type == DeviceType.ADB:
+            return self.module.get_screenshot(device_id, timeout, display_id)
         return self.module.get_screenshot(device_id, timeout)
 
     def get_current_app(self, device_id: str | None = None) -> str:

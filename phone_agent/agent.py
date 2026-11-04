@@ -19,6 +19,7 @@ class AgentConfig:
 
     max_steps: int = 100
     device_id: str | None = None
+    display_id: str | None = None
     lang: str = "cn"
     system_prompt: str | None = None
     verbose: bool = True
@@ -141,7 +142,9 @@ class PhoneAgent:
 
         # Capture current screen state
         device_factory = get_device_factory()
-        screenshot = device_factory.get_screenshot(self.agent_config.device_id)
+        screenshot = device_factory.get_screenshot(
+            self.agent_config.device_id, display_id=self.agent_config.display_id
+        )
         current_app = device_factory.get_current_app(self.agent_config.device_id)
 
         # Build messages
