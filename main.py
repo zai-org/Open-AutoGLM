@@ -499,6 +499,13 @@ Examples:
     )
 
     parser.add_argument(
+        "--display-id",
+        default=os.getenv("PHONE_AGENT_DISPLAY_ID") or None,
+        help="Route input to a logical display id (try 0 on Samsung DeX or any "
+             "device with an external monitor). Default: adb picks the focused display.",
+    )
+
+    parser.add_argument(
         "--lang",
         type=str,
         choices=["cn", "en"],
@@ -684,6 +691,11 @@ def handle_device_commands(args) -> bool:
 def main():
     """Main entry point."""
     args = parse_args()
+
+    # Route input to a specific display when asked (multi-display devices)
+    if args.display_id is not None and args.device_type == "adb":
+        from phone_agent.adb import set_input_display
+        set_input_display(args.display_id)
 
     # Set device type globally based on args
     if args.device_type == "adb":

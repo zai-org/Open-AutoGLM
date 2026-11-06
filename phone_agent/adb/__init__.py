@@ -14,6 +14,7 @@ from phone_agent.adb.device import (
     home,
     launch_app,
     long_press,
+    set_input_display,
     swipe,
     tap,
 )
