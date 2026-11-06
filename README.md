@@ -114,6 +114,22 @@ ADB 调试能力，可通过 WiFi 或网络连接设备，实现灵活的远程�
 下载 [安装包](https://github.com/senzhk/ADBKeyBoard/blob/master/ADBKeyboard.apk) 并在对应的安卓设备中进行安装。
 注意，安装完成后还需要到 `设置-输入法` 或者 `设置-键盘列表` 中启用 `ADB Keyboard` 才能生效(或使用命令`adb shell ime enable com.android.adbkeyboard/.AdbIME`[How-to-use](https://github.com/senzhk/ADBKeyBoard/blob/master/README.md#how-to-use))
 
+### 5. 多显示器设备（可选，例如三星 DeX）
+
+如果设备接了外接显示器（DeX、HDMI、部分折叠屏），`adb shell input` **不带 `-d` 时会被路由到当前有焦点的显示器**——
+通常就是外接屏。结果就是：截图画面上是手机，但每一次点击都落在显示器上，动作看起来完全没反应。
+
+显式指定逻辑显示 id 即可：
+
+```bash
+# 0 = 手机内屏（用 dumpsys display 确认）
+python main.py --display-id 0 --base-url ... --model autoglm-phone --apikey ... "打开小红书看第一条笔记"
+```
+
+也可以用环境变量 `PHONE_AGENT_DISPLAY_ID=0`。
+
+不指定时保持原有行为，普通单屏设备不受影响。
+
 ## iPhone 环境准备
 
 如果你使用的是 iPhone 设备，请参考专门的 iOS 配置文档：

@@ -8,6 +8,27 @@ from typing import List, Optional, Tuple
 from phone_agent.config.apps import APP_PACKAGES
 from phone_agent.config.timing import TIMING_CONFIG
 
+# Optional target display for input injection.
+#
+# On devices with more than one display (Samsung DeX, an HDMI monitor, some
+# foldables) `adb shell input` without `-d` is routed to whichever display
+# currently has focus. That is usually the external display — so every tap
+# silently misses the phone. Pinning the display makes the behaviour
+# deterministic. Unset = previous behaviour, so nothing changes by default.
+_INPUT_DISPLAY: str | None = None
+
+
+def set_input_display(display_id: str | None) -> None:
+    """Route all input events to a specific logical display id (e.g. "0")."""
+    global _INPUT_DISPLAY
+    display_id = (display_id or "").strip()
+    _INPUT_DISPLAY = display_id if display_id and display_id.lower() != "none" else None
+
+
+def _input_display_args() -> List[str]:
+    """`-d <id>` when a display was configured, otherwise nothing."""
+    return ["-d", _INPUT_DISPLAY] if _INPUT_DISPLAY is not None else []
+
 
 def get_current_app(device_id: str | None = None) -> str:
     """
@@ -56,7 +77,7 @@ def tap(
     adb_prefix = _get_adb_prefix(device_id)
 
     subprocess.run(
-        adb_prefix + ["shell", "input", "tap", str(x), str(y)], capture_output=True
+        adb_prefix + ["shell", "input", *_input_display_args(), "tap", str(x), str(y)], capture_output=True
     )
     time.sleep(delay)
 
@@ -79,11 +100,11 @@ def double_tap(
     adb_prefix = _get_adb_prefix(device_id)
 
     subprocess.run(
-        adb_prefix + ["shell", "input", "tap", str(x), str(y)], capture_output=True
+        adb_prefix + ["shell", "input", *_input_display_args(), "tap", str(x), str(y)], capture_output=True
     )
     time.sleep(TIMING_CONFIG.device.double_tap_interval)
     subprocess.run(
-        adb_prefix + ["shell", "input", "tap", str(x), str(y)], capture_output=True
+        adb_prefix + ["shell", "input", *_input_display_args(), "tap", str(x), str(y)], capture_output=True
     )
     time.sleep(delay)
 
@@ -112,7 +133,7 @@ def long_press(
 
     subprocess.run(
         adb_prefix
-        + ["shell", "input", "swipe", str(x), str(y), str(x), str(y), str(duration_ms)],
+        + ["shell", "input", *_input_display_args(), "swipe", str(x), str(y), str(x), str(y), str(duration_ms)],
         capture_output=True,
     )
     time.sleep(delay)
@@ -155,6 +176,7 @@ def swipe(
         + [
             "shell",
             "input",
+            *_input_display_args(),
             "swipe",
             str(start_x),
             str(start_y),
@@ -181,7 +203,7 @@ def back(device_id: str | None = None, delay: float | None = None) -> None:
     adb_prefix = _get_adb_prefix(device_id)
 
     subprocess.run(
-        adb_prefix + ["shell", "input", "keyevent", "4"], capture_output=True
+        adb_prefix + ["shell", "input", *_input_display_args(), "keyevent", "4"], capture_output=True
     )
     time.sleep(delay)
 
@@ -200,7 +222,7 @@ def home(device_id: str | None = None, delay: float | None = None) -> None:
     adb_prefix = _get_adb_prefix(device_id)
 
     subprocess.run(
-        adb_prefix + ["shell", "input", "keyevent", "KEYCODE_HOME"], capture_output=True
+        adb_prefix + ["shell", "input", *_input_display_args(), "keyevent", "KEYCODE_HOME"], capture_output=True
     )
     time.sleep(delay)
 
