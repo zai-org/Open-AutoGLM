@@ -151,6 +151,8 @@ class ActionHandler:
     def _handle_type(self, action: dict, width: int, height: int) -> ActionResult:
         """Handle text input action."""
         text = action.get("text", "")
+        if text is None:
+            text = ""
 
         device_factory = get_device_factory()
 
@@ -376,10 +378,24 @@ def parse_action(response: str) -> dict[str, Any]:
                 raise ValueError(f"Failed to parse do() action: {e}")
 
         elif response.startswith("finish"):
-            action = {
-                "_metadata": "finish",
-                "message": response.replace("finish(message=", "")[1:-2],
-            }
+            # Extract message from finish(message="...") format
+            try:
+                tree = ast.parse(response, mode="eval")
+                if isinstance(tree.body, ast.Call):
+                    action = {"_metadata": "finish"}
+                    for keyword in tree.body.keywords:
+                        action[keyword.arg] = ast.literal_eval(keyword.value)
+                else:
+                    action = {"_metadata": "finish", "message": ""}
+            except (SyntaxError, ValueError):
+                # Fallback: try manual extraction
+                msg_start = response.find('message="')
+                if msg_start != -1:
+                    msg_start += len('message="')
+                    msg_end = response.rfind('")')
+                    action = {"_metadata": "finish", "message": response[msg_start:msg_end]}
+                else:
+                    action = {"_metadata": "finish", "message": ""}
         else:
             raise ValueError(f"Failed to parse action: {response}")
         return action
