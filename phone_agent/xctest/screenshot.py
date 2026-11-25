@@ -4,7 +4,6 @@ import base64
 import os
 import subprocess
 import tempfile
-import uuid
 from dataclasses import dataclass
 from io import BytesIO
 
@@ -103,9 +102,7 @@ def _get_screenshot_wda(
     return None
 
 
-def _get_screenshot_idevice(
-    device_id: str | None, timeout: int
-) -> Screenshot | None:
+def _get_screenshot_idevice(device_id: str | None, timeout: int) -> Screenshot | None:
     """
     Capture screenshot using idevicescreenshot (libimobiledevice).
 
@@ -117,30 +114,23 @@ def _get_screenshot_idevice(
         Screenshot object or None if failed.
     """
     try:
-        temp_path = os.path.join(
-            tempfile.gettempdir(), f"ios_screenshot_{uuid.uuid4()}.png"
-        )
+        with tempfile.TemporaryDirectory(prefix="ios_screenshot_") as temp_dir:
+            temp_path = os.path.join(temp_dir, "screenshot.png")
+            cmd = ["idevicescreenshot"]
+            if device_id:
+                cmd.extend(["-u", device_id])
+            cmd.append(temp_path)
 
-        cmd = ["idevicescreenshot"]
-        if device_id:
-            cmd.extend(["-u", device_id])
-        cmd.append(temp_path)
+            result = subprocess.run(
+                cmd, capture_output=True, text=True, timeout=timeout
+            )
+            if result.returncode != 0 or not os.path.exists(temp_path):
+                return None
 
-        result = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=timeout
-        )
-
-        if result.returncode == 0 and os.path.exists(temp_path):
-            # Read and encode image
-            img = Image.open(temp_path)
-            width, height = img.size
-
-            buffered = BytesIO()
-            img.save(buffered, format="PNG")
-            base64_data = base64.b64encode(buffered.getvalue()).decode("utf-8")
-
-            # Cleanup
-            os.remove(temp_path)
+            with Image.open(temp_path) as img, BytesIO() as buffered:
+                width, height = img.size
+                img.save(buffered, format="PNG")
+                base64_data = base64.b64encode(buffered.getvalue()).decode("utf-8")
 
             return Screenshot(
                 base64_data=base64_data, width=width, height=height, is_sensitive=False
