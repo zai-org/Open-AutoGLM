@@ -656,6 +656,8 @@ def handle_device_commands(args) -> bool:
             print(f"Disconnecting from {args.disconnect}...")
             success, message = conn.disconnect(args.disconnect)
         print(f"{'✓' if success else '✗'} {message}")
+        if not success:
+            sys.exit(1)
         return True
 
     # Handle --enable-tcpip

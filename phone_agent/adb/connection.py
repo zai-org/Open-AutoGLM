@@ -112,6 +112,8 @@ class ADBConnection:
             result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", timeout=5)
 
             output = result.stdout + result.stderr
+            if result.returncode != 0:
+                return False, output.strip() or f"ADB disconnect failed (exit code {result.returncode})"
             return True, output.strip() or "Disconnected"
 
         except Exception as e:
